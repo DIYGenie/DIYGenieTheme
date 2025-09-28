@@ -109,9 +109,9 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.inter,
-    color: '#4B5563',
+    color: '#374151',
     textAlign: 'center',
-    marginBottom: spacing.xxl * 1.15,
+    marginBottom: spacing.xxl * 1.25,
   },
   spacer: {
     flex: 0.15,
