@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "DIY Genie",
+    "slug": "diy-genie",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/Icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#8B5CF6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Icon.png",
+        "backgroundColor": "#8B5CF6"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
