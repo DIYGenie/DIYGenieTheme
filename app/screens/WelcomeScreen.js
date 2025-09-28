@@ -109,16 +109,16 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
+    color: '#4B5563',
     textAlign: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xxl * 1.15,
   },
   spacer: {
-    flex: 0.2,
+    flex: 0.15,
   },
   ctaButton: {
     backgroundColor: colors.ctaOrange,
-    paddingHorizontal: spacing.xxxl * 1.15,
+    paddingHorizontal: spacing.xxxl * 1.38,
     paddingVertical: spacing.md * 1.15,
     borderRadius: layout.borderRadius.full,
     marginBottom: spacing.xl,
