@@ -1,5 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { enableScreens } from 'react-native-screens';
 import { useFonts } from 'expo-font';
 import {
   Manrope_400Regular,
@@ -11,6 +13,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet } from 'react-native';
+
+// Enable screens for React Navigation
+enableScreens();
 
 import AppNavigator from './app/navigation/AppNavigator';
 import { colors } from './theme/colors';
@@ -33,12 +38,12 @@ export default function App() {
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
       <NavigationContainer>
         <AppNavigator />
       </NavigationContainer>
-    </>
+    </SafeAreaProvider>
   );
 }
 

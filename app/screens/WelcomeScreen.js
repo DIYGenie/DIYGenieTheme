@@ -17,7 +17,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen({ navigation }) {
   const handleGetStarted = () => {
-    navigation.navigate('Home');
+    navigation.replace('Main');
   };
 
   return (
@@ -112,6 +112,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    // Web-specific shadow
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
   },
   ctaButtonText: {
     fontSize: typography.fontSize.lg,
