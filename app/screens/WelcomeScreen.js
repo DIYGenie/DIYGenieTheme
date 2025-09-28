@@ -15,6 +15,13 @@ import { typography } from '../../theme/typography';
 
 const { width, height } = Dimensions.get('window');
 
+// Calculate responsive icon size (25-30% of available vertical space above title)
+const getIconSize = () => {
+  // Use roughly 25% of screen height for the icon, with min/max bounds
+  const responsiveSize = Math.min(Math.max(height * 0.25, 150), 300);
+  return responsiveSize;
+};
+
 export default function WelcomeScreen({ navigation }) {
   const handleGetStarted = () => {
     navigation.replace('Main');
@@ -78,8 +85,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   appIcon: {
-    width: layout.iconSize.appIcon,
-    height: layout.iconSize.appIcon,
+    width: getIconSize(),
+    height: getIconSize(),
+    // Add subtle drop shadow for depth
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
+    // Web-specific shadow
+    boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.25)',
   },
   title: {
     fontSize: typography.fontSize.title,
