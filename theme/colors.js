@@ -1,14 +1,14 @@
 export const colors = {
-  // Gradient colors for lavender to sky blue background
-  gradientStart: '#A78BFA', // Lavender
-  gradientEnd: '#60A5FA',   // Sky Blue
+  // Gradient colors for light lavender to soft sky blue background
+  gradientStart: '#C4B5FD', // Light Lavender
+  gradientEnd: '#93C5FD',   // Soft Sky Blue
   
   // UI colors
   white: '#FFFFFF',
   black: '#000000',
   
-  // CTA button color (orange)
-  ctaOrange: '#F97316',
+  // CTA button color (amber golden-orange)
+  ctaOrange: '#F59E0B',
   ctaOrangePressed: '#EA580C',
   
   // Text colors
