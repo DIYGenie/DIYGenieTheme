@@ -1,7 +1,7 @@
 export const colors = {
-  // Gradient colors for purple to blue background
-  gradientStart: '#8B5CF6', // Purple
-  gradientEnd: '#3B82F6',   // Blue
+  // Gradient colors for lavender to sky blue background
+  gradientStart: '#A78BFA', // Lavender
+  gradientEnd: '#60A5FA',   // Sky Blue
   
   // UI colors
   white: '#FFFFFF',

@@ -114,12 +114,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   spacer: {
-    flex: 0.3,
+    flex: 0.2,
   },
   ctaButton: {
     backgroundColor: colors.ctaOrange,
-    paddingHorizontal: spacing.xxxl,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xxxl * 1.15,
+    paddingVertical: spacing.md * 1.15,
     borderRadius: layout.borderRadius.full,
     marginBottom: spacing.xl,
     shadowColor: colors.black,
