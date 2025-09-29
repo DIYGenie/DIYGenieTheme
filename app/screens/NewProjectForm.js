@@ -89,7 +89,7 @@ export default function NewProjectForm({ navigation }) {
         contentContainerStyle={{ 
           paddingHorizontal: 24,
           paddingTop: 24,
-          paddingBottom: tabBarHeight + insets.bottom + 90,
+          paddingBottom: tabBarHeight + insets.bottom + 160,
           overflow: 'visible',
         }}
         showsVerticalScrollIndicator={false}
@@ -196,7 +196,7 @@ export default function NewProjectForm({ navigation }) {
           left: 0,
           right: 0,
           bottom: tabBarHeight + insets.bottom + 8,
-          backgroundColor: '#FFFFFF',
+          backgroundColor: '#FFF',
           paddingTop: 10,
           paddingHorizontal: 16,
           borderTopWidth: StyleSheet.hairlineWidth,
@@ -209,37 +209,36 @@ export default function NewProjectForm({ navigation }) {
         <View
           style={{
             alignSelf: 'center',
-            flexDirection: 'row',
+            width: '100%',
+            maxWidth: 360,
+            gap: 12,
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12,
-            width: '100%',
-            maxWidth: 520,
           }}
         >
           <TouchableOpacity 
             style={[
-              styles.buttonTile,
+              styles.squareTile,
               styles.scanRoomButton,
-              !isFormValid && styles.buttonTileDisabled
+              !isFormValid && styles.squareTileDisabled
             ]}
             onPress={handleScanRoom}
             disabled={!isFormValid}
           >
-            <Ionicons name="camera" size={24} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+            <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
             <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[
-              styles.buttonTile,
+              styles.squareTile,
               styles.uploadPhotoButton,
-              !isFormValid && styles.buttonTileDisabled
+              !isFormValid && styles.squareTileDisabled
             ]}
             onPress={handleUploadPhoto}
             disabled={!isFormValid}
           >
-            <Ionicons name="image" size={24} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+            <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
             <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
           </TouchableOpacity>
         </View>
@@ -363,10 +362,9 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
   },
-  buttonTile: {
-    flex: 1,
-    minWidth: 150,
-    height: 56,
+  squareTile: {
+    width: 120,
+    height: 120,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -376,7 +374,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  buttonTileDisabled: {
+  squareTileDisabled: {
     opacity: 0.6,
     shadowOpacity: 0,
   },
