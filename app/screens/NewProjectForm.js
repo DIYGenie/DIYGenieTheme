@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
@@ -13,6 +14,8 @@ export default function NewProjectForm({ navigation }) {
   const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const scrollViewRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -62,17 +65,31 @@ export default function NewProjectForm({ navigation }) {
     setShowSkillDropdown(false);
   };
 
+  const handleBudgetFocus = () => {
+    setShowBudgetDropdown(!showBudgetDropdown);
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToFocusedInput();
+    }
+  };
+
+  const handleSkillFocus = () => {
+    setShowSkillDropdown(!showSkillDropdown);
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToFocusedInput();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        extraScrollHeight={100}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
@@ -101,7 +118,7 @@ export default function NewProjectForm({ navigation }) {
             <Text style={styles.fieldLabel}>Budget</Text>
             <TouchableOpacity 
               style={styles.dropdown}
-              onPress={() => setShowBudgetDropdown(!showBudgetDropdown)}
+              onPress={handleBudgetFocus}
             >
               <Text style={[styles.dropdownText, !budget && styles.placeholderText]}>
                 {budget || 'Select budget range'}
@@ -135,7 +152,7 @@ export default function NewProjectForm({ navigation }) {
             <Text style={styles.fieldLabel}>Skill Level</Text>
             <TouchableOpacity 
               style={styles.dropdown}
-              onPress={() => setShowSkillDropdown(!showSkillDropdown)}
+              onPress={handleSkillFocus}
             >
               <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
                 {skillLevel || 'Select skill level'}
@@ -163,29 +180,62 @@ export default function NewProjectForm({ navigation }) {
           </View>
         </View>
 
-        </ScrollView>
-        
-        {/* Sticky Bottom Action Bar */}
-        <View style={styles.bottomActionBar}>
+      </KeyboardAwareScrollView>
+      
+      {/* Sticky Bottom Action Bar */}
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: insets.bottom + 8,
+          backgroundColor: '#FFFFFF',
+          paddingHorizontal: 16,
+          paddingTop: 10,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: 'rgba(229,231,235,0.6)',
+        }}
+        pointerEvents={showBudgetDropdown || showSkillDropdown ? 'none' : 'box-none'}
+      >
+        <View
+          style={{
+            alignSelf: 'center',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            width: '100%',
+            maxWidth: 520,
+            flexWrap: 'wrap',
+          }}
+        >
           <TouchableOpacity 
-            style={[styles.actionButton, styles.scanRoomButton, !isFormValid && styles.actionButtonDisabled]}
+            style={[
+              styles.newActionButton,
+              styles.scanRoomButton,
+              !isFormValid && styles.newActionButtonDisabled
+            ]}
             onPress={handleScanRoom}
             disabled={!isFormValid}
           >
-            <Ionicons name="camera" size={24} color={isFormValid ? '#F59E0B' : '#9CA3AF'} />
+            <Ionicons name="camera" size={24} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
             <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.actionButton, styles.uploadPhotoButton, !isFormValid && styles.actionButtonDisabled]}
+            style={[
+              styles.newActionButton,
+              styles.uploadPhotoButton,
+              !isFormValid && styles.newActionButtonDisabled
+            ]}
             onPress={handleUploadPhoto}
             disabled={!isFormValid}
           >
-            <Ionicons name="image" size={24} color={isFormValid ? '#1F2937' : '#9CA3AF'} />
+            <Ionicons name="image" size={24} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
             <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -195,9 +245,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
     overflow: 'visible',
@@ -205,7 +252,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 24,
+    paddingBottom: 120, // Extra space for sticky footer
     overflow: 'visible',
   },
   header: {
@@ -298,10 +345,10 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.06,
     shadowRadius: 20,
-    elevation: 3,
+    elevation: 24,
     // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
-    zIndex: 1000,
+    zIndex: 100,
   },
   dropdownOption: {
     padding: 16,
@@ -313,60 +360,43 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
   },
-  bottomActionBar: {
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  actionButton: {
-    width: '49%',
+  newActionButton: {
+    flexGrow: 1,
+    flexBasis: '48%',
     height: 56,
     borderRadius: 16,
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 20,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    minWidth: 160,
   },
-  actionButtonDisabled: {
+  newActionButtonDisabled: {
     opacity: 0.6,
     shadowOpacity: 0,
-    elevation: 0,
-    boxShadow: 'none',
   },
   scanRoomButton: {
-    backgroundColor: colors.white,
     borderWidth: 1.5,
     borderColor: '#FBBF24',
+    backgroundColor: '#FFF',
   },
   uploadPhotoButton: {
-    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    backgroundColor: '#FFF',
   },
   scanRoomText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#F59E0B',
-    marginTop: 6,
   },
   uploadPhotoText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#1F2937',
-    marginTop: 6,
   },
   actionButtonTextDisabled: {
     color: '#9CA3AF',
