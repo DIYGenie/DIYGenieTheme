@@ -55,19 +55,19 @@ export default function HomeScreen({ navigation }) {
 
             {/* Welcome Header */}
             <View style={styles.welcomeHeader}>
-              <Text style={styles.welcomeTitle}>Welcome back, Tye 👋</Text>
+              <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
               <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
             </View>
 
-            {/* CTA Buttons */}
-            <View style={styles.ctaSection}>
-              <TouchableOpacity style={styles.scanRoomButton} onPress={handleScanRoom}>
-                <Ionicons name="camera" size={20} color="#F59E0B" style={styles.buttonIcon} />
+            {/* CTA Tiles */}
+            <View style={styles.ctaRow}>
+              <TouchableOpacity style={styles.scanRoomTile} onPress={handleScanRoom}>
+                <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
                 <Text style={styles.scanRoomText}>Scan Room</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.uploadPhotoButton} onPress={handleUploadPhoto}>
-                <Ionicons name="image" size={20} color={colors.white} style={styles.buttonIcon} />
+              <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
+                <Ionicons name="image" size={28} color={colors.white} style={styles.tileIcon} />
                 <Text style={styles.uploadPhotoText}>Upload Photo</Text>
               </TouchableOpacity>
             </View>
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   welcomeHeader: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   welcomeTitle: {
     fontSize: 20,
@@ -249,21 +249,26 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#475569',
   },
-  ctaSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  scanRoomButton: {
+  ctaRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  scanRoomTile: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '70%',
-    height: 52,
+    minWidth: 120,
+    minHeight: 120,
     backgroundColor: colors.white,
     borderWidth: 2,
     borderColor: '#F59E0B',
     borderRadius: 16,
-    marginBottom: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -275,14 +280,15 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
-  uploadPhotoButton: {
-    flexDirection: 'row',
+  uploadPhotoTile: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '70%',
-    height: 52,
+    minWidth: 120,
+    minHeight: 120,
     backgroundColor: '#F59E0B',
     borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -294,17 +300,19 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
-  buttonIcon: {
-    marginRight: 8,
+  tileIcon: {
+    marginBottom: 8,
   },
   scanRoomText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
+    fontFamily: typography.fontFamily.manropeSemiBold,
     color: '#F59E0B',
+    textAlign: 'center',
   },
   uploadPhotoText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
+    fontFamily: typography.fontFamily.manropeSemiBold,
     color: colors.white,
+    textAlign: 'center',
   },
 });
