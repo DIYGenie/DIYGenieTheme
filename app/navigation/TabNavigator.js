@@ -73,12 +73,12 @@ export default function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Projects" component={ProjectsScreen} />
       <Tab.Screen 
         name="NewProject" 
         component={NewProjectForm} 
         options={{ tabBarLabel: 'New Project' }}
       />
+      <Tab.Screen name="Projects" component={ProjectsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
