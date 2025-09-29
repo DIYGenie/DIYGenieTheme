@@ -22,6 +22,10 @@ if (!sbUrl || !sbKey) {
 
 const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
 
+app.get('/health', (req, res) => {
+  res.json({ ok: true, status: 'healthy' });
+});
+
 app.get('/api/projects', async (req, res) => {
   try {
     const userId = String(req.query.user_id || '').trim();

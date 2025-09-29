@@ -8,6 +8,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects, ApiError } from '../lib/api';
 import { supabase } from '../lib/storage';
+import { BASE_URL } from '../config';
 
 export default function ProjectsScreen({ navigation, route }) {
   const [activeFilter, setActiveFilter] = useState('All');
@@ -15,17 +16,22 @@ export default function ProjectsScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
+  const [lastHealthCheck, setLastHealthCheck] = useState(0);
   const userId = '00000000-0000-0000-0000-000000000001';
 
   const fetchProjects = async () => {
     try {
       const data = await listProjects(userId);
       setProjects(data);
-      setNetworkError(false);
+      if (Date.now() - lastHealthCheck < 60000) {
+        setNetworkError(false);
+      }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       if (error instanceof ApiError && error.status === 0) {
-        setNetworkError(true);
+        if (Date.now() - lastHealthCheck >= 60000) {
+          setNetworkError(true);
+        }
       }
     } finally {
       setLoading(false);
@@ -45,7 +51,25 @@ export default function ProjectsScreen({ navigation, route }) {
   );
 
   useEffect(() => {
-    fetchProjects();
+    const init = async () => {
+      // Health ping
+      try {
+        const healthResp = await fetch(`${BASE_URL}/health`, { method: 'GET' });
+        if (healthResp.ok) {
+          setLastHealthCheck(Date.now());
+          setNetworkError(false);
+        } else {
+          throw new Error('Health check failed');
+        }
+      } catch (healthErr) {
+        setNetworkError(true);
+      }
+
+      // Fetch projects
+      fetchProjects();
+    };
+    
+    init();
   }, []);
 
   const onRefresh = () => {

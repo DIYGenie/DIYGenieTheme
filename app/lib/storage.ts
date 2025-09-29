@@ -12,66 +12,41 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export { supabase };
 
 /**
- * Convert local URI to Blob for upload
- * Works on both web and mobile via fetch
+ * Detect mime type from file extension
  */
-async function uriToBlob(uri: string): Promise<Blob> {
-  const response = await fetch(uri);
-  const blob = await response.blob();
-  return blob;
+function guessMime(uri: string): string {
+  if (uri.endsWith('.png') || uri.endsWith('.PNG')) return 'image/png';
+  if (uri.endsWith('.jpg') || uri.endsWith('.JPG')) return 'image/jpeg';
+  if (uri.endsWith('.jpeg') || uri.endsWith('.JPEG')) return 'image/jpeg';
+  return 'image/jpeg'; // default
 }
 
 /**
  * Upload an image to Supabase Storage and return its public URL
  * 
- * @param localUri - Local file URI from image picker
  * @param projectId - Project ID for organizing uploads
+ * @param fileUri - Local file URI from image picker
  * @returns Public URL of the uploaded image
+ * @throws Error (not ApiError) on storage failures
  */
 export async function uploadImageAsync(
-  localUri: string,
-  projectId: string
+  projectId: string,
+  fileUri: string
 ): Promise<string> {
-  try {
-    // Generate unique file path
-    const timestamp = Date.now();
-    const filePath = `projects/${projectId}/${timestamp}.jpg`;
+  const resp = await fetch(fileUri);
+  const blob = await resp.blob();
+  const contentType = guessMime(fileUri);
 
-    // Convert local URI to Blob
-    const blob = await uriToBlob(localUri);
+  const fileName = `${Date.now()}.${contentType === 'image/png' ? 'png' : 'jpg'}`;
+  const path = `projects/${projectId}/${fileName}`;
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(UPLOADS_BUCKET)
-      .upload(filePath, blob, {
-        upsert: false,
-        contentType: 'image/jpeg',
-      });
+  const { data, error } = await supabase
+    .storage
+    .from(UPLOADS_BUCKET)
+    .upload(path, blob, { contentType, upsert: true });
 
-    if (error) {
-      throw new Error(`Upload failed: ${error.message}`);
-    }
-
-    if (!data) {
-      throw new Error('Upload succeeded but no data returned');
-    }
-
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(UPLOADS_BUCKET)
-      .getPublicUrl(filePath);
-
-    if (!urlData?.publicUrl) {
-      throw new Error('Failed to get public URL for uploaded image');
-    }
-
-    return urlData.publicUrl;
-  } catch (error) {
-    console.error('Image upload error:', error);
-    throw new Error(
-      error instanceof Error
-        ? `Failed to upload image: ${error.message}`
-        : 'Failed to upload image - please try again'
-    );
-  }
+  if (error) throw new Error(error.message);
+  
+  const { data: pub } = supabase.storage.from(UPLOADS_BUCKET).getPublicUrl(path);
+  return pub?.publicUrl;
 }

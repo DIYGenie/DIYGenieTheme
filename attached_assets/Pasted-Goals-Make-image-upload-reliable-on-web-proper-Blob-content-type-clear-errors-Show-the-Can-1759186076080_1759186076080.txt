@@ -1,0 +1,107 @@
+Goals
+
+Make image upload reliable on web (proper Blob + content type + clear errors).
+
+Show the “Can’t reach server” banner only for actual API (BASE_URL) failures, not storage errors.
+
+Fix “Unexpected text node” warnings by wrapping raw strings in <Text>.
+
+Remove expo-image-picker deprecation warnings (use MediaType enum).
+
+Adjust Projects screen horizontal padding so content isn’t too close to edges.
+
+Files to edit/create (only these):
+
+app/lib/storage.ts
+
+app/screens/NewProject.tsx
+
+app/screens/Projects.tsx
+
+app/components/Toast.tsx (or your toast component)
+
+app/components/*Empty* (empty state component if present)
+
+(NEW) app/components/T.tsx – tiny <Text> wrapper with Inter body style
+
+Implementation details
+
+Upload robustness (app/lib/storage.ts)
+
+Implement reliable web upload:
+
+// Detect mime from file extension; default 'image/jpeg'
+function guessMime(uri:string){ return uri.endsWith('.png') ? 'image/png' : 'image/jpeg'; }
+
+export async function uploadImageAsync(projectId: string, fileUri: string) {
+  const resp = await fetch(fileUri);
+  const blob = await resp.blob();
+  const contentType = guessMime(fileUri);
+
+  const fileName = `${Date.now()}.${contentType === 'image/png' ? 'png' : 'jpg'}`;
+  const path = `projects/${projectId}/${fileName}`;
+
+  const { data, error } = await supabase
+    .storage
+    .from(UPLOADS_BUCKET)
+    .upload(path, blob, { contentType, upsert: true });
+
+  if (error) throw new Error(error.message);
+  const { data: pub } = supabase.storage.from(UPLOADS_BUCKET).getPublicUrl(path);
+  return pub?.publicUrl;
+}
+
+
+Return a plain Error on failure (not ApiError) so UI can distinguish storage vs API issues.
+
+New Project logic (app/screens/NewProject.tsx)
+
+Where we call upload + API updates, split error handling:
+
+ApiError (from api.ts) → same handling as today.
+
+Error from storage → show toast: “Upload failed: <message>” and do not trigger the API “Network/CORS” banner.
+
+After selecting image, ensure we call ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaType.Images, quality: 0.9 }) (replace deprecated MediaTypeOptions).
+
+Health ping & banner control
+
+On app/screen mount (Projects + New Project), ping ${BASE_URL}/health once:
+
+If it succeeds, suppress the “Can’t reach server” banner for the next 60s.
+
+If it fails (network), show the banner.
+
+Keep existing banner for real API network failures (ApiError.status === 0) when no recent successful ping.
+
+Wrap stray text (app/components/T.tsx & audit)
+
+Add T:
+
+import { Text, TextProps } from 'react-native';
+export default function T(props: TextProps){ return <Text {...props} />; }
+
+
+(Apply your Inter body style as default.)
+
+Replace any raw strings under <View> (e.g., “Uploading…”, “Generating…”, separators, chip text, empty-state copy) with <Text> or <T>.
+
+Projects spacing (app/screens/Projects.tsx)
+
+Increase horizontal padding/margins to 24 (or px-6 equivalent) for the main container and empty state card so content isn’t flush with the edges.
+
+Keep typography and gradient consistent.
+
+Acceptance criteria
+
+Selecting room.jpeg uploads without error; on failure, toast shows a clear storage error (no API banner).
+
+Health ping works: when API is up, the yellow “Can’t reach server” banner does not appear.
+
+No “Unexpected text node” warnings remain.
+
+No expo-image-picker deprecation warnings.
+
+Projects screen content is comfortably inset from screen edges (≈24px).
+
+No file renames/deletes; no secrets.

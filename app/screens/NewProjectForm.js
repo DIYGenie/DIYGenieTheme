@@ -12,6 +12,7 @@ import { getEntitlements, createProject, updateProject, triggerPreview, ApiError
 import { uploadImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
+import { BASE_URL } from '../config';
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -27,6 +28,7 @@ export default function NewProjectForm({ navigation }) {
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [networkError, setNetworkError] = useState(false);
+  const [lastHealthCheck, setLastHealthCheck] = useState(0);
   const userId = '00000000-0000-0000-0000-000000000001';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -58,13 +60,31 @@ export default function NewProjectForm({ navigation }) {
 
   useEffect(() => {
     const init = async () => {
+      // Health ping
+      try {
+        const healthResp = await fetch(`${BASE_URL}/health`, { method: 'GET' });
+        if (healthResp.ok) {
+          setLastHealthCheck(Date.now());
+          setNetworkError(false);
+        } else {
+          throw new Error('Health check failed');
+        }
+      } catch (healthErr) {
+        setNetworkError(true);
+      }
+
+      // Fetch entitlements
       try {
         const data = await getEntitlements(userId);
         setEntitlements(data);
-        setNetworkError(false);
+        if (Date.now() - lastHealthCheck < 60000) {
+          setNetworkError(false);
+        }
       } catch (error) {
         if (error instanceof ApiError && error.status === 0) {
-          setNetworkError(true);
+          if (Date.now() - lastHealthCheck >= 60000) {
+            setNetworkError(true);
+          }
         }
         setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
       } finally {
@@ -96,10 +116,10 @@ export default function NewProjectForm({ navigation }) {
 
       // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 1,
+        quality: 0.9,
       });
 
       if (result.canceled) {
@@ -122,7 +142,7 @@ export default function NewProjectForm({ navigation }) {
       setProjectId(currentProjectId);
 
       // Step 2: Upload image to Supabase Storage
-      const publicUrl = await uploadImageAsync(localUri, currentProjectId);
+      const publicUrl = await uploadImageAsync(currentProjectId, localUri);
       setInputImageUrl(publicUrl);
 
       // Step 3: Try to PATCH the image URL to the project (graceful if not supported)
@@ -136,7 +156,18 @@ export default function NewProjectForm({ navigation }) {
 
     } catch (error) {
       console.error('Upload failed:', error);
-      showToast('Upload failed', 'error');
+      
+      // Distinguish storage errors from API errors
+      if (error instanceof ApiError) {
+        // API error - might trigger network banner
+        if (error.status === 0 && Date.now() - lastHealthCheck >= 60000) {
+          setNetworkError(true);
+        }
+        showToast('Upload failed', 'error');
+      } else {
+        // Storage error - show detailed message, no network banner
+        showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+      }
       triggerHaptic('error');
     } finally {
       setIsUploading(false);
@@ -333,12 +364,11 @@ export default function NewProjectForm({ navigation }) {
             alignItems: 'center' 
           }}>
             <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
-            <Text style={{
-              position: 'absolute', top: -9, paddingHorizontal: 8,
-              backgroundColor: '#FFF', color: '#6B7280', fontSize: 12, fontWeight: '600'
-            }}>
-              Add your room photo
-            </Text>
+            <View style={{ position: 'absolute', top: -9, paddingHorizontal: 8, backgroundColor: '#FFF' }}>
+              <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: '600' }}>
+                Add your room photo
+              </Text>
+            </View>
           </View>
 
           {/* Helper text */}

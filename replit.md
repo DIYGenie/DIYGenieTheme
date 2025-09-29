@@ -110,6 +110,15 @@ The application follows a component-based React Native architecture with the fol
 - **Empty State**: Projects screen already includes centered card with folder icon, "No projects yet" message, and "Start Your First Project" CTA button that navigates to NewProject.
 - **Pull-to-Refresh**: Projects screen already includes RefreshControl to reload project list via listProjects API.
 
+### Image Upload & Health Ping Improvements (September 29, 2025)
+- **Reliable Web Upload (app/lib/storage.ts)**: Implemented proper Blob-based upload with mime type detection (image/png vs image/jpeg). Fetch file URI, convert to Blob with correct contentType, upload with upsert: true. Throws plain Error (not ApiError) on storage failures to distinguish from API errors.
+- **Separate Error Handling (NewProjectForm.js)**: Split error handling between storage errors (show detailed toast) and API errors (may trigger network banner). Storage failures show "Upload failed: {message}" without triggering CORS/network banner.
+- **MediaType Enum (NewProjectForm.js)**: Replaced deprecated `ImagePicker.MediaTypeOptions.Images` with `ImagePicker.MediaType.Images` to eliminate deprecation warnings. Quality set to 0.9 for optimized uploads.
+- **Health Ping System**: Both NewProjectForm and ProjectsScreen now ping `${BASE_URL}/health` on mount. Successful health check (within 60s) suppresses "Can't reach server" banner. Failed health check triggers banner. Prevents false network warnings when API is operational.
+- **Health Endpoint (server.js)**: Added GET `/health` endpoint that returns `{ok: true, status: 'healthy'}` for health checks.
+- **Text Node Fixes**: Fixed "Unexpected text node" warnings by wrapping separator text in proper View > Text hierarchy in NewProjectForm.
+- **Projects Screen Padding**: Maintained 24px horizontal padding (paddingHorizontal: 24) for comfortable content inset from screen edges.
+
 ## External Dependencies
 
 ### Core Framework Dependencies
