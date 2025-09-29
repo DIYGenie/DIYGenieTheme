@@ -44,10 +44,34 @@ export default function HomeScreen() {
               />
             </View>
 
+            {/* Onboarding Card */}
+            <View style={styles.onboardingCard}>
+              <Text style={styles.onboardingTitle}>Getting Started with DIY Genie</Text>
+              
+              <View style={styles.bulletPoints}>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="camera-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
+                  <Text style={styles.bulletText}>Upload or scan your room</Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="create-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
+                  <Text style={styles.bulletText}>Describe your project</Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="bulb-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
+                  <Text style={styles.bulletText}>Get your AI plan + preview</Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity style={styles.ctaButton} onPress={handleNewProject}>
+                <Text style={styles.ctaButtonText}>Start Your First Project</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Quick Actions */}
             <View style={styles.quickActionsRow}>
               <TouchableOpacity style={[styles.quickAction, styles.newProjectAction]} onPress={handleNewProject}>
-                <Ionicons name="add" size={32} color={colors.surface} />
+                <Ionicons name="add" size={32} color={colors.accent} />
                 <Text style={styles.newProjectText}>New Project</Text>
               </TouchableOpacity>
               
@@ -194,7 +218,9 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
   },
   newProjectAction: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   scanRoomAction: {
     backgroundColor: colors.surface,
@@ -204,7 +230,7 @@ const styles = StyleSheet.create({
   newProjectText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.surface,
+    color: colors.accent,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -264,5 +290,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
+  },
+  onboardingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16, // rounded-xl
+    padding: 20,
+    marginBottom: 24,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+    // Web-specific shadow
+    boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
+  },
+  onboardingTitle: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  bulletPoints: {
+    alignSelf: 'stretch',
+    marginBottom: 20,
+  },
+  bulletPoint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bulletIcon: {
+    marginRight: 12,
+  },
+  bulletText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  ctaButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24, // pill shape
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    // Web-specific shadow
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+  },
+  ctaButtonText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.surface,
+    textAlign: 'center',
   },
 });
