@@ -1,0 +1,110 @@
+New Project — center the bottom buttons above the tab bar
+
+Goal: Place Scan Room and Upload Photo in a sticky, centered row above the bottom tab bar. Keep them disabled until the form is valid.
+
+Use safe area + real tab bar height
+
+In NewProjectForm.tsx, import:
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+
+
+Inside the component:
+
+const insets = useSafeAreaInsets();
+const tabBarHeight = useBottomTabBarHeight(); // accurate height
+
+
+Sticky footer container (above the tab bar)
+
+Replace the current footer with:
+
+<View
+  style={{
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    // sit just above the tab bar + safe area
+    bottom: tabBarHeight + insets.bottom + 8,
+    backgroundColor: '#FFFFFF',
+    paddingTop: 10,
+    paddingHorizontal: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(229,231,235,0.6)',
+    zIndex: 50,
+    elevation: 12,
+  }}
+  pointerEvents="box-none"
+>
+  <View
+    style={{
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      width: '100%',
+      maxWidth: 520,      // keep centered & tidy on wide screens
+    }}
+  >
+    {/* LEFT: Scan Room (outlined amber) */}
+    {/* RIGHT: Upload Photo (neutral) */}
+  </View>
+</View>
+
+
+Add extra bottom padding to the scroll area so content doesn’t hide behind the footer:
+
+<KeyboardAwareScrollView
+  contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 90 }}
+  ...
+>
+
+
+Button tiles (uniform + responsive)
+
+Shared style for both:
+
+{
+  flex: 1,
+  minWidth: 150,
+  height: 56,
+  borderRadius: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowRadius: 20,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 6,
+}
+
+
+Scan Room: borderWidth: 1.5, borderColor: '#FBBF24', bg #FFF, icon+text #F59E0B.
+
+Upload Photo: borderWidth: 1, borderColor: '#E5E7EB', bg #FFF, icon+text #1F2937.
+
+Disabled state: opacity: 0.6, shadowOpacity: 0.
+
+Keep form validity logic
+
+Buttons remain disabled until:
+
+description length ≥ 10,
+
+budget selected,
+
+skill level selected.
+
+Z-order safety
+
+Ensure any parent wrappers use overflow: 'visible'.
+
+Footer has zIndex: 50 / elevation: 12 so it stays on top of the page content but below dropdown menus rendered in a Portal.
+
+Deliver
+
+Show the buttons centered in the space above the tab bar on all devices.
+
+Verify they don’t overlap the gradient bar and remain visible when the keyboard opens.

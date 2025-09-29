@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +17,7 @@ export default function NewProjectForm({ navigation }) {
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -84,7 +86,12 @@ export default function NewProjectForm({ navigation }) {
       <KeyboardAwareScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ 
+          paddingHorizontal: 24,
+          paddingTop: 24,
+          paddingBottom: tabBarHeight + insets.bottom + 90,
+          overflow: 'visible',
+        }}
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         extraScrollHeight={100}
@@ -188,12 +195,14 @@ export default function NewProjectForm({ navigation }) {
           position: 'absolute',
           left: 0,
           right: 0,
-          bottom: insets.bottom + 8,
+          bottom: tabBarHeight + insets.bottom + 8,
           backgroundColor: '#FFFFFF',
-          paddingHorizontal: 16,
           paddingTop: 10,
+          paddingHorizontal: 16,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: 'rgba(229,231,235,0.6)',
+          zIndex: 50,
+          elevation: 12,
         }}
         pointerEvents={showBudgetDropdown || showSkillDropdown ? 'none' : 'box-none'}
       >
@@ -206,14 +215,13 @@ export default function NewProjectForm({ navigation }) {
             gap: 12,
             width: '100%',
             maxWidth: 520,
-            flexWrap: 'wrap',
           }}
         >
           <TouchableOpacity 
             style={[
-              styles.newActionButton,
+              styles.buttonTile,
               styles.scanRoomButton,
-              !isFormValid && styles.newActionButtonDisabled
+              !isFormValid && styles.buttonTileDisabled
             ]}
             onPress={handleScanRoom}
             disabled={!isFormValid}
@@ -224,9 +232,9 @@ export default function NewProjectForm({ navigation }) {
           
           <TouchableOpacity 
             style={[
-              styles.newActionButton,
+              styles.buttonTile,
               styles.uploadPhotoButton,
-              !isFormValid && styles.newActionButtonDisabled
+              !isFormValid && styles.buttonTileDisabled
             ]}
             onPress={handleUploadPhoto}
             disabled={!isFormValid}
@@ -244,15 +252,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+    overflow: 'visible',
   },
   scrollView: {
     flex: 1,
-    overflow: 'visible',
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 120, // Extra space for sticky footer
     overflow: 'visible',
   },
   header: {
@@ -360,9 +363,9 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
   },
-  newActionButton: {
-    flexGrow: 1,
-    flexBasis: '48%',
+  buttonTile: {
+    flex: 1,
+    minWidth: 150,
     height: 56,
     borderRadius: 16,
     justifyContent: 'center',
@@ -372,9 +375,8 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
-    minWidth: 160,
   },
-  newActionButtonDisabled: {
+  buttonTileDisabled: {
     opacity: 0.6,
     shadowOpacity: 0,
   },
