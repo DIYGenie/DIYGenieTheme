@@ -47,12 +47,12 @@ export default function HomeScreen() {
             {/* Quick Actions */}
             <View style={styles.quickActionsRow}>
               <TouchableOpacity style={[styles.quickAction, styles.newProjectAction]} onPress={handleNewProject}>
-                <Ionicons name="add" size={32} color={colors.surface} />
+                <Ionicons name="add" size={38} color={colors.surface} />
                 <Text style={styles.newProjectText}>New Project</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={[styles.quickAction, styles.scanRoomAction]} onPress={handleScanRoom}>
-                <Ionicons name="camera" size={32} color={colors.textPrimary} />
+                <Ionicons name="camera" size={38} color={colors.textPrimary} />
                 <Text style={styles.scanRoomText}>Scan Room</Text>
               </TouchableOpacity>
             </View>
@@ -108,6 +108,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.containerPadding,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    // Web-specific shadow
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
   },
   topBarTitle: {
     fontSize: 22,
@@ -119,13 +129,35 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: colors.muted,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.surface,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+    // Web-specific shadow
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.08)',
   },
   contentSheet: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
     marginTop: spacing.sm,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+    // Web-specific shadow
+    boxShadow: '0px -4px 16px rgba(0, 0, 0, 0.1)',
   },
   scrollView: {
     flex: 1,
@@ -164,13 +196,13 @@ const styles = StyleSheet.create({
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 20,
+    elevation: 4,
     // Web-specific shadow
-    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.05)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
   },
   newProjectAction: {
     backgroundColor: colors.accent,
@@ -184,21 +216,21 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.surface,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
   scanRoomText: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
   sectionHeader: {
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   projectsSection: {
     gap: spacing.md,
