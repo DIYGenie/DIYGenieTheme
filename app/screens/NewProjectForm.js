@@ -474,7 +474,7 @@ export default function NewProjectForm({ navigation }) {
                 {isGeneratingPreview ? (
                   <>
                     <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.generateButtonText}>Generating preview…</Text>
+                    <Text style={styles.generateButtonText}>Generating preview...</Text>
                   </>
                 ) : (
                   <>

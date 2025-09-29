@@ -2,6 +2,7 @@
  * Supabase Storage helper for image uploads
  */
 
+import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, UPLOADS_BUCKET } from '../config';
 
@@ -15,10 +16,7 @@ export { supabase };
  * Detect mime type from file extension
  */
 function guessMime(uri: string): string {
-  if (uri.endsWith('.png') || uri.endsWith('.PNG')) return 'image/png';
-  if (uri.endsWith('.jpg') || uri.endsWith('.JPG')) return 'image/jpeg';
-  if (uri.endsWith('.jpeg') || uri.endsWith('.JPEG')) return 'image/jpeg';
-  return 'image/jpeg'; // default
+  return uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
 }
 
 /**
@@ -33,17 +31,22 @@ export async function uploadImageAsync(
   projectId: string,
   fileUri: string
 ): Promise<string> {
-  const resp = await fetch(fileUri);
-  const blob = await resp.blob();
   const contentType = guessMime(fileUri);
-
-  const fileName = `${Date.now()}.${contentType === 'image/png' ? 'png' : 'jpg'}`;
+  const ext = contentType === 'image/png' ? 'png' : 'jpg';
+  const fileName = `${Date.now()}.${ext}`;
   const path = `projects/${projectId}/${fileName}`;
 
-  const { data, error } = await supabase
+  const resp = await fetch(fileUri);
+  const blob = await resp.blob();
+
+  const file = Platform.OS === 'web'
+    ? new File([blob], fileName, { type: contentType })
+    : blob;
+
+  const { error } = await supabase
     .storage
     .from(UPLOADS_BUCKET)
-    .upload(path, blob, { contentType, upsert: true });
+    .upload(path, file as any, { contentType, upsert: true });
 
   if (error) throw new Error(error.message);
   
