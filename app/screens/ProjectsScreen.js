@@ -6,19 +6,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { listProjects } from '../lib/api';
+import { listProjects, ApiError } from '../lib/api';
+import { supabase } from '../lib/storage';
 
 export default function ProjectsScreen({ navigation, route }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
 
   const fetchProjects = async () => {
     try {
-      // TODO: Replace with actual user ID from auth context
-      const mockUserId = 'user-123';
-      const data = await listProjects(mockUserId);
+      if (!userId) return;
+      const data = await listProjects(userId);
       setProjects(data);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
@@ -40,8 +41,24 @@ export default function ProjectsScreen({ navigation, route }) {
   );
 
   useEffect(() => {
-    fetchProjects();
+    const init = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        const id = user?.id || 'dev-user';
+        setUserId(id);
+      } catch (error) {
+        console.error('Auth error:', error);
+        setUserId('dev-user');
+      }
+    };
+    init();
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchProjects();
+    }
+  }, [userId]);
 
   const onRefresh = () => {
     setRefreshing(true);

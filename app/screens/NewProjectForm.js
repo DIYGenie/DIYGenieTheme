@@ -8,8 +8,8 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, triggerPreview } from '../lib/api';
-import { uploadImageAsync } from '../lib/storage';
+import { getEntitlements, createProject, updateProject, triggerPreview, ApiError } from '../lib/api';
+import { uploadImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
 
@@ -26,6 +26,8 @@ export default function NewProjectForm({ navigation }) {
   const [projectId, setProjectId] = useState('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const [userId, setUserId] = useState(null);
+  const [devMode, setDevMode] = useState(false);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -55,21 +57,48 @@ export default function NewProjectForm({ navigation }) {
   };
 
   useEffect(() => {
-    const fetchEntitlements = async () => {
+    const init = async () => {
       try {
-        // TODO: Replace with actual user ID from auth context
-        const mockUserId = 'user-123';
-        const data = await getEntitlements(mockUserId);
-        setEntitlements(data);
+        // Try to get real Supabase user
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (user?.id) {
+          setUserId(user.id);
+          
+          // Try to fetch entitlements for real user
+          try {
+            const data = await getEntitlements(user.id);
+            setEntitlements(data);
+            setDevMode(false);
+          } catch (error) {
+            // If entitlements not found (404) or network error, use dev fallback
+            if (error instanceof ApiError && (error.status === 404 || error.status === 0)) {
+              console.warn('Entitlements not found, using dev fallback');
+              setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
+              setDevMode(true);
+            } else {
+              throw error;
+            }
+          }
+        } else {
+          // No user logged in, use dev mode
+          console.warn('No user logged in, using dev fallback');
+          setUserId('dev-user');
+          setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
+          setDevMode(true);
+        }
       } catch (error) {
-        console.error('Failed to fetch entitlements:', error);
-        // Keep default state (0 remaining) on error
+        console.error('Init error:', error);
+        // Fall back to dev mode on any error
+        setUserId('dev-user');
+        setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
+        setDevMode(true);
       } finally {
         setLoadingEntitlements(false);
       }
     };
     
-    fetchEntitlements();
+    init();
   }, []);
 
   const handleScanRoom = () => {
@@ -107,9 +136,8 @@ export default function NewProjectForm({ navigation }) {
       setIsUploading(true);
 
       // Step 1: Create project
-      const mockUserId = 'user-123'; // TODO: Replace with actual user ID from auth
       const projectData = await createProject({
-        user_id: mockUserId,
+        user_id: userId || 'dev-user',
         name: description.substring(0, 100), // Use description as name
         budget: budget,
         skill: skillLevel,
@@ -208,6 +236,11 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
           <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
+          {devMode && (
+            <View style={styles.devBanner}>
+              <Text style={styles.devBannerText}>Dev mode: using default entitlements</Text>
+            </View>
+          )}
         </View>
 
           {/* Description Input */}
@@ -630,5 +663,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#FFFFFF',
+  },
+  devBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  devBannerText: {
+    fontSize: 11,
+    fontFamily: typography.fontFamily.inter,
+    color: '#D97706',
+    fontWeight: '600',
   },
 });

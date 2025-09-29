@@ -8,6 +8,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, UPLOADS_BUCKET } from '../config';
 // Initialize Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Export supabase client for auth access
+export { supabase };
+
 /**
  * Convert local URI to Blob for upload
  * Works on both web and mobile via fetch

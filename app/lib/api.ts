@@ -28,7 +28,11 @@ async function fetchJson<T = any>(
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
   try {
-    const url = `${BASE_URL}${path}`;
+    // Normalize base URL and path
+    const BASE = BASE_URL.replace(/\/+$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    const url = `${BASE}${normalizedPath}`;
+    
     const response = await fetch(url, {
       ...init,
       signal: controller.signal,
@@ -58,11 +62,14 @@ async function fetchJson<T = any>(
     }
 
     if (error.name === 'AbortError') {
-      throw new ApiError('Request timeout - please try again');
+      throw new ApiError('Request timeout - please try again', 0);
     }
 
+    // Network error (CORS, DNS, connection refused, etc.)
+    console.warn('Network/CORS?', error.message);
     throw new ApiError(
-      error.message || 'Network error - please check your connection'
+      error.message || 'Network error - please check your connection',
+      0
     );
   }
 }

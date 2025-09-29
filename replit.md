@@ -69,6 +69,17 @@ The application follows a component-based React Native architecture with the fol
 - **Smart Card Display**: Project cards now display preview thumbnail (Image component) if preview_url exists, skeleton shimmer with ActivityIndicator if status is 'preview_requested' or 'pending', or placeholder if neither. Added "Preview requested" chip for pending previews.
 - **Error Handling**: Shows "Preview failed. Try again." toast on API errors with automatic re-enable of the Generate Preview button.
 
+### Auth Integration & Error Handling (September 29, 2025)
+- **Real Supabase Auth**: Both NewProjectForm and ProjectsScreen now use `supabase.auth.getUser()` to get the real user ID
+- **Dev Fallback**: When no user is authenticated or entitlements endpoint returns 404/network error, automatically falls back to dev mode with default entitlements (tier: Free, quota: 5, remaining: 5)
+- **Dev Mode Banner**: Small yellow banner displays "Dev mode: using default entitlements" in NewProjectForm when using fallback
+- **Exported Supabase Client**: `app/lib/storage.ts` now exports the supabase client for auth access across the app
+- **Improved Fetch Error Handling**: 
+  - Normalized BASE_URL handling (removes trailing slashes, ensures leading slash on paths)
+  - Network errors (CORS, DNS, connection refused) now return status: 0 with console hint "Network/CORS?"
+  - API errors include proper status codes and parsed error messages
+  - ApiError class provides structured error information (message, status, data)
+
 ### UX Polish & Interaction Improvements (September 29, 2025)
 - **Toast Component (app/components/Toast.js)**: Created lightweight toast notification system with animated slide-in from bottom. Supports success (green) and error (red) variants with appropriate icons. Auto-dismisses after 2.5 seconds with fade-out animation.
 - **Debounce Hook (app/lib/hooks.js)**: Implemented useDebouncePress custom hook with 300ms delay to prevent double-tap submissions on all primary CTAs (Upload Photo, Generate Preview).
