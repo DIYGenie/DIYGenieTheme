@@ -67,7 +67,7 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
-                <Ionicons name="image" size={28} color={colors.white} style={styles.tileIcon} />
+                <Ionicons name="image" size={28} color="#111827" style={styles.tileIcon} />
                 <Text style={styles.uploadPhotoText}>Upload Photo</Text>
               </TouchableOpacity>
             </View>
@@ -138,12 +138,12 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   avatarPlaceholder: {
-    width: 38,
-    height: 38,
-    backgroundColor: colors.muted,
-    borderRadius: 19,
-    borderWidth: 2,
-    borderColor: colors.white,
+    width: 36,
+    height: 36,
+    backgroundColor: '#FFFFFFCC', // 80% opacity
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -158,9 +158,19 @@ const styles = StyleSheet.create({
   contentSheet: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    marginTop: -14, // Overlap gradient by 14px
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -20, // Overlap gradient by 20px to hide sliver
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
+    // Web-specific shadow
+    boxShadow: '0px -2px 24px rgba(0, 0, 0, 0.04)',
   },
   scrollView: {
     flex: 1,
@@ -198,20 +208,20 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 4,
     },
     shadowOpacity: 0.08,
     shadowRadius: 24,
     elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 6px 24px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
   thumbnailPlaceholder: {
     width: 56,
@@ -236,7 +246,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   welcomeHeader: {
-    marginBottom: 8,
+    marginBottom: 24,
   },
   welcomeTitle: {
     fontSize: 20,
@@ -246,7 +256,7 @@ const styles = StyleSheet.create({
   },
   welcomeSubtitle: {
     fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
+    fontFamily: typography.fontFamily.interMedium,
     color: '#475569',
   },
   ctaRow: {
@@ -255,8 +265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flexWrap: 'wrap',
-    marginTop: 20,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   scanRoomTile: {
     alignItems: 'center',
@@ -285,7 +294,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 120,
     minHeight: 120,
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -312,7 +323,7 @@ const styles = StyleSheet.create({
   uploadPhotoText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
+    color: '#111827',
     textAlign: 'center',
   },
 });
