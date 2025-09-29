@@ -305,13 +305,13 @@ const styles = StyleSheet.create({
   },
   scanRoomText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeSemiBold,
+    fontFamily: typography.fontFamily.manropeBold,
     color: '#F59E0B',
     textAlign: 'center',
   },
   uploadPhotoText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeSemiBold,
+    fontFamily: typography.fontFamily.manropeBold,
     color: colors.white,
     textAlign: 'center',
   },
