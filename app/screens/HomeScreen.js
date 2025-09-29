@@ -9,7 +9,7 @@ import { typography } from '../../theme/typography';
 
 export default function HomeScreen({ navigation }) {
   const handleNewProject = () => {
-    navigation.navigate('NewProjectForm');
+    navigation.navigate('NewProject');
   };
 
   return (

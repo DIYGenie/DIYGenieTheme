@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -16,11 +17,38 @@ export default function NewProjectForm({ navigation }) {
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
-  const isFormValid = description.trim().length > 0 && budget && skillLevel;
+  const isFormValid = description.trim().length >= 10 && budget && skillLevel;
 
-  const handleContinue = () => {
+  const handleScanRoom = () => {
     if (isFormValid) {
-      navigation.navigate('NewProjectMedia');
+      navigation.navigate('ScanRoomIntro');
+    }
+  };
+
+  const handleUploadPhoto = async () => {
+    if (!isFormValid) return;
+    
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission required', 'Please allow camera roll access to upload photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      navigation.navigate('ProjectPreview', {
+        imageUri: result.assets[0].uri,
+        description,
+        budget,
+        skill: skillLevel
+      });
     }
   };
 
@@ -36,7 +64,15 @@ export default function NewProjectForm({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
@@ -48,7 +84,7 @@ export default function NewProjectForm({ navigation }) {
           <Text style={styles.fieldLabel}>Project Description</Text>
           <TextInput
             style={styles.textArea}
-            placeholder="e.g. Build 3 floating shelves for living room wall"
+            placeholder="e.g. Build 3 floating shelves for living room wall (minimum 10 characters)"
             placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={4}
@@ -56,6 +92,7 @@ export default function NewProjectForm({ navigation }) {
             onChangeText={setDescription}
             textAlignVertical="top"
           />
+          <Text style={styles.charCount}>{description.length}/10 characters minimum</Text>
         </View>
 
         {/* Budget Dropdown */}
@@ -122,17 +159,29 @@ export default function NewProjectForm({ navigation }) {
           )}
         </View>
 
-        {/* Continue Button */}
-        <TouchableOpacity 
-          style={[styles.continueButton, !isFormValid && styles.continueButtonDisabled]}
-          onPress={handleContinue}
-          disabled={!isFormValid}
-        >
-          <Text style={[styles.continueText, !isFormValid && styles.continueTextDisabled]}>
-            Continue
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+        
+        {/* Sticky Bottom Action Bar */}
+        <View style={styles.bottomActionBar}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.scanRoomButton, !isFormValid && styles.actionButtonDisabled]}
+            onPress={handleScanRoom}
+            disabled={!isFormValid}
+          >
+            <Ionicons name="camera" size={24} color={isFormValid ? '#F59E0B' : '#9CA3AF'} />
+            <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.uploadPhotoButton, !isFormValid && styles.actionButtonDisabled]}
+            onPress={handleUploadPhoto}
+            disabled={!isFormValid}
+          >
+            <Ionicons name="image" size={24} color={isFormValid ? '#1F2937' : '#9CA3AF'} />
+            <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -142,10 +191,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
+    paddingBottom: 24,
   },
   header: {
     marginBottom: 32,
@@ -182,6 +237,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
     minHeight: 100,
+  },
+  charCount: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
   dropdown: {
     backgroundColor: colors.surface,
@@ -233,14 +294,22 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
   },
-  continueButton: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 16,
+  bottomActionBar: {
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingHorizontal: 24,
     paddingVertical: 16,
-    paddingHorizontal: 32,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  actionButton: {
+    width: '49%',
+    height: 56,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 32,
+    justifyContent: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -252,18 +321,35 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
-  continueButtonDisabled: {
-    backgroundColor: '#F3F4F6',
+  actionButtonDisabled: {
+    opacity: 0.6,
     shadowOpacity: 0,
     elevation: 0,
     boxShadow: 'none',
   },
-  continueText: {
+  scanRoomButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: '#FBBF24',
+  },
+  uploadPhotoButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  scanRoomText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
+    color: '#F59E0B',
+    marginTop: 6,
   },
-  continueTextDisabled: {
+  uploadPhotoText: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#1F2937',
+    marginTop: 6,
+  },
+  actionButtonTextDisabled: {
     color: '#9CA3AF',
   },
 });

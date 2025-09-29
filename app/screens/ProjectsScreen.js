@@ -39,7 +39,7 @@ export default function ProjectsScreen({ navigation }) {
   };
 
   const handleStartProject = () => {
-    navigation.navigate('NewProjectForm');
+    navigation.navigate('NewProject');
   };
 
   const filteredProjects = projects.filter(project => {
