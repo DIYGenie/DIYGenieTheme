@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
@@ -15,9 +14,11 @@ export default function NewProjectForm({ navigation }) {
   const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
-  const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const { height: H } = useWindowDimensions();
+  const isSmall = H < 740;
+  const isVerySmall = H < 680;
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -69,128 +70,131 @@ export default function NewProjectForm({ navigation }) {
 
   const handleBudgetFocus = () => {
     setShowBudgetDropdown(!showBudgetDropdown);
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollToFocusedInput();
-    }
   };
 
   const handleSkillFocus = () => {
     setShowSkillDropdown(!showSkillDropdown);
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollToFocusedInput();
-    }
   };
 
+  const TILE = isVerySmall ? 88 : isSmall ? 92 : 104;
+  const GAP = isSmall ? 10 : 12;
+  const ICON_SIZE = isSmall ? 22 : 24;
+  const LABEL_SIZE = isVerySmall ? 12 : 13;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAwareScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        enableOnAndroid
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: tabBarHeight + insets.bottom + 220,
-          overflow: 'visible',
-        }}
-      >
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+      <View style={{
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingTop: 6,
+        paddingBottom: tabBarHeight + insets.bottom + 8,
+        justifyContent: 'space-between'
+      }}>
+        {/* Top: title + form */}
+        <View>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Start a New Project</Text>
-          <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
+          <Text style={styles.title}>New Project</Text>
+          <Text style={styles.subtitle}>Tell us about your DIY vision</Text>
         </View>
 
-        {/* Description Field */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Project Description</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="e.g. Build 3 floating shelves for living room wall (minimum 10 characters)"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={4}
-            value={description}
-            onChangeText={setDescription}
-            textAlignVertical="top"
-          />
-          <Text style={styles.charCount}>{description.length}/10 characters minimum</Text>
-        </View>
-
-        {/* Budget Dropdown */}
-        <View style={styles.budgetFieldWrapper}>
+          {/* Description Input */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Budget</Text>
-            <Pressable 
-              style={styles.dropdown}
-              onPress={handleBudgetFocus}
-            >
-              <Text style={[styles.dropdownText, !budget && styles.placeholderText]}>
-                {budget || 'Select budget range'}
-              </Text>
-              <Ionicons 
-                name={showBudgetDropdown ? 'chevron-up' : 'chevron-down'} 
-                size={20} 
-                color={colors.textSecondary} 
-              />
-            </Pressable>
-            
-            {showBudgetDropdown && (
-              <View style={styles.dropdownOptions}>
-                {budgetOptions.map((option) => (
-                  <Pressable
-                    key={option}
-                    style={styles.dropdownOption}
-                    onPress={() => handleBudgetSelect(option)}
-                  >
-                    <Text style={styles.dropdownOptionText}>{option}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            <Text style={styles.fieldLabel}>Description</Text>
+            <TextInput
+              style={styles.textInput}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="What do you want to build?"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <Text style={styles.helperText}>
+              {description.length}/10 minimum
+            </Text>
+          </View>
+
+          {/* Budget Dropdown */}
+          <View style={styles.budgetFieldWrapper}>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Budget</Text>
+              <Pressable 
+                style={styles.dropdown}
+                onPress={handleBudgetFocus}
+              >
+                <Text style={[styles.dropdownText, !budget && styles.placeholderText]}>
+                  {budget || 'Select budget range'}
+                </Text>
+                <Ionicons 
+                  name={showBudgetDropdown ? 'chevron-up' : 'chevron-down'} 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
+              </Pressable>
+              
+              {showBudgetDropdown && (
+                <View style={styles.dropdownOptions}>
+                  {budgetOptions.map((option) => (
+                    <Pressable
+                      key={option}
+                      style={styles.dropdownOption}
+                      onPress={() => handleBudgetSelect(option)}
+                    >
+                      <Text style={styles.dropdownOptionText}>{option}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Skill Level Dropdown */}
+          <View style={styles.skillFieldWrapper}>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Skill Level</Text>
+              <Pressable 
+                style={styles.dropdown}
+                onPress={handleSkillFocus}
+              >
+                <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
+                  {skillLevel || 'Select skill level'}
+                </Text>
+                <Ionicons 
+                  name={showSkillDropdown ? 'chevron-up' : 'chevron-down'} 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
+              </Pressable>
+              
+              {showSkillDropdown && (
+                <View style={styles.dropdownOptions}>
+                  {skillOptions.map((option) => (
+                    <Pressable
+                      key={option}
+                      style={styles.dropdownOption}
+                      onPress={() => handleSkillSelect(option)}
+                    >
+                      <Text style={styles.dropdownOptionText}>{option}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* Skill Level Dropdown */}
-        <View style={styles.skillFieldWrapper}>
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Skill Level</Text>
-            <Pressable 
-              style={styles.dropdown}
-              onPress={handleSkillFocus}
-            >
-              <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
-                {skillLevel || 'Select skill level'}
-              </Text>
-              <Ionicons 
-                name={showSkillDropdown ? 'chevron-up' : 'chevron-down'} 
-                size={20} 
-                color={colors.textSecondary} 
-              />
-            </Pressable>
-            
-            {showSkillDropdown && (
-              <View style={styles.dropdownOptions}>
-                {skillOptions.map((option) => (
-                  <Pressable
-                    key={option}
-                    style={styles.dropdownOption}
-                    onPress={() => handleSkillSelect(option)}
-                  >
-                    <Text style={styles.dropdownOptionText}>{option}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Media Section */}
-        <View style={{ marginTop: 24 }}>
-          <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        {/* Bottom: media section with stacked tiles */}
+        <View>
+          <View style={{ 
+            marginTop: isSmall ? 12 : 16, 
+            marginBottom: isSmall ? 8 : 10, 
+            alignItems: 'center' 
+          }}>
             <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
             <Text style={{
-              position: 'absolute', top: -10, paddingHorizontal: 8,
+              position: 'absolute', top: -9, paddingHorizontal: 8,
               backgroundColor: '#FFF', color: '#6B7280', fontSize: 12, fontWeight: '600'
             }}>
               Add your room photo
@@ -198,48 +202,71 @@ export default function NewProjectForm({ navigation }) {
           </View>
 
           {/* Stacked tiles */}
-          <View style={{ alignItems: 'center', gap: 16 }}>
+          <View style={{ alignItems: 'center', gap: GAP }}>
             {/* Scan Room */}
             <Pressable
               disabled={!isFormValid}
               style={({ pressed }) => ({
-                width: 120, height: 120, borderRadius: 16,
+                width: TILE, height: TILE, borderRadius: 16,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1.5, borderColor: '#FBBF24',
                 opacity: !isFormValid ? 0.6 : 1,
-                shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 }, elevation: 6,
+                shadowColor: '#000', 
+                shadowOpacity: !isFormValid ? 0 : 0.06, 
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 }, 
+                elevation: 6,
                 transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
               })}
               onPress={handleScanRoom}
             >
-              <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-              <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
+              <Ionicons 
+                name="camera" 
+                size={ICON_SIZE} 
+                color={isFormValid ? '#F59E0B' : '#9CA3AF'} 
+                style={{ marginBottom: 4 }} 
+              />
+              <Text style={{
+                fontSize: LABEL_SIZE, 
+                fontWeight: '600', 
+                color: isFormValid ? '#F59E0B' : '#9CA3AF'
+              }}>Scan Room</Text>
             </Pressable>
 
             {/* Upload Photo */}
             <Pressable
               disabled={!isFormValid}
               style={({ pressed }) => ({
-                width: 120, height: 120, borderRadius: 16,
+                width: TILE, height: TILE, borderRadius: 16,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1, borderColor: '#E5E7EB',
                 opacity: !isFormValid ? 0.6 : 1,
-                shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10,
-                shadowOffset: { width: 0, height: 4 }, elevation: 6,
+                shadowColor: '#000', 
+                shadowOpacity: !isFormValid ? 0 : 0.06, 
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 }, 
+                elevation: 6,
                 transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
               })}
               onPress={handleUploadPhoto}
             >
-              <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-              <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
+              <Ionicons 
+                name="image" 
+                size={ICON_SIZE} 
+                color={isFormValid ? '#1F2937' : '#9CA3AF'} 
+                style={{ marginBottom: 4 }} 
+              />
+              <Text style={{
+                fontSize: LABEL_SIZE, 
+                fontWeight: '600', 
+                color: isFormValid ? '#1F2937' : '#9CA3AF'
+              }}>Upload Photo</Text>
             </Pressable>
           </View>
         </View>
-
-      </KeyboardAwareScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -255,19 +282,22 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 20,
+    alignItems: 'center',
   },
   title: {
     fontSize: 22,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#0F172A',
-    marginBottom: 8,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.interMedium,
-    color: '#475569',
-    lineHeight: 20,
+    fontSize: 13,
+    fontFamily: typography.fontFamily.inter,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 12,
   },
   budgetFieldWrapper: {
     position: 'relative',
@@ -282,7 +312,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   fieldContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
     position: 'relative',
     overflow: 'visible',
   },
@@ -292,16 +322,18 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 8,
   },
-  textArea: {
+  textInput: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     fontSize: 16,
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
-    minHeight: 100,
+    height: 44,
+    minHeight: 44,
+    textAlignVertical: 'top',
   },
   charCount: {
     fontSize: 12,
