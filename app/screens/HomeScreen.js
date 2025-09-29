@@ -44,40 +44,34 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Onboarding Card */}
-            <View style={styles.onboardingCard}>
-              <Text style={styles.onboardingTitle}>Getting Started with DIY Genie</Text>
+            {/* How it works section */}
+            <View style={styles.howItWorksSection}>
+              <Text style={styles.howItWorksTitle}>How DIY Genie Works</Text>
               
-              <View style={styles.bulletPoints}>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="camera-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
-                  <Text style={styles.bulletText}>Upload or scan your room</Text>
+              <View style={styles.stepCardsRow}>
+                <View style={styles.stepCard}>
+                  <Ionicons name="camera" size={24} color={colors.textSecondary} style={styles.stepIcon} />
+                  <Text style={styles.stepText}>Add your room</Text>
                 </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="create-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
-                  <Text style={styles.bulletText}>Describe your project</Text>
+                
+                <View style={styles.stepCard}>
+                  <Ionicons name="create" size={24} color={colors.textSecondary} style={styles.stepIcon} />
+                  <Text style={styles.stepText}>Tell us the goal</Text>
                 </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="bulb-outline" size={16} color={colors.textSecondary} style={styles.bulletIcon} />
-                  <Text style={styles.bulletText}>Get your AI plan + preview</Text>
+                
+                <View style={styles.stepCard}>
+                  <Ionicons name="sparkles" size={24} color={colors.textSecondary} style={styles.stepIcon} />
+                  <Text style={styles.stepText}>See & build</Text>
                 </View>
               </View>
               
-              <TouchableOpacity style={styles.ctaButton} onPress={handleNewProject}>
-                <Text style={styles.ctaButtonText}>Start Your First Project</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Quick Actions */}
-            <View style={styles.quickActionsRow}>
-              <TouchableOpacity style={[styles.quickAction, styles.newProjectAction]} onPress={handleNewProject}>
-                <Ionicons name="add" size={32} color={colors.accent} />
-                <Text style={styles.newProjectText}>New Project</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={[styles.quickAction, styles.scanRoomAction]} onPress={handleScanRoom}>
-                <Ionicons name="camera" size={32} color={colors.textPrimary} />
-                <Text style={styles.scanRoomText}>Scan Room</Text>
+              {/* Primary CTA */}
+              <TouchableOpacity style={styles.primaryCTA} onPress={handleNewProject}>
+                <Ionicons name="sparkles" size={20} color={colors.white} style={styles.ctaIcon} />
+                <View style={styles.ctaTextContainer}>
+                  <Text style={styles.ctaMainText}>Start a Project</Text>
+                  <Text style={styles.ctaSubText}>Upload photo or Scan room</Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -130,30 +124,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
+    backgroundColor: colors.brandPurpleDeep,
   },
   topBarTitle: {
     fontSize: 22,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
+    color: colors.white,
   },
   avatarPlaceholder: {
     width: 38,
     height: 38,
     backgroundColor: colors.muted,
     borderRadius: 19,
-    borderWidth: 1,
-    borderColor: colors.muted,
+    borderWidth: 2,
+    borderColor: colors.white,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -194,52 +178,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
-  },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 20,
-  },
-  quickAction: {
-    flex: 1,
-    minHeight: 116,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
-    // Web-specific shadow
-    boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
-  },
-  newProjectAction: {
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-  scanRoomAction: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.muted,
-  },
-  newProjectText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.accent,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  scanRoomText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    marginTop: 8,
-    textAlign: 'center',
   },
   sectionHeader: {
     fontSize: 18,
@@ -291,11 +229,25 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
   },
-  onboardingCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16, // rounded-xl
-    padding: 20,
+  howItWorksSection: {
     marginBottom: 24,
+  },
+  howItWorksTitle: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.textPrimary,
+    marginBottom: 16,
+  },
+  stepCardsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  stepCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: {
@@ -308,36 +260,23 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
   },
-  onboardingTitle: {
-    fontSize: 18,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  bulletPoints: {
-    alignSelf: 'stretch',
-    marginBottom: 20,
-  },
-  bulletPoint: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  stepIcon: {
     marginBottom: 8,
   },
-  bulletIcon: {
-    marginRight: 12,
-  },
-  bulletText: {
+  stepText: {
     fontSize: 14,
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
-    flex: 1,
+    textAlign: 'center',
   },
-  ctaButton: {
+  primaryCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.accent,
+    borderRadius: 26, // pill shape
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24, // pill shape
+    paddingVertical: 16,
+    height: 52,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -349,10 +288,22 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
   },
-  ctaButtonText: {
+  ctaIcon: {
+    marginRight: 12,
+  },
+  ctaTextContainer: {
+    flex: 1,
+  },
+  ctaMainText: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.surface,
-    textAlign: 'center',
+    color: colors.white,
+    marginBottom: 2,
+  },
+  ctaSubText: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.white,
+    opacity: 0.8,
   },
 });

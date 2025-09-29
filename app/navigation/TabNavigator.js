@@ -15,7 +15,7 @@ const Tab = createBottomTabNavigator();
 
 function TabBarBackground() {
   return (
-    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.tabBackground }]} />
+    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.brandPurpleDeep }]} />
   );
 }
 
@@ -36,8 +36,8 @@ export default function TabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.tabActive,
-        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarActiveTintColor: colors.white,
+        tabBarInactiveTintColor: colors.purpleLight,
         tabBarStyle: {
           backgroundColor: 'transparent',
           borderTopWidth: 1,
