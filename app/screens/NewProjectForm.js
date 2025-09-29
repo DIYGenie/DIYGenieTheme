@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -135,19 +135,29 @@ export default function NewProjectForm({ navigation }) {
                 />
               </Pressable>
               
-              {showBudgetDropdown && (
-                <View style={styles.dropdownOptions}>
-                  {budgetOptions.map((option) => (
-                    <Pressable
-                      key={option}
-                      style={styles.dropdownOption}
-                      onPress={() => handleBudgetSelect(option)}
-                    >
-                      <Text style={styles.dropdownOptionText}>{option}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
+              <Modal
+                transparent
+                visible={showBudgetDropdown}
+                animationType="fade"
+                onRequestClose={() => setShowBudgetDropdown(false)}
+              >
+                <Pressable 
+                  style={styles.modalOverlay} 
+                  onPress={() => setShowBudgetDropdown(false)}
+                >
+                  <View style={[styles.dropdownOptions, styles.budgetDropdownPosition]}>
+                    {budgetOptions.map((option) => (
+                      <Pressable
+                        key={option}
+                        style={styles.dropdownOption}
+                        onPress={() => handleBudgetSelect(option)}
+                      >
+                        <Text style={styles.dropdownOptionText}>{option}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Pressable>
+              </Modal>
             </View>
           </View>
 
@@ -169,28 +179,38 @@ export default function NewProjectForm({ navigation }) {
                 />
               </Pressable>
               
-              {showSkillDropdown && (
-                <View style={styles.dropdownOptions}>
-                  {skillOptions.map((option) => (
-                    <Pressable
-                      key={option}
-                      style={styles.dropdownOption}
-                      onPress={() => handleSkillSelect(option)}
-                    >
-                      <Text style={styles.dropdownOptionText}>{option}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
+              <Modal
+                transparent
+                visible={showSkillDropdown}
+                animationType="fade"
+                onRequestClose={() => setShowSkillDropdown(false)}
+              >
+                <Pressable 
+                  style={styles.modalOverlay} 
+                  onPress={() => setShowSkillDropdown(false)}
+                >
+                  <View style={[styles.dropdownOptions, styles.skillDropdownPosition]}>
+                    {skillOptions.map((option) => (
+                      <Pressable
+                        key={option}
+                        style={styles.dropdownOption}
+                        onPress={() => handleSkillSelect(option)}
+                      >
+                        <Text style={styles.dropdownOptionText}>{option}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </Pressable>
+              </Modal>
             </View>
           </View>
         </View>
 
         {/* Bottom: media section with stacked tiles */}
-        <View>
+        <View style={styles.tilesContainer}>
           <View style={{ 
-            marginTop: isSmall ? 12 : 16, 
-            marginBottom: isSmall ? 8 : 10, 
+            marginTop: 12, 
+            marginBottom: 8, 
             alignItems: 'center' 
           }}>
             <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
@@ -203,7 +223,7 @@ export default function NewProjectForm({ navigation }) {
           </View>
 
           {/* Stacked tiles */}
-          <View style={{ alignItems: 'center', gap: GAP }}>
+          <View style={[styles.tilesWrapper, { gap: GAP }]}>
             {/* Scan Room */}
             <Pressable
               disabled={!isFormValid}
@@ -283,7 +303,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   title: {
     fontSize: 22,
@@ -300,18 +320,18 @@ const styles = StyleSheet.create({
   },
   budgetFieldWrapper: {
     position: 'relative',
-    zIndex: 30,
-    elevation: 30,
+    zIndex: 2000,
+    elevation: 2000,
     overflow: 'visible',
   },
   skillFieldWrapper: {
     position: 'relative',
-    zIndex: 20,
-    elevation: 20,
+    zIndex: 3000,
+    elevation: 3000,
     overflow: 'visible',
   },
   fieldContainer: {
-    marginBottom: 12,
+    marginBottom: 14,
     position: 'relative',
     overflow: 'visible',
   },
@@ -359,15 +379,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   dropdownOptions: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    marginTop: 4,
+    marginHorizontal: 20,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -375,10 +391,31 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.06,
     shadowRadius: 20,
-    elevation: 1000,
+    elevation: 6,
     // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
-    zIndex: 1000,
+    maxWidth: 300,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  budgetDropdownPosition: {
+    marginTop: -50,
+  },
+  skillDropdownPosition: {
+    marginTop: 0,
+  },
+  tilesContainer: {
+    zIndex: 0,
+    elevation: 0,
+  },
+  tilesWrapper: {
+    alignItems: 'center',
+    zIndex: 0,
+    elevation: 0,
   },
   dropdownOption: {
     padding: 16,
