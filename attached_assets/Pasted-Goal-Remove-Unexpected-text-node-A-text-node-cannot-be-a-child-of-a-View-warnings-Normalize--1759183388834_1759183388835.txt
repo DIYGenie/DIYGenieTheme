@@ -1,0 +1,74 @@
+Goal
+
+Remove “Unexpected text node: A text node cannot be a child of a <View>” warnings.
+
+Normalize API URL joins and improve error reporting (show real HTTP status vs generic “Failed to fetch”).
+
+Use a stable userId for listing projects when auth isn’t wired yet.
+
+Files to edit/create (only these):
+
+app/lib/api.ts
+
+app/screens/NewProject.tsx
+
+app/screens/Projects.tsx
+
+app/components/Toast.tsx (or whatever toast/empty components were added in 2D)
+
+app/components/T.tsx (NEW tiny <Text> wrapper)
+
+Implementation details
+
+Wrap stray text
+
+Add app/components/T.tsx exporting a styled <Text> (Inter body).
+
+Find any <View> children containing raw strings (e.g., "Uploading…", "Generating…", . separators, chip labels, empty-state copy). Wrap all such strings in <Text> (or the new <T>).
+
+Keep typography consistent with Manrope/Inter.
+
+Fetch hardening (app/lib/api.ts)
+
+Normalize base:
+
+const BASE = BASE_URL.replace(/\/+$/,'');
+const join = (p:string) => `${BASE}${p.startsWith('/') ? p : `/${p}`}`;
+
+
+Ensure fetchJson(path) uses join(path) and sets headers:
+{ 'Accept':'application/json', 'Content-Type':'application/json' }.
+
+On non-2xx: parse JSON if possible; throw ApiError with status=res.status and parsed data.
+
+On network errors: throw ApiError with status:0 and message. Log concise hint: Network/CORS or wrong BASE_URL.
+
+Stable userId for now
+
+In Projects.tsx and NewProject.tsx, derive:
+
+const userId = 'demo'; // until Supabase auth is wired
+
+
+(Replace any previous user-123 usage.)
+
+Use userId for getEntitlements(userId) and listProjects(userId).
+
+Dev-only banner
+
+When an ApiError has status === 0, show a small non-blocking banner at top:
+“Can’t reach server. Check BASE_URL or CORS.”
+
+Hide banner in production builds.
+
+Acceptance criteria
+
+No “Unexpected text node…” warnings remain.
+
+API calls hit https://api.diygenieapp.com/... without // or trailing-slash issues.
+
+Projects tab loads via GET /api/projects?user_id=demo (empty array OK).
+
+Clear banner only on real network failure.
+
+No secrets added; no file renames/deletes.

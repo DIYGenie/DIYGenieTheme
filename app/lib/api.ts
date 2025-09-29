@@ -20,6 +20,9 @@ export class ApiError extends Error {
 /**
  * Generic JSON fetch wrapper with timeout and error handling
  */
+const BASE = BASE_URL.replace(/\/+$/, '');
+const join = (p: string) => `${BASE}${p.startsWith('/') ? p : `/${p}`}`;
+
 async function fetchJson<T = any>(
   path: string,
   init?: RequestInit
@@ -28,15 +31,13 @@ async function fetchJson<T = any>(
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
   try {
-    // Normalize base URL and path
-    const BASE = BASE_URL.replace(/\/+$/, '');
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    const url = `${BASE}${normalizedPath}`;
+    const url = join(path);
     
     const response = await fetch(url, {
       ...init,
       signal: controller.signal,
       headers: {
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
         ...init?.headers,
       },
@@ -47,7 +48,7 @@ async function fetchJson<T = any>(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
-        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        errorData.error || errorData.message || `HTTP ${response.status}`,
         response.status,
         errorData
       );
@@ -62,13 +63,13 @@ async function fetchJson<T = any>(
     }
 
     if (error.name === 'AbortError') {
-      throw new ApiError('Request timeout - please try again', 0);
+      throw new ApiError('Request timeout', 0);
     }
 
     // Network error (CORS, DNS, connection refused, etc.)
-    console.warn('Network/CORS?', error.message);
+    console.warn('Network/CORS or wrong BASE_URL');
     throw new ApiError(
-      error.message || 'Network error - please check your connection',
+      error.message || 'Network error',
       0
     );
   }
@@ -171,8 +172,11 @@ export async function triggerPreview(
  */
 export async function listProjects(userId: string): Promise<any[]> {
   const data = await fetchJson(`/api/projects?user_id=${userId}`);
-  // Tolerate different response shapes - if it's already an array, return it
-  // Otherwise try to find an array in common field names
+  // Handle { ok: true, items: [...] } response
+  if (data.items && Array.isArray(data.items)) {
+    return data.items;
+  }
+  // Tolerate different response shapes
   if (Array.isArray(data)) {
     return data;
   }
@@ -182,6 +186,5 @@ export async function listProjects(userId: string): Promise<any[]> {
   if (data.data && Array.isArray(data.data)) {
     return data.data;
   }
-  // If we can't find an array, return empty array
   return [];
 }

@@ -26,8 +26,8 @@ export default function NewProjectForm({ navigation }) {
   const [projectId, setProjectId] = useState('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-  const [userId, setUserId] = useState(null);
-  const [devMode, setDevMode] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
+  const userId = '00000000-0000-0000-0000-000000000001';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -59,40 +59,14 @@ export default function NewProjectForm({ navigation }) {
   useEffect(() => {
     const init = async () => {
       try {
-        // Try to get real Supabase user
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (user?.id) {
-          setUserId(user.id);
-          
-          // Try to fetch entitlements for real user
-          try {
-            const data = await getEntitlements(user.id);
-            setEntitlements(data);
-            setDevMode(false);
-          } catch (error) {
-            // If entitlements not found (404) or network error, use dev fallback
-            if (error instanceof ApiError && (error.status === 404 || error.status === 0)) {
-              console.warn('Entitlements not found, using dev fallback');
-              setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
-              setDevMode(true);
-            } else {
-              throw error;
-            }
-          }
-        } else {
-          // No user logged in, use dev mode
-          console.warn('No user logged in, using dev fallback');
-          setUserId('dev-user');
-          setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
-          setDevMode(true);
-        }
+        const data = await getEntitlements(userId);
+        setEntitlements(data);
+        setNetworkError(false);
       } catch (error) {
-        console.error('Init error:', error);
-        // Fall back to dev mode on any error
-        setUserId('dev-user');
+        if (error instanceof ApiError && error.status === 0) {
+          setNetworkError(true);
+        }
         setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
-        setDevMode(true);
       } finally {
         setLoadingEntitlements(false);
       }
@@ -236,9 +210,9 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
           <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
-          {devMode && (
+          {networkError && __DEV__ && (
             <View style={styles.devBanner}>
-              <Text style={styles.devBannerText}>Dev mode: using default entitlements</Text>
+              <Text style={styles.devBannerText}>Can't reach server. Check BASE_URL or CORS.</Text>
             </View>
           )}
         </View>
@@ -414,7 +388,9 @@ export default function NewProjectForm({ navigation }) {
                 fontSize: LABEL_SIZE, 
                 fontWeight: '600', 
                 color: canUpload ? '#F59E0B' : '#9CA3AF'
-              }}>Scan Room</Text>
+              }}>
+                Scan Room
+              </Text>
             </Pressable>
 
             {/* Upload Photo */}
@@ -446,7 +422,9 @@ export default function NewProjectForm({ navigation }) {
                 fontSize: LABEL_SIZE, 
                 fontWeight: '600', 
                 color: canUpload ? '#1F2937' : '#9CA3AF'
-              }}>Upload Photo</Text>
+              }}>
+                Upload Photo
+              </Text>
             </Pressable>
           </View>
 

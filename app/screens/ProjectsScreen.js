@@ -14,15 +14,19 @@ export default function ProjectsScreen({ navigation, route }) {
   const [projects, setProjects] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState(null);
+  const [networkError, setNetworkError] = useState(false);
+  const userId = '00000000-0000-0000-0000-000000000001';
 
   const fetchProjects = async () => {
     try {
-      if (!userId) return;
       const data = await listProjects(userId);
       setProjects(data);
+      setNetworkError(false);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+      if (error instanceof ApiError && error.status === 0) {
+        setNetworkError(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,24 +45,8 @@ export default function ProjectsScreen({ navigation, route }) {
   );
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        const id = user?.id || 'dev-user';
-        setUserId(id);
-      } catch (error) {
-        console.error('Auth error:', error);
-        setUserId('dev-user');
-      }
-    };
-    init();
+    fetchProjects();
   }, []);
-
-  useEffect(() => {
-    if (userId) {
-      fetchProjects();
-    }
-  }, [userId]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -95,6 +83,13 @@ export default function ProjectsScreen({ navigation, route }) {
         <View style={styles.headerSection}>
           <Text style={styles.title}>Projects</Text>
           <Text style={styles.subtitle}>Manage all your DIY projects in one place</Text>
+          {networkError && __DEV__ && (
+            <View style={{ backgroundColor: '#FEF3C7', padding: 8, borderRadius: 8, marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: '#92400E', textAlign: 'center' }}>
+                Can't reach server. Check BASE_URL or CORS.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Search Bar */}
