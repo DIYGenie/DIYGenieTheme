@@ -1,0 +1,67 @@
+Goal
+
+Implement GET /api/projects?user_id=... to list a user’s projects (latest first).
+
+Update /me/entitlements/:userId to return a default Free tier when no record exists (instead of not_found).
+
+Ensure Supabase server client uses SUPABASE_URL + SUPABASE_SERVICE_KEY.
+
+Secrets (already set; error if missing):
+
+SUPABASE_URL
+
+SUPABASE_SERVICE_KEY
+
+Implementation details (single file):
+
+Import/create Supabase server client:
+
+import { createClient } from '@supabase/supabase-js';
+const sbUrl = process.env.SUPABASE_URL!;
+const sbKey = process.env.SUPABASE_SERVICE_KEY!;
+if (!sbUrl || !sbKey) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
+
+
+(If CORS middleware not present yet) add:
+
+import cors from 'cors';
+app.use(cors({ origin: true, credentials: false }));
+
+
+Route: GET /api/projects
+
+app.get('/api/projects', async (req, res) => {
+  try {
+    const userId = String(req.query.user_id || '').trim();
+    if (!userId) return res.status(400).json({ ok:false, error:'missing_user_id' });
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id,user_id,name,budget,skill,status,input_image_url,preview_url,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ ok:false, error: error.message });
+    return res.json({ ok:true, items: data ?? [] });
+  } catch (e:any) {
+    return res.status(500).json({ ok:false, error: e.message || 'server_error' });
+  }
+});
+
+
+Update existing GET /me/entitlements/:userId handler
+At the point where it currently returns {"ok":false,"error":"not_found"}, replace with:
+
+return res.json({ ok:true, tier:'Free', quota:5, remaining:5 });
+
+
+(Leave real Stripe/Supabase logic unchanged; only change the “no record” case.)
+
+Acceptance criteria
+
+GET https://api.diygenieapp.com/api/projects?user_id=demo → { ok:true, items:[...] } (empty array OK).
+
+GET https://api.diygenieapp.com/me/entitlements/any-new-id → { ok:true, tier:'Free', quota:5, remaining:5 } (no not_found).
+
+No new files created; only the main server entry modified.
