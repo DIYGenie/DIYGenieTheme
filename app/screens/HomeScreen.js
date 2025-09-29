@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme/colors';
+import { colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -20,10 +20,11 @@ export default function HomeScreen() {
     >
       <SafeAreaView style={styles.safeArea}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.content}>
+          {/* Header Card */}
+          <View style={styles.headerCard}>
             <Text style={styles.title}>Home</Text>
             <Text style={styles.subtitle}>Welcome to DIY Genie!</Text>
-
+            
             {/* New Project CTA Button */}
             <TouchableOpacity
               style={styles.ctaButton}
@@ -32,8 +33,10 @@ export default function HomeScreen() {
             >
               <Text style={styles.ctaButtonText}>New Project</Text>
             </TouchableOpacity>
+          </View>
 
-            {/* Project Cards */}
+          {/* Projects Section */}
+          <View style={styles.content}>
             <View style={styles.projectsSection}>
               <ProjectCard />
               <ProjectCard />
@@ -75,10 +78,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    alignItems: 'center',
     paddingHorizontal: layout.containerPadding,
-    paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
+  },
+  headerCard: {
+    backgroundColor: colors.surface,
+    marginHorizontal: layout.containerPadding,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: layout.borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 4,
+    // Web-specific shadow
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
   },
   title: {
     fontSize: typography.fontSize['3xl'],
@@ -95,21 +115,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
   },
   ctaButton: {
-    backgroundColor: colors.ctaOrange,
+    backgroundColor: colors.accent,
     paddingHorizontal: spacing.xxxl * 1.38,
     paddingVertical: spacing.md * 1.15,
     borderRadius: layout.borderRadius.full,
-    marginBottom: spacing.xxl,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
   },
   ctaButtonText: {
     fontSize: typography.fontSize.lg,
@@ -122,25 +141,26 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   projectCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: layout.borderRadius.lg,
     padding: spacing.lg,
     flexDirection: 'row',
+    marginBottom: spacing.md,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 4,
     // Web-specific shadow
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
   },
   thumbnailPlaceholder: {
     width: 60,
     height: 60,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.muted,
     borderRadius: layout.borderRadius.sm,
     marginRight: spacing.md,
   },
@@ -150,14 +170,15 @@ const styles = StyleSheet.create({
   },
   titlePlaceholder: {
     height: 16,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: colors.textSecondary,
+    opacity: 0.3,
     borderRadius: 4,
     marginBottom: spacing.sm,
     width: '70%',
   },
   descriptionPlaceholder: {
     height: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.muted,
     borderRadius: 3,
     marginBottom: spacing.xs,
     width: '100%',

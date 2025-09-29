@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme/colors';
+import { colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -16,8 +16,10 @@ export default function ProjectsScreen() {
     >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <Text style={styles.title}>Projects</Text>
-          <Text style={styles.subtitle}>Your DIY projects will appear here</Text>
+          <View style={styles.headerCard}>
+            <Text style={styles.title}>Projects</Text>
+            <Text style={styles.subtitle}>Your DIY projects will appear here</Text>
+          </View>
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -33,9 +35,24 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: layout.containerPadding,
+  },
+  headerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: layout.borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 4,
+    // Web-specific shadow
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
   },
   title: {
     fontSize: typography.fontSize['3xl'],

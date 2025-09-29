@@ -8,19 +8,14 @@ import HomeScreen from '../screens/HomeScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
-import { colors } from '../../theme/colors';
+import { colors } from '../../theme/colors.ts';
 import { spacing } from '../../theme/spacing';
 
 const Tab = createBottomTabNavigator();
 
 function TabBarBackground() {
   return (
-    <LinearGradient
-      colors={[colors.gradientStart, colors.gradientEnd]}
-      style={StyleSheet.absoluteFillObject}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-    />
+    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.tabBackground }]} />
   );
 }
 
@@ -45,11 +40,21 @@ export default function TabNavigator() {
         tabBarInactiveTintColor: colors.tabInactive,
         tabBarStyle: {
           backgroundColor: 'transparent',
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: colors.muted,
           elevation: 0,
           height: 80,
           paddingBottom: spacing.md,
           paddingTop: spacing.sm,
+          shadowColor: colors.black,
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: 0.05,
+          shadowRadius: 20,
+          // Web-specific shadow
+          boxShadow: '0px -2px 20px rgba(0, 0, 0, 0.05)',
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarLabelStyle: {
