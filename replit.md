@@ -35,6 +35,18 @@ The application follows a component-based React Native architecture with the fol
 
 **Reusable Styling**: Each screen implements similar base styling patterns using LinearGradient backgrounds and consistent text hierarchies, suggesting potential for component abstraction as the app grows.
 
+## Recent Changes (September 29, 2025)
+
+### API Integration & Entitlements System
+- **Config Layer (app/config.ts)**: Added typed configuration module that reads EXPO_PUBLIC_* environment variables with validation. Exports BASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, and UPLOADS_BUCKET with clear error messages if required variables are missing.
+- **API Wrapper (app/lib/api.ts)**: Created fetchJson helper with timeout and error handling, plus getEntitlements(userId) function to fetch user quota/tier/remaining projects from backend endpoint.
+- **New Project Gating**: Updated NewProjectForm to fetch entitlements on mount and gate photo upload tiles based on both form validation (description ≥10 chars + budget + skill selected) AND available entitlements (remaining > 0).
+- **Helper Text**: Added conditional messaging above photo tiles showing "Complete fields to continue", "Upgrade to continue", or remaining project count based on validation and entitlement state.
+
+### Modal-Based Dropdown System
+- **Fixed Overlay Issues**: Converted Budget and Skill dropdowns to use React Native Modal components for proper z-index rendering above all content including photo tiles.
+- **Z-Index Hierarchy**: Skill dropdown (3000) > Budget dropdown (2000) > Photo tiles (0) ensures clean dropdown behavior without visual conflicts.
+
 ## External Dependencies
 
 ### Core Framework Dependencies
