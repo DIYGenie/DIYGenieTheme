@@ -5,6 +5,8 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import TabNavigator from './TabNavigator';
 import HowItWorks from '../screens/HowItWorks';
 import NewProject from '../screens/NewProject';
+import NewProjectForm from '../screens/NewProjectForm';
+import NewProjectMedia from '../screens/NewProjectMedia';
 
 const Stack = createStackNavigator();
 
@@ -20,6 +22,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Main" component={TabNavigator} />
       <Stack.Screen name="HowItWorks" component={HowItWorks} />
       <Stack.Screen name="NewProject" component={NewProject} />
+      <Stack.Screen name="NewProjectForm" component={NewProjectForm} />
+      <Stack.Screen name="NewProjectMedia" component={NewProjectMedia} />
     </Stack.Navigator>
   );
 }

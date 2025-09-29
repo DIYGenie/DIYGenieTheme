@@ -7,8 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import HomeScreen from '../screens/HomeScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import NewProjectForm from '../screens/NewProjectForm';
 
-import { colors } from '../../theme/colors.ts';
+import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
 const Tab = createBottomTabNavigator();
@@ -35,6 +36,8 @@ export default function TabNavigator() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Projects') {
             iconName = focused ? 'folder' : 'folder-outline';
+          } else if (route.name === 'NewProject') {
+            iconName = 'add';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -71,6 +74,11 @@ export default function TabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Projects" component={ProjectsScreen} />
+      <Tab.Screen 
+        name="NewProject" 
+        component={NewProjectForm} 
+        options={{ tabBarLabel: 'New Project' }}
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
