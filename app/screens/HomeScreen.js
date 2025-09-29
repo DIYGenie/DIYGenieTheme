@@ -16,6 +16,10 @@ export default function HomeScreen({ navigation }) {
     // TODO: Navigate to room scanning
   };
 
+  const handleUploadPhoto = () => {
+    // TODO: Navigate to photo upload
+  };
+
   return (
     <LinearGradient
       colors={[colors.gradientStart, colors.gradientEnd]}
@@ -49,10 +53,22 @@ export default function HomeScreen({ navigation }) {
               />
             </View>
 
-            {/* Start a Project CTA */}
+            {/* Welcome Header */}
+            <View style={styles.welcomeHeader}>
+              <Text style={styles.welcomeTitle}>Welcome back, Tye 👋</Text>
+              <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
+            </View>
+
+            {/* CTA Buttons */}
             <View style={styles.ctaSection}>
-              <TouchableOpacity style={styles.mediumCTA} onPress={handleNewProject}>
-                <Text style={styles.mediumCtaText}>Start a Project</Text>
+              <TouchableOpacity style={styles.scanRoomButton} onPress={handleScanRoom}>
+                <Ionicons name="camera" size={20} color="#F59E0B" style={styles.buttonIcon} />
+                <Text style={styles.scanRoomText}>Scan Room</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.uploadPhotoButton} onPress={handleUploadPhoto}>
+                <Ionicons name="image" size={20} color={colors.white} style={styles.buttonIcon} />
+                <Text style={styles.uploadPhotoText}>Upload Photo</Text>
               </TouchableOpacity>
             </View>
 
@@ -219,17 +235,35 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
   },
+  welcomeHeader: {
+    marginBottom: 16,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: '#475569',
+  },
   ctaSection: {
+    alignItems: 'center',
     marginBottom: 32,
   },
-  mediumCTA: {
-    alignSelf: 'center',
+  scanRoomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: '70%',
     height: 52,
-    backgroundColor: colors.accent,
-    borderRadius: 16, // rounded-rect, not pill
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    borderRadius: 16,
+    marginBottom: 12,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -241,10 +275,36 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
-  mediumCtaText: {
+  uploadPhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '70%',
+    height: 52,
+    backgroundColor: '#F59E0B',
+    borderRadius: 16,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 3,
+    // Web-specific shadow
+    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  scanRoomText: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#F59E0B',
+  },
+  uploadPhotoText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.white,
-    textAlign: 'center',
   },
 });
