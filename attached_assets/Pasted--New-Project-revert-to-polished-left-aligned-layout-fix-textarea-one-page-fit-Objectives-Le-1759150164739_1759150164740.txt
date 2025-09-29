@@ -1,0 +1,124 @@
+: New Project — revert to polished left-aligned layout + fix textarea + one-page fit
+
+Objectives
+
+Left-aligned header (not centered), matching Home/Projects.
+
+Textarea without internal scrollbar; shows 2–3 lines, grows only if needed.
+
+Keep single page (no scrolling) on standard phones.
+
+Balanced spacing and stacked tiles.
+
+Changes
+
+Header
+
+Replace centered “New Project” with left-aligned:
+
+Title: “Start a New Project” — Manrope 22 / 700, color #0F172A, marginTop: 8, marginBottom: 4.
+
+Subtitle: “Tell us what you’d like DIY Genie to help you build” — Inter 13 / 500, color #64748B, marginBottom: 12.
+
+Container (no scroll)
+
+Use SafeAreaView with a single flex container:
+
+const insets = useSafeAreaInsets();
+const tabBarHeight = useBottomTabBarHeight();
+const { height: H } = useWindowDimensions();
+const isSmall = H < 740;
+
+<SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+  <View style={{
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: tabBarHeight + insets.bottom + 8,
+    justifyContent: 'space-between'
+  }}>
+    {/* Top: title + form */}
+    {/* Bottom: media section */}
+  </View>
+</SafeAreaView>
+
+
+Textarea (no internal scroll)
+
+Description input props:
+
+<TextInput
+  multiline
+  numberOfLines={isSmall ? 2 : 3}
+  scrollEnabled={false}
+  textAlignVertical="top"
+  style={{ height: isSmall ? 68 : 84, borderRadius: 12 }}
+/>
+
+
+Helper: “0/10 characters minimum” — Inter 12, #6B7280, marginTop: 6.
+
+Fields spacing
+
+Field gaps 12 px; input height 44; radius 12.
+
+Budget wrapper: { position: 'relative', zIndex: 30, elevation: 30, overflow: 'visible' }
+
+Skill wrapper: { position: 'relative', zIndex: 20, elevation: 20, overflow: 'visible' }
+
+Dropdown menus render in Portal with menu container zIndex: 1000, elevation: 1000.
+
+Media section (stacked tiles, compact, centered)
+
+Divider with caption, tighter:
+
+<View style={{ marginTop: isSmall ? 12 : 16, marginBottom: isSmall ? 8 : 10, alignItems: 'center' }}>
+  <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
+  <Text style={{ position: 'absolute', top: -9, paddingHorizontal: 8, backgroundColor: '#FFF', color: '#6B7280', fontSize: 12, fontWeight: '600' }}>
+    Add your room photo
+  </Text>
+</View>
+
+
+Tile size + gap (responsive but compact):
+
+const TILE = isSmall ? 92 : 104;
+const GAP  = isSmall ? 10 : 12;
+
+
+Shared tile style:
+
+{
+  width: TILE, height: TILE, borderRadius: 16,
+  justifyContent: 'center', alignItems: 'center',
+  backgroundColor: '#FFF',
+  shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12,
+  shadowOffset: { width: 0, height: 4 }, elevation: 6,
+}
+
+
+Scan Room: borderWidth: 1.5, borderColor: '#FBBF24', icon+text #F59E0B
+
+Upload Photo: borderWidth: 1, borderColor: '#E5E7EB', icon+text #1F2937'
+
+Icon 22–24, label 13 (semi-bold). Disabled: opacity: 0.6, shadowOpacity: 0.
+
+Validation (unchanged)
+
+Tiles enabled only when:
+
+description length ≥ 10
+
+budget selected
+
+skill level selected
+
+Verify
+
+On a typical device height (~812), no scrolling; both tiles fully visible above the gradient tab bar.
+
+Dropdowns overlay cleanly over the tiles/tab bar.
+
+Textarea shows no internal scrollbar.
+
+Visual style matches Home: left-aligned, airy, but compact.

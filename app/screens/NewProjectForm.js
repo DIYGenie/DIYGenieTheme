@@ -94,25 +94,26 @@ export default function NewProjectForm({ navigation }) {
         <View>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>New Project</Text>
-          <Text style={styles.subtitle}>Tell us about your DIY vision</Text>
+          <Text style={styles.title}>Start a New Project</Text>
+          <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
         </View>
 
           {/* Description Input */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Description</Text>
+            <Text style={styles.fieldLabel}>Project Description</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textArea, { height: isSmall ? 68 : 84 }]}
               value={description}
               onChangeText={setDescription}
-              placeholder="What do you want to build?"
+              placeholder="e.g. Build 3 floating shelves for living room wall (minimum 10 characters)"
               placeholderTextColor={colors.textSecondary}
               multiline
-              numberOfLines={3}
+              numberOfLines={isSmall ? 2 : 3}
+              scrollEnabled={false}
               textAlignVertical="top"
             />
-            <Text style={styles.helperText}>
-              {description.length}/10 minimum
+            <Text style={styles.charCount}>
+              {description.length}/10 characters minimum
             </Text>
           </View>
 
@@ -283,20 +284,18 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
-    alignItems: 'center',
   },
   title: {
     fontSize: 22,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    textAlign: 'center',
+    color: '#0F172A',
+    marginTop: 8,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
     fontFamily: typography.fontFamily.inter,
     color: '#64748B',
-    textAlign: 'center',
-    marginTop: 4,
     marginBottom: 12,
   },
   budgetFieldWrapper: {
@@ -322,31 +321,31 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 8,
   },
-  textInput: {
+  textArea: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     fontSize: 16,
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
-    height: 44,
-    minHeight: 44,
     textAlignVertical: 'top',
   },
   charCount: {
     fontSize: 12,
     fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-    marginTop: 4,
+    color: '#6B7280',
+    marginTop: 6,
+    textAlign: 'right',
   },
   dropdown: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
+    height: 44,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -367,7 +366,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 16,
+    borderRadius: 12,
     marginTop: 4,
     shadowColor: colors.black,
     shadowOffset: {
