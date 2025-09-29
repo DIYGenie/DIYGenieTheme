@@ -1,0 +1,76 @@
+Goal
+After an image upload on New Project, add a Generate Preview action that calls the webhook preview endpoint, shows professional loading feedback, then navigates to Projects and displays the card with preview status/thumbnail.
+
+Files to edit (only these):
+
+app/lib/api.ts (extend)
+
+app/screens/NewProject.tsx (add Generate Preview CTA & flow)
+
+app/screens/Projects.tsx (refresh list + show preview status/thumbnail)
+
+Implementation details
+
+API (app/lib/api.ts)
+
+Add:
+
+export async function triggerPreview(projectId: string, payload: { input_image_url: string; prompt?: string; room_type?: string; design_style?: string }): Promise<any>
+
+POST ${BASE_URL}/api/projects/${projectId}/preview with JSON body.
+
+Resolve on 200/201/202; tolerant to extra fields.
+
+export async function listProjects(userId: string): Promise<any[]>
+
+GET ${BASE_URL}/api/projects?user_id=${userId} (or the existing list endpoint used by your webhook; tolerate alt shapes).
+
+New Project (app/screens/NewProject.tsx)
+
+Preconditions already present from 2B: projectId and inputImageUrl in state after upload.
+
+Render a primary button below the upload success state: “Generate Preview”.
+
+On press:
+
+Debounce (300ms) and disable while running.
+
+Call triggerPreview(projectId, { input_image_url: inputImageUrl, prompt: description }).
+
+Show inline progress text “Generating preview…” with small spinner; keep tiles and button blocked (pointerEvents="none" on the action block).
+
+On success → navigation.navigate('Projects', { refresh: true }).
+
+On error → toast “Preview failed. Try again.” and re-enable.
+
+Projects (app/screens/Projects.tsx)
+
+On focus and when route.params?.refresh, call listProjects(user.id) and update state.
+
+Card rendering:
+
+If preview_url exists → show thumbnail image (cover, 16:9, rounded).
+
+Else if status === 'preview_requested' (or equivalent) → show a skeleton shimmer block and a small chip “Preview requested”.
+
+Keep existing progress/status rendering for other states.
+
+Add pull-to-refresh if missing; reuses listProjects.
+
+Polish
+
+Prevent double taps on Generate Preview with a simple in-flight flag.
+
+Keep the New Project screen one page (no ScrollView).
+
+Consistent toasts for success/error; short copy.
+
+Optional: light haptic feedback on success if expo-haptics is already installed; skip otherwise.
+
+Acceptance criteria
+
+After uploading an image, tapping Generate Preview calls /api/projects/:id/preview, shows “Generating preview…”, then navigates to Projects.
+
+Projects screen refreshes and shows either a preview thumbnail (when available) or a skeleton + “Preview requested” chip.
+
+Debounced button; clear loading/error states; no secrets exposed; no file renames/deletes.

@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject } from '../lib/api';
+import { getEntitlements, createProject, updateProject, triggerPreview } from '../lib/api';
 import { uploadImageAsync } from '../lib/storage';
 
 export default function NewProjectForm({ navigation }) {
@@ -20,11 +20,14 @@ export default function NewProjectForm({ navigation }) {
   const [loadingEntitlements, setLoadingEntitlements] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [inputImageUrl, setInputImageUrl] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
   const isSmall = H < 740;
   const isVerySmall = H < 680;
+  const debounceTimerRef = useRef(null);
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -93,22 +96,20 @@ export default function NewProjectForm({ navigation }) {
         status: 'pending',
       });
 
-      const projectId = projectData.id;
+      const currentProjectId = projectData.id;
+      setProjectId(currentProjectId);
 
       // Step 2: Upload image to Supabase Storage
-      const publicUrl = await uploadImageAsync(localUri, projectId);
+      const publicUrl = await uploadImageAsync(localUri, currentProjectId);
       setInputImageUrl(publicUrl);
 
       // Step 3: Try to PATCH the image URL to the project (graceful if not supported)
-      await updateProject(projectId, {
+      await updateProject(currentProjectId, {
         input_image_url: publicUrl,
       });
 
       // Success!
       Alert.alert('Success', 'Photo uploaded successfully!');
-
-      // TODO: Navigate to preview or next screen when ready
-      // For now, just show success
 
     } catch (error) {
       console.error('Upload failed:', error);
@@ -137,6 +138,37 @@ export default function NewProjectForm({ navigation }) {
 
   const handleSkillFocus = () => {
     setShowSkillDropdown(!showSkillDropdown);
+  };
+
+  const handleGeneratePreview = () => {
+    // Debounce to prevent double taps
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      if (!projectId || !inputImageUrl || isGeneratingPreview) return;
+
+      setIsGeneratingPreview(true);
+
+      try {
+        await triggerPreview(projectId, {
+          input_image_url: inputImageUrl,
+          prompt: description,
+        });
+
+        // Navigate to Projects with refresh flag
+        navigation.navigate('Projects', { refresh: true });
+      } catch (error) {
+        console.error('Preview generation failed:', error);
+        Alert.alert(
+          'Preview Failed',
+          'Preview failed. Try again.'
+        );
+      } finally {
+        setIsGeneratingPreview(false);
+      }
+    }, 300);
   };
 
   const TILE = isVerySmall ? 88 : isSmall ? 92 : 104;
@@ -364,6 +396,35 @@ export default function NewProjectForm({ navigation }) {
               }}>Upload Photo</Text>
             </Pressable>
           </View>
+
+          {/* Generate Preview Button - shows after successful upload */}
+          {inputImageUrl && projectId && (
+            <View style={{ marginTop: 16, pointerEvents: isGeneratingPreview ? 'none' : 'auto' }}>
+              <Pressable
+                disabled={isGeneratingPreview}
+                style={({ pressed }) => [
+                  styles.generateButton,
+                  {
+                    opacity: isGeneratingPreview ? 0.6 : 1,
+                    transform: [{ scale: pressed && !isGeneratingPreview ? 0.98 : 1 }],
+                  }
+                ]}
+                onPress={handleGeneratePreview}
+              >
+                {isGeneratingPreview ? (
+                  <>
+                    <Ionicons name="sync" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.generateButtonText}>Generating preview…</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.generateButtonText}>Generate Preview</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -525,5 +586,24 @@ const styles = StyleSheet.create({
   },
   actionButtonTextDisabled: {
     color: '#9CA3AF',
+  },
+  generateButton: {
+    backgroundColor: '#F59E0B',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  generateButtonText: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#FFFFFF',
   },
 });

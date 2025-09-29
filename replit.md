@@ -61,6 +61,14 @@ The application follows a component-based React Native architecture with the fol
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous/public key
 - `EXPO_PUBLIC_UPLOADS_BUCKET` - Storage bucket name (optional, defaults to 'uploads')
 
+### Preview Generation & Project List Display
+- **Preview API (app/lib/api.ts)**: Added triggerPreview() to POST to /api/projects/{id}/preview with input image and optional prompt/room_type/design_style. Also added listProjects() to GET /api/projects?user_id={userId} with tolerance for various response shapes.
+- **Generate Preview Button (NewProjectForm)**: After successful image upload, displays a "Generate Preview" button with sparkles icon. Button is debounced (300ms) to prevent double-taps and shows "Generating preview..." loading state with sync icon during API call.
+- **Navigation Flow**: On successful preview trigger, automatically navigates to Projects screen with refresh parameter to fetch updated project list.
+- **Projects Screen Refresh**: Implemented useFocusEffect to detect refresh parameter and reload projects. Also added pull-to-refresh for manual updates.
+- **Smart Card Display**: Project cards now display preview thumbnail (Image component) if preview_url exists, skeleton shimmer with ActivityIndicator if status is 'preview_requested' or 'pending', or placeholder if neither. Added "Preview requested" chip for pending previews.
+- **Error Handling**: Shows "Preview failed. Try again." toast on API errors with automatic re-enable of the Generate Preview button.
+
 ## External Dependencies
 
 ### Core Framework Dependencies

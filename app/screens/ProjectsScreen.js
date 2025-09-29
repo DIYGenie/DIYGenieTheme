@@ -1,38 +1,52 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { listProjects } from '../lib/api';
 
-export default function ProjectsScreen({ navigation }) {
+export default function ProjectsScreen({ navigation, route }) {
   const [activeFilter, setActiveFilter] = useState('All');
-  
-  // Sample projects data - in real app this would come from state/API
-  const projects = [
-    {
-      id: 1,
-      title: 'Kitchen Cabinet Makeover',
-      status: 'active',
-      stepsRemaining: 3,
-      progress: 0.7,
-    },
-    {
-      id: 2,
-      title: 'Living Room Accent Wall',
-      status: 'active',
-      stepsRemaining: 5,
-      progress: 0.4,
-    },
-    {
-      id: 3,
-      title: 'Bedroom Floating Shelves',
-      status: 'completed',
-      stepsRemaining: 0,
-      progress: 1.0,
-    },
-  ];
+  const [projects, setProjects] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProjects = async () => {
+    try {
+      // TODO: Replace with actual user ID from auth context
+      const mockUserId = 'user-123';
+      const data = await listProjects(mockUserId);
+      setProjects(data);
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Fetch on mount and when screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.refresh) {
+        fetchProjects();
+        // Clear the refresh param
+        navigation.setParams({ refresh: undefined });
+      }
+    }, [route.params?.refresh])
+  );
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchProjects();
+  };
 
   const handleFilterPress = (filter) => {
     setActiveFilter(filter);
@@ -53,7 +67,13 @@ export default function ProjectsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Projects</Text>
@@ -119,33 +139,59 @@ export default function ProjectsScreen({ navigation }) {
 }
 
 function ProjectCard({ project }) {
+  const hasPreview = project.preview_url;
+  const isPreviewRequested = project.status === 'preview_requested' || project.status === 'pending';
+  const projectName = project.name || project.title || 'Untitled Project';
+  
   return (
     <TouchableOpacity style={styles.projectCard}>
       {/* Thumbnail */}
-      <View style={styles.thumbnailPlaceholder} />
+      {hasPreview ? (
+        <Image 
+          source={{ uri: project.preview_url }} 
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+        />
+      ) : isPreviewRequested ? (
+        <View style={styles.thumbnailSkeleton}>
+          <ActivityIndicator size="small" color="#F59E0B" />
+        </View>
+      ) : (
+        <View style={styles.thumbnailPlaceholder} />
+      )}
       
       {/* Content */}
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{project.title}</Text>
+        <Text style={styles.cardTitle} numberOfLines={1}>{projectName}</Text>
         
-        <Text style={styles.cardSubtitle}>
-          {project.status === 'completed' 
-            ? 'Completed' 
-            : `${project.stepsRemaining} steps remaining`
-          }
-        </Text>
-        
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBackground}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${project.progress * 100}%` }
-              ]} 
-            />
+        {isPreviewRequested && !hasPreview ? (
+          <View style={styles.previewChip}>
+            <Text style={styles.previewChipText}>Preview requested</Text>
           </View>
-        </View>
+        ) : (
+          <Text style={styles.cardSubtitle}>
+            {project.status === 'completed' 
+              ? 'Completed' 
+              : project.stepsRemaining 
+              ? `${project.stepsRemaining} steps remaining`
+              : 'In progress'
+            }
+          </Text>
+        )}
+        
+        {/* Progress Bar - only show if progress exists */}
+        {project.progress !== undefined && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBackground}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${project.progress * 100}%` }
+                ]} 
+              />
+            </View>
+          </View>
+        )}
       </View>
       
       {/* Chevron */}
@@ -251,6 +297,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     borderRadius: 12,
     marginRight: spacing.md,
+  },
+  thumbnailImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    marginRight: spacing.md,
+  },
+  thumbnailSkeleton: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    marginRight: spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewChip: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  previewChipText: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#D97706',
   },
   cardContent: {
     flex: 1,

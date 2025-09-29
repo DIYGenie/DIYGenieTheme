@@ -140,3 +140,41 @@ export async function updateProject(
     throw error;
   }
 }
+
+/**
+ * Trigger preview generation for a project
+ */
+export async function triggerPreview(
+  projectId: string,
+  payload: {
+    input_image_url: string;
+    prompt?: string;
+    room_type?: string;
+    design_style?: string;
+  }
+): Promise<any> {
+  return fetchJson(`/api/projects/${projectId}/preview`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * List all projects for a user
+ */
+export async function listProjects(userId: string): Promise<any[]> {
+  const data = await fetchJson(`/api/projects?user_id=${userId}`);
+  // Tolerate different response shapes - if it's already an array, return it
+  // Otherwise try to find an array in common field names
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data.projects && Array.isArray(data.projects)) {
+    return data.projects;
+  }
+  if (data.data && Array.isArray(data.data)) {
+    return data.data;
+  }
+  // If we can't find an array, return empty array
+  return [];
+}
