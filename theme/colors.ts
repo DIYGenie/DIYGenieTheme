@@ -14,8 +14,8 @@ export const colors = {
   // Interactive colors
   accent: '#F59E0B',     // amber-500 - primary CTA (unchanged)
   accentPressed: '#D97706', // amber-600 - pressed state
-  brandPurpleDeep: '#6D28D9', // purple-700 - nav bars/background accents
-  purpleLight: '#E9D5FF',     // purple-200 - inactive tab/icon tint
+  brandPurpleDeep: '#5B21B6', // purple-800 - nav bars/background accents
+  purpleLight: '#C4B5FD',     // purple-300 - inactive tab/icon tint
   
   // UI elements
   muted: '#E5E7EB',      // gray-200 - skeletons/dividers

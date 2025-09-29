@@ -48,30 +48,35 @@ export default function HomeScreen() {
             <View style={styles.howItWorksSection}>
               <Text style={styles.howItWorksTitle}>How DIY Genie Works</Text>
               
-              <View style={styles.stepCardsRow}>
-                <View style={styles.stepCard}>
-                  <Ionicons name="camera" size={24} color={colors.textSecondary} style={styles.stepIcon} />
-                  <Text style={styles.stepText}>Add your room</Text>
+              <View style={styles.stepCardsGrid}>
+                <View style={styles.stepCardRow}>
+                  <View style={styles.stepCard}>
+                    <Ionicons name="camera" size={28} color={colors.textSecondary} style={styles.stepIcon} />
+                    <Text style={styles.stepText}>Add your room</Text>
+                  </View>
+                  
+                  <View style={styles.stepCard}>
+                    <Ionicons name="create" size={28} color={colors.textSecondary} style={styles.stepIcon} />
+                    <Text style={styles.stepText}>Tell us the goal</Text>
+                  </View>
                 </View>
                 
-                <View style={styles.stepCard}>
-                  <Ionicons name="create" size={24} color={colors.textSecondary} style={styles.stepIcon} />
-                  <Text style={styles.stepText}>Tell us the goal</Text>
-                </View>
-                
-                <View style={styles.stepCard}>
-                  <Ionicons name="sparkles" size={24} color={colors.textSecondary} style={styles.stepIcon} />
-                  <Text style={styles.stepText}>See & build</Text>
+                <View style={styles.stepCardRow}>
+                  <View style={styles.stepCard}>
+                    <Ionicons name="sparkles" size={28} color={colors.textSecondary} style={styles.stepIcon} />
+                    <Text style={styles.stepText}>See & preview</Text>
+                  </View>
+                  
+                  <View style={styles.stepCard}>
+                    <Ionicons name="clipboard" size={28} color={colors.textSecondary} style={styles.stepIcon} />
+                    <Text style={styles.stepText}>Get your plan</Text>
+                  </View>
                 </View>
               </View>
               
-              {/* Primary CTA */}
-              <TouchableOpacity style={styles.primaryCTA} onPress={handleNewProject}>
-                <Ionicons name="sparkles" size={20} color={colors.white} style={styles.ctaIcon} />
-                <View style={styles.ctaTextContainer}>
-                  <Text style={styles.ctaMainText}>Start a Project</Text>
-                  <Text style={styles.ctaSubText}>Upload photo or Scan room</Text>
-                </View>
+              {/* Medium CTA */}
+              <TouchableOpacity style={styles.mediumCTA} onPress={handleNewProject}>
+                <Text style={styles.mediumCtaText}>Start a Project</Text>
               </TouchableOpacity>
             </View>
 
@@ -183,7 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginTop: 20,
+    marginTop: 44, // Add 24px breathing room
     marginBottom: 20,
   },
   projectsSection: {
@@ -238,72 +243,65 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 16,
   },
-  stepCardsRow: {
+  stepCardsGrid: {
+    marginBottom: 20,
+  },
+  stepCardRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
     marginBottom: 16,
   },
   stepCard: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
+    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
   stepIcon: {
     marginBottom: 8,
   },
   stepText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  primaryCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-    borderRadius: 26, // pill shape
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+  mediumCTA: {
+    alignSelf: 'center',
+    width: '70%',
     height: 52,
+    backgroundColor: colors.accent,
+    borderRadius: 16, // rounded-rect, not pill
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
     elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
   },
-  ctaIcon: {
-    marginRight: 12,
-  },
-  ctaTextContainer: {
-    flex: 1,
-  },
-  ctaMainText: {
-    fontSize: typography.fontSize.md,
+  mediumCtaText: {
+    fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.white,
-    marginBottom: 2,
-  },
-  ctaSubText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.white,
-    opacity: 0.8,
+    textAlign: 'center',
   },
 });
