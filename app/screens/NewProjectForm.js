@@ -96,67 +96,71 @@ export default function NewProjectForm({ navigation }) {
         </View>
 
         {/* Budget Dropdown */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Budget</Text>
-          <TouchableOpacity 
-            style={styles.dropdown}
-            onPress={() => setShowBudgetDropdown(!showBudgetDropdown)}
-          >
-            <Text style={[styles.dropdownText, !budget && styles.placeholderText]}>
-              {budget || 'Select budget range'}
-            </Text>
-            <Ionicons 
-              name={showBudgetDropdown ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color={colors.textSecondary} 
-            />
-          </TouchableOpacity>
-          
-          {showBudgetDropdown && (
-            <View style={styles.dropdownOptions}>
-              {budgetOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.dropdownOption}
-                  onPress={() => handleBudgetSelect(option)}
-                >
-                  <Text style={styles.dropdownOptionText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+        <View style={styles.budgetFieldWrapper}>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Budget</Text>
+            <TouchableOpacity 
+              style={styles.dropdown}
+              onPress={() => setShowBudgetDropdown(!showBudgetDropdown)}
+            >
+              <Text style={[styles.dropdownText, !budget && styles.placeholderText]}>
+                {budget || 'Select budget range'}
+              </Text>
+              <Ionicons 
+                name={showBudgetDropdown ? 'chevron-up' : 'chevron-down'} 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+            </TouchableOpacity>
+            
+            {showBudgetDropdown && (
+              <View style={styles.dropdownOptions}>
+                {budgetOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.dropdownOption}
+                    onPress={() => handleBudgetSelect(option)}
+                  >
+                    <Text style={styles.dropdownOptionText}>{option}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Skill Level Dropdown */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Skill Level</Text>
-          <TouchableOpacity 
-            style={styles.dropdown}
-            onPress={() => setShowSkillDropdown(!showSkillDropdown)}
-          >
-            <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
-              {skillLevel || 'Select skill level'}
-            </Text>
-            <Ionicons 
-              name={showSkillDropdown ? 'chevron-up' : 'chevron-down'} 
-              size={20} 
-              color={colors.textSecondary} 
-            />
-          </TouchableOpacity>
-          
-          {showSkillDropdown && (
-            <View style={styles.dropdownOptions}>
-              {skillOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.dropdownOption}
-                  onPress={() => handleSkillSelect(option)}
-                >
-                  <Text style={styles.dropdownOptionText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+        <View style={styles.skillFieldWrapper}>
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Skill Level</Text>
+            <TouchableOpacity 
+              style={styles.dropdown}
+              onPress={() => setShowSkillDropdown(!showSkillDropdown)}
+            >
+              <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
+                {skillLevel || 'Select skill level'}
+              </Text>
+              <Ionicons 
+                name={showSkillDropdown ? 'chevron-up' : 'chevron-down'} 
+                size={20} 
+                color={colors.textSecondary} 
+              />
+            </TouchableOpacity>
+            
+            {showSkillDropdown && (
+              <View style={styles.dropdownOptions}>
+                {skillOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.dropdownOption}
+                    onPress={() => handleSkillSelect(option)}
+                  >
+                    <Text style={styles.dropdownOptionText}>{option}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         </ScrollView>
@@ -196,11 +200,13 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    overflow: 'visible',
   },
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 24,
+    overflow: 'visible',
   },
   header: {
     marginBottom: 32,
@@ -217,9 +223,22 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 20,
   },
+  budgetFieldWrapper: {
+    position: 'relative',
+    zIndex: 20,
+    elevation: 20,
+    overflow: 'visible',
+  },
+  skillFieldWrapper: {
+    position: 'relative',
+    zIndex: 10,
+    elevation: 10,
+    overflow: 'visible',
+  },
   fieldContainer: {
     marginBottom: 24,
     position: 'relative',
+    overflow: 'visible',
   },
   fieldLabel: {
     fontSize: 16,

@@ -1,0 +1,81 @@
+Auto-scroll field into view on focus
+
+Wrap the form in KeyboardAwareScrollView (or use ScrollView + contentInsetAdjustmentBehavior="automatic").
+
+On focus of Budget/Skill, call scrollToFocusedInput (KeyboardAware) or scrollTo so the dropdown origin sits well above the sticky bar.
+
+Sticky bottom action bar (centered)
+
+Replace footer container with:
+
+const insets = useSafeAreaInsets();
+
+<View
+  style={{
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: insets.bottom + 8,   // sits above tab bar
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(229,231,235,0.6)',
+  }}
+  pointerEvents="box-none"
+>
+  <View
+    style={{
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+      width: '100%',
+      maxWidth: 520,               // keeps nice width on tablets
+    }}
+  >
+    {/* Scan Room (outlined amber) */}
+    {/* Upload Photo (neutral card) */}
+  </View>
+</View>
+
+
+Each button:
+
+style={{
+  flexGrow: 1,
+  flexBasis: '48%',
+  height: 56,
+  borderRadius: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowRadius: 20,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 6,
+}}
+
+
+Scan Room: borderWidth: 1.5, borderColor: '#FBBF24', backgroundColor: '#FFF', color: '#F59E0B'
+
+Upload Photo: borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFF', color: '#1F2937'
+
+Enable/disable logic stays the same
+
+Keep both buttons disabled until description (≥10 chars), budget, and skill are filled. Disabled style: opacity: 0.6, shadowOpacity: 0.
+
+Make sure dropdown is not hidden by footer
+
+When a dropdown is open, set footer pointerEvents="none" or raise dropdown menu zIndex/elevation above 100 to guarantee it stays on top (zIndex: 100, elevation: 24).
+
+Deliver
+
+Preview:
+
+Expand Budget: menu overlays cleanly without pushing Skill label.
+
+Buttons row is centered, comfortably above the tab bar, and stays visible with the keyboard.
+
+On small screens, buttons wrap nicely (each 100% width stacked) — if needed, add flexWrap: 'wrap' with minWidth: 160.
