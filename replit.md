@@ -38,11 +38,12 @@ The application follows a component-based React Native architecture with the fol
 ## Recent Changes (September 29, 2025)
 
 ### Backend API Server Implementation (September 29, 2025)
-- **Express Server (server.js)**: Created Node.js/Express backend API server running on port 3001 with CORS enabled
+- **Express Server (server.js)**: Created Node.js/Express backend API server running on port 3001 with full CORS support
+- **CORS Configuration**: Configured with `origin: true`, explicit methods `['GET','POST','PATCH','OPTIONS']`, and allowed headers `['Content-Type','Authorization']` for proper preflight handling
 - **Supabase Integration**: Server uses SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables to connect to Supabase with service role privileges
 - **GET /api/projects?user_id=...**: Lists all projects for a user, ordered by created_at descending. Returns `{ok: true, items: [...]}` with empty array if no projects exist. Validates user_id is provided (400 error if missing).
 - **GET /me/entitlements/:userId**: Returns user entitlements with automatic fallback to Free tier default `{ok: true, tier: "Free", quota: 5, remaining: 5}` when no record exists or table is missing. Gracefully handles database schema changes.
-- **POST /api/projects**: Creates new project with user_id, name, budget, skill, description. Returns created project.
+- **POST /api/projects**: Creates new project with required fields user_id and name. Returns `{ok: true, id: "<uuid>"}` on success. Database schema requires: user_id (UUID, FK to users table), name (text), status (text), input_image_url (text), preview_url (text).
 - **PATCH /api/projects/:id**: Updates existing project fields. Returns 404 if project not found.
 - **POST /api/projects/:id/preview**: Triggers preview generation by updating project status to 'preview_requested'.
 - **Error Handling**: All endpoints return proper HTTP status codes and JSON responses with `{ok: false, error: <message>}` format on errors. Content-Type: application/json headers on all responses.

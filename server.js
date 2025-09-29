@@ -5,7 +5,12 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: true, credentials: false }));
+app.use(cors({
+  origin: true,
+  credentials: false,
+  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 const sbUrl = process.env.SUPABASE_URL;
@@ -64,23 +69,24 @@ app.post('/api/projects', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
   try {
-    const { user_id, name, budget, skill, description } = req.body;
+    const { user_id, name, status } = req.body || {};
     
-    if (!user_id) {
-      return res.status(400).json({ ok: false, error: 'user_id is required' });
+    if (!user_id || !name) {
+      return res.status(400).json({ ok: false, error: 'missing_fields' });
     }
+    
+    const insert = {
+      user_id,
+      name,
+      status: status ?? 'new',
+      input_image_url: null,
+      preview_url: null
+    };
     
     const { data, error } = await supabase
       .from('projects')
-      .insert([{
-        user_id,
-        name: name || 'Untitled Project',
-        budget,
-        skill,
-        description,
-        status: 'draft'
-      }])
-      .select()
+      .insert(insert)
+      .select('id')
       .single();
     
     if (error) {
@@ -88,10 +94,10 @@ app.post('/api/projects', async (req, res) => {
       return res.status(500).json({ ok: false, error: error.message });
     }
     
-    return res.status(201).json({ ok: true, project: data });
+    return res.status(201).json({ ok: true, id: data.id });
   } catch (err) {
     console.error('Unexpected error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: err.message || 'server_error' });
   }
 });
 
