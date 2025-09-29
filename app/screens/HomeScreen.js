@@ -21,69 +21,48 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={[colors.gradientStart, colors.gradientEnd]}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-    >
-      <SafeAreaView style={styles.safeArea}>
-        {/* Top Bar */}
-        <LinearGradient
-          colors={[colors.gradientStart, colors.gradientEnd]}
-          style={styles.topBar}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-        >
-          <Text style={styles.topBarTitle}>Home</Text>
-          <View style={styles.avatarPlaceholder} />
-        </LinearGradient>
-
-        {/* Content Sheet - overlaps gradient */}
-        <View style={styles.contentSheet}>
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search projects…"
-                placeholderTextColor={colors.textSecondary}
-                editable={false}
-              />
-            </View>
-
-            {/* Welcome Header */}
-            <View style={styles.welcomeHeader}>
-              <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
-              <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
-            </View>
-
-            {/* CTA Tiles */}
-            <View style={styles.ctaRow}>
-              <TouchableOpacity style={styles.scanRoomTile} onPress={handleScanRoom}>
-                <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
-                <Text style={styles.scanRoomText}>Scan Room</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
-                <Ionicons name="image" size={28} color="#111827" style={styles.tileIcon} />
-                <Text style={styles.uploadPhotoText}>Upload Photo</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Section Header */}
-            <Text style={styles.sectionHeader}>Recent Projects</Text>
-
-            {/* Project Cards */}
-            <View style={styles.projectsSection}>
-              <ProjectCard />
-              <ProjectCard />
-            </View>
-          </ScrollView>
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search projects…"
+            placeholderTextColor={colors.textSecondary}
+            editable={false}
+          />
         </View>
-      </SafeAreaView>
-    </LinearGradient>
+
+        {/* Welcome Header */}
+        <View style={styles.welcomeHeader}>
+          <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
+          <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
+        </View>
+
+        {/* CTA Tiles */}
+        <View style={styles.ctaRow}>
+          <TouchableOpacity style={styles.scanRoomTile} onPress={handleScanRoom}>
+            <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
+            <Text style={styles.scanRoomText}>Scan Room</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
+            <Ionicons name="image" size={28} color="#1F2937" style={styles.tileIcon} />
+            <Text style={styles.uploadPhotoText}>Upload Photo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Section Header */}
+        <Text style={styles.sectionHeader}>Recent Projects</Text>
+
+        {/* Project Cards */}
+        <View style={styles.projectsSection}>
+          <ProjectCard />
+          <ProjectCard />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -111,66 +90,7 @@ function ProjectCard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
-  },
-  topBarTitle: {
-    fontSize: 22,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
-  },
-  avatarPlaceholder: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#FFFFFFCC', // 80% opacity
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-    // Web-specific shadow
-    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)',
-  },
-  contentSheet: {
-    flex: 1,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -20, // Overlap gradient by 20px to hide sliver
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 2,
-    // Web-specific shadow
-    boxShadow: '0px -2px 24px rgba(0, 0, 0, 0.04)',
   },
   scrollView: {
     flex: 1,
@@ -216,11 +136,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
     elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   thumbnailPlaceholder: {
     width: 56,
@@ -245,10 +165,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   welcomeHeader: {
-    marginBottom: 24,
+    marginTop: 20,
+    marginBottom: 16,
   },
   welcomeTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#0F172A',
     marginBottom: 4,
@@ -264,7 +185,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flexWrap: 'wrap',
-    marginBottom: 28,
+    marginTop: 24,
+    marginBottom: 32,
   },
   scanRoomTile: {
     alignItems: 'center',
@@ -272,8 +194,8 @@ const styles = StyleSheet.create({
     minWidth: 120,
     minHeight: 120,
     backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderWidth: 1.5,
+    borderColor: '#FBBF24',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -282,11 +204,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
     elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   uploadPhotoTile: {
     alignItems: 'center',
@@ -304,11 +226,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
     elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   tileIcon: {
     marginBottom: 8,
@@ -322,7 +244,7 @@ const styles = StyleSheet.create({
   uploadPhotoText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#111827',
+    color: '#1F2937',
     textAlign: 'center',
   },
 });
