@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -86,16 +86,14 @@ export default function NewProjectForm({ navigation }) {
       <KeyboardAwareScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={{ 
-          paddingHorizontal: 24,
-          paddingTop: 24,
-          paddingBottom: tabBarHeight + insets.bottom + 240,
+        enableOnAndroid
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: tabBarHeight + insets.bottom + 220,
           overflow: 'visible',
         }}
-        showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        extraScrollHeight={100}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
         <View style={styles.header}>
@@ -123,7 +121,7 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.budgetFieldWrapper}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Budget</Text>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.dropdown}
               onPress={handleBudgetFocus}
             >
@@ -135,18 +133,18 @@ export default function NewProjectForm({ navigation }) {
                 size={20} 
                 color={colors.textSecondary} 
               />
-            </TouchableOpacity>
+            </Pressable>
             
             {showBudgetDropdown && (
               <View style={styles.dropdownOptions}>
                 {budgetOptions.map((option) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={option}
                     style={styles.dropdownOption}
                     onPress={() => handleBudgetSelect(option)}
                   >
                     <Text style={styles.dropdownOptionText}>{option}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -157,7 +155,7 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.skillFieldWrapper}>
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Skill Level</Text>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.dropdown}
               onPress={handleSkillFocus}
             >
@@ -169,59 +167,76 @@ export default function NewProjectForm({ navigation }) {
                 size={20} 
                 color={colors.textSecondary} 
               />
-            </TouchableOpacity>
+            </Pressable>
             
             {showSkillDropdown && (
               <View style={styles.dropdownOptions}>
                 {skillOptions.map((option) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={option}
                     style={styles.dropdownOption}
                     onPress={() => handleSkillSelect(option)}
                   >
                     <Text style={styles.dropdownOptionText}>{option}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             )}
           </View>
         </View>
 
-        {/* Soft Divider */}
-        <View style={{ marginTop: 24, marginBottom: 16, alignItems: 'center' }}>
-          <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
-          <Text style={{ position: 'absolute', top: -10, paddingHorizontal: 8, backgroundColor: '#FFF', color: '#6B7280', fontSize: 12, fontWeight: '600' }}>
-            Add your room photo
-          </Text>
-        </View>
+        {/* Media Section */}
+        <View style={{ marginTop: 24 }}>
+          <View style={{ alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ height: 1, width: '100%', backgroundColor: 'rgba(229,231,235,0.9)' }} />
+            <Text style={{
+              position: 'absolute', top: -10, paddingHorizontal: 8,
+              backgroundColor: '#FFF', color: '#6B7280', fontSize: 12, fontWeight: '600'
+            }}>
+              Add your room photo
+            </Text>
+          </View>
 
-        {/* Stacked Media Tiles */}
-        <View style={styles.tilesContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.squareTile,
-              styles.scanRoomButton,
-              !isFormValid && styles.squareTileDisabled
-            ]}
-            onPress={handleScanRoom}
-            disabled={!isFormValid}
-          >
-            <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-            <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.squareTile,
-              styles.uploadPhotoButton,
-              !isFormValid && styles.squareTileDisabled
-            ]}
-            onPress={handleUploadPhoto}
-            disabled={!isFormValid}
-          >
-            <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-            <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
-          </TouchableOpacity>
+          {/* Stacked tiles */}
+          <View style={{ alignItems: 'center', gap: 16 }}>
+            {/* Scan Room */}
+            <Pressable
+              disabled={!isFormValid}
+              style={({ pressed }) => ({
+                width: 120, height: 120, borderRadius: 16,
+                justifyContent: 'center', alignItems: 'center',
+                backgroundColor: '#FFF',
+                borderWidth: 1.5, borderColor: '#FBBF24',
+                opacity: !isFormValid ? 0.6 : 1,
+                shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 }, elevation: 6,
+                transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
+              })}
+              onPress={handleScanRoom}
+            >
+              <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+              <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
+            </Pressable>
+
+            {/* Upload Photo */}
+            <Pressable
+              disabled={!isFormValid}
+              style={({ pressed }) => ({
+                width: 120, height: 120, borderRadius: 16,
+                justifyContent: 'center', alignItems: 'center',
+                backgroundColor: '#FFF',
+                borderWidth: 1, borderColor: '#E5E7EB',
+                opacity: !isFormValid ? 0.6 : 1,
+                shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 }, elevation: 6,
+                transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
+              })}
+              onPress={handleUploadPhoto}
+            >
+              <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+              <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
+            </Pressable>
+          </View>
         </View>
 
       </KeyboardAwareScrollView>
@@ -256,18 +271,18 @@ const styles = StyleSheet.create({
   },
   budgetFieldWrapper: {
     position: 'relative',
-    zIndex: 20,
-    elevation: 20,
+    zIndex: 30,
+    elevation: 30,
     overflow: 'visible',
   },
   skillFieldWrapper: {
     position: 'relative',
-    zIndex: 10,
-    elevation: 10,
+    zIndex: 20,
+    elevation: 20,
     overflow: 'visible',
   },
   fieldContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
     position: 'relative',
     overflow: 'visible',
   },
@@ -343,40 +358,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
-  },
-  tilesContainer: {
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    width: '100%',
-    maxWidth: 360,
-  },
-  squareTile: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  squareTileDisabled: {
-    opacity: 0.6,
-    shadowOpacity: 0,
-  },
-  scanRoomButton: {
-    borderWidth: 1.5,
-    borderColor: '#FBBF24',
-    backgroundColor: '#FFF',
-  },
-  uploadPhotoButton: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFF',
   },
   scanRoomText: {
     fontSize: 16,
