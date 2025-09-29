@@ -46,20 +46,20 @@ export default function TabNavigator() {
         tabBarStyle: {
           backgroundColor: 'transparent',
           borderTopWidth: 1,
-          borderTopColor: 'rgba(229, 231, 235, 0.6)',
-          elevation: 3,
+          borderTopColor: 'rgba(229, 231, 235, 0.5)',
+          elevation: 0,
           height: 80,
           paddingBottom: spacing.md,
           paddingTop: spacing.sm,
-          shadowColor: colors.black,
+          shadowColor: 'transparent',
           shadowOffset: {
             width: 0,
-            height: 2,
+            height: 0,
           },
-          shadowOpacity: 0.06,
-          shadowRadius: 16,
+          shadowOpacity: 0,
+          shadowRadius: 0,
           // Web-specific shadow
-          boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
+          boxShadow: 'none',
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarLabelStyle: {

@@ -166,10 +166,10 @@ const styles = StyleSheet.create({
   },
   welcomeHeader: {
     marginTop: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   welcomeTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#0F172A',
     marginBottom: 4,
@@ -178,6 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.interMedium,
     color: '#475569',
+    lineHeight: 21, // 1.5 line height
   },
   ctaRow: {
     flexDirection: 'row',
