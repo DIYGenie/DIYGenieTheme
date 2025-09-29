@@ -1,0 +1,96 @@
+Goal
+From the New Project screen:
+
+Create a project via webhook (POST /api/projects → { id }).
+
+Let user pick an image (Expo Image Picker).
+
+Upload to Supabase Storage bucket uploads → return public URL.
+
+Store the public URL in state and (if supported) PATCH it to the project row.
+
+Do not trigger preview yet (that’s Task 2C).
+
+Files to edit/create (only these):
+
+app/lib/api.ts (extend)
+
+app/lib/storage.ts (NEW: Supabase upload helper)
+
+app/screens/NewProject.tsx (wire create + upload)
+
+Implementation details
+
+API (app/lib/api.ts)
+
+Keep existing fetchJson and getEntitlements.
+
+Add:
+
+export async function createProject(payload: { user_id: string; name: string; budget: '$'|'$$'|'$$$'; skill: 'Beginner'|'Intermediate'|'Advanced'; status?: string; }): Promise<{ id: string }>
+
+POST ${BASE_URL}/api/projects
+
+Request body includes { user_id, name, budget, skill, status: 'pending' }
+
+export async function updateProject(projectId: string, patch: Record<string, any>): Promise<void>
+
+PATCH ${BASE_URL}/api/projects/${projectId}
+
+Swallow 404/405 gracefully (if backend doesn’t support patch yet).
+
+Storage helper (app/lib/storage.ts) — NEW
+
+Create a Supabase client with SUPABASE_URL + SUPABASE_ANON_KEY (from app/config.ts).
+
+export async function uploadImageAsync(localUri: string, projectId: string): Promise<string>
+
+Generate file path: projects/${projectId}/${Date.now()}.jpg
+
+Convert local URI → Blob and storage.from(UPLOADS_BUCKET).upload(path, file, { upsert: false, contentType: 'image/jpeg' })
+
+Get public URL via storage.from(UPLOADS_BUCKET).getPublicUrl(path) and return it.
+
+Throw descriptive errors on failure.
+
+New Project wiring (app/screens/NewProject.tsx)
+
+Reuse the same user id approach from 2A (real auth user.id if present, else the same mock id Agent 3 added).
+
+On Upload Photo press (only when gated valid & remaining > 0):
+
+Create project → const { id: projectId } = await createProject({...}).
+
+Launch Expo Image Picker (expo-image-picker). If not installed, add it; request permission only as needed.
+
+If user selects an image, call uploadImageAsync(localUri, projectId) → publicUrl.
+
+Save publicUrl in local component state (e.g., setInputImageUrl(publicUrl)).
+
+Try updateProject(projectId, { input_image_url: publicUrl }) (ignore if 404/405).
+
+Show a lightweight success toast (“Photo uploaded”).
+
+Disabled/Loading states:
+
+While creating/uploading, disable both tiles and show small inline spinner text (“Uploading photo…”).
+
+On error, show toast & re-enable tiles.
+
+Keep screen one page; no ScrollView added.
+
+Dependencies
+
+If missing, add expo-image-picker and configure for Expo.
+
+Do not add any native-only code; we’re staying Expo-compatible.
+
+Acceptance criteria
+
+Tapping Upload Photo (with valid form and entitlements) creates a project, opens image picker, uploads to Supabase, and stores a public URL.
+
+The public URL is kept in state and we attempt to PATCH it to the project (no hard failure if unsupported).
+
+Clear UX states: disabled during work, error toast on failure, success toast on upload.
+
+No preview trigger yet; no secrets added; no file renames/deletes.
