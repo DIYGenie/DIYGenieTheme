@@ -7,7 +7,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements } from '../lib/api';
+import { getEntitlements, createProject, updateProject } from '../lib/api';
+import { uploadImageAsync } from '../lib/storage';
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -17,6 +18,8 @@ export default function NewProjectForm({ navigation }) {
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'free' });
   const [loadingEntitlements, setLoadingEntitlements] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [inputImageUrl, setInputImageUrl] = useState('');
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -27,7 +30,7 @@ export default function NewProjectForm({ navigation }) {
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
-  const canUpload = isFormValid && entitlements.remaining > 0;
+  const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
 
   useEffect(() => {
     const fetchEntitlements = async () => {
@@ -54,29 +57,67 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleUploadPhoto = async () => {
-    if (!canUpload) return;
+    if (!canUpload || isUploading) return;
     
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission required', 'Please allow camera roll access to upload photos.');
-      return;
-    }
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission required', 'Please allow camera roll access to upload photos.');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      navigation.navigate('ProjectPreview', {
-        imageUri: result.assets[0].uri,
-        description,
-        budget,
-        skill: skillLevel
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
       });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const localUri = result.assets[0].uri;
+      setIsUploading(true);
+
+      // Step 1: Create project
+      const mockUserId = 'user-123'; // TODO: Replace with actual user ID from auth
+      const projectData = await createProject({
+        user_id: mockUserId,
+        name: description.substring(0, 100), // Use description as name
+        budget: budget,
+        skill: skillLevel,
+        status: 'pending',
+      });
+
+      const projectId = projectData.id;
+
+      // Step 2: Upload image to Supabase Storage
+      const publicUrl = await uploadImageAsync(localUri, projectId);
+      setInputImageUrl(publicUrl);
+
+      // Step 3: Try to PATCH the image URL to the project (graceful if not supported)
+      await updateProject(projectId, {
+        input_image_url: publicUrl,
+      });
+
+      // Success!
+      Alert.alert('Success', 'Photo uploaded successfully!');
+
+      // TODO: Navigate to preview or next screen when ready
+      // For now, just show success
+
+    } catch (error) {
+      console.error('Upload failed:', error);
+      Alert.alert(
+        'Upload Failed',
+        error instanceof Error ? error.message : 'Failed to upload photo. Please try again.'
+      );
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -247,7 +288,9 @@ export default function NewProjectForm({ navigation }) {
           {/* Helper text */}
           {!loadingEntitlements && (
             <Text style={styles.helperText}>
-              {!isFormValid
+              {isUploading
+                ? 'Uploading photo...'
+                : !isFormValid
                 ? 'Complete fields to continue'
                 : entitlements.remaining <= 0
                 ? 'Upgrade to continue'
