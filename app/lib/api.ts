@@ -84,3 +84,59 @@ export interface Entitlements {
 export async function getEntitlements(userId: string): Promise<Entitlements> {
   return fetchJson<Entitlements>(`/me/entitlements/${userId}`);
 }
+
+/**
+ * Project creation payload
+ */
+export interface CreateProjectPayload {
+  user_id: string;
+  name: string;
+  budget: '$' | '$$' | '$$$';
+  skill: 'Beginner' | 'Intermediate' | 'Advanced';
+  status?: string;
+}
+
+/**
+ * Project creation response
+ */
+export interface CreateProjectResponse {
+  id: string;
+  [key: string]: any; // Tolerate extra fields
+}
+
+/**
+ * Create a new project via webhook
+ */
+export async function createProject(
+  payload: CreateProjectPayload
+): Promise<CreateProjectResponse> {
+  return fetchJson<CreateProjectResponse>('/api/projects', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...payload,
+      status: payload.status || 'pending',
+    }),
+  });
+}
+
+/**
+ * Update an existing project (gracefully handles 404/405 if not supported)
+ */
+export async function updateProject(
+  projectId: string,
+  patch: Record<string, any>
+): Promise<void> {
+  try {
+    await fetchJson(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+  } catch (error) {
+    // Gracefully swallow 404/405 errors if backend doesn't support PATCH yet
+    if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+      console.warn(`PATCH not supported for project ${projectId}, continuing...`);
+      return;
+    }
+    throw error;
+  }
+}
