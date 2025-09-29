@@ -198,8 +198,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    marginTop: 48, // Increased breathing room
+    color: '#0F172A',
     marginBottom: 24,
   },
   projectsSection: {
