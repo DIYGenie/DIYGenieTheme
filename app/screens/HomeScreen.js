@@ -7,9 +7,9 @@ import { colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const handleNewProject = () => {
-    // TODO: Navigate to new project creation
+    navigation.navigate('HowItWorks');
   };
 
   const handleScanRoom = () => {
@@ -173,8 +173,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginTop: 44, // Add 24px breathing room
-    marginBottom: 20,
+    marginTop: 48, // Increased breathing room
+    marginBottom: 24,
   },
   projectsSection: {
     gap: 16,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   ctaSection: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   mediumCTA: {
     alignSelf: 'center',

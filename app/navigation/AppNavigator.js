@@ -3,6 +3,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import WelcomeScreen from '../screens/WelcomeScreen';
 import TabNavigator from './TabNavigator';
+import HowItWorks from '../screens/HowItWorks';
+import NewProject from '../screens/NewProject';
 
 const Stack = createStackNavigator();
 
@@ -16,6 +18,8 @@ export default function AppNavigator() {
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Main" component={TabNavigator} />
+      <Stack.Screen name="HowItWorks" component={HowItWorks} />
+      <Stack.Screen name="NewProject" component={NewProject} />
     </Stack.Navigator>
   );
 }
