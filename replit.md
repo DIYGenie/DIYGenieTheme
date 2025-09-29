@@ -69,6 +69,24 @@ The application follows a component-based React Native architecture with the fol
 - **Smart Card Display**: Project cards now display preview thumbnail (Image component) if preview_url exists, skeleton shimmer with ActivityIndicator if status is 'preview_requested' or 'pending', or placeholder if neither. Added "Preview requested" chip for pending previews.
 - **Error Handling**: Shows "Preview failed. Try again." toast on API errors with automatic re-enable of the Generate Preview button.
 
+### UX Polish & Interaction Improvements (September 29, 2025)
+- **Toast Component (app/components/Toast.js)**: Created lightweight toast notification system with animated slide-in from bottom. Supports success (green) and error (red) variants with appropriate icons. Auto-dismisses after 2.5 seconds with fade-out animation.
+- **Debounce Hook (app/lib/hooks.js)**: Implemented useDebouncePress custom hook with 300ms delay to prevent double-tap submissions on all primary CTAs (Upload Photo, Generate Preview).
+- **Haptic Feedback**: Integrated expo-haptics for tactile feedback on success (Success notification) and error (Error notification) events. Gracefully handles devices without haptic support.
+- **Loading State Polish**:
+  - Dim entire action section with opacity 0.6 during upload/preview operations
+  - Disable pointer events with pointerEvents="none" during loading
+  - Added ActivityIndicator spinners to "Uploading photo..." helper text and "Generating preview..." button state
+  - Replaced generic text-only loading states with spinner + text combinations
+- **Toast Integration**: Replaced Alert.alert with toast notifications for:
+  - "Photo uploaded!" (success)
+  - "Upload failed" (error)
+  - "Permission required" (error)
+  - "Preview requested!" (success)
+  - "Preview failed" (error)
+- **Empty State**: Projects screen already includes centered card with folder icon, "No projects yet" message, and "Start Your First Project" CTA button that navigates to NewProject.
+- **Pull-to-Refresh**: Projects screen already includes RefreshControl to reload project list via listProjects API.
+
 ## External Dependencies
 
 ### Core Framework Dependencies

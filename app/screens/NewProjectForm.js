@@ -1,14 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { getEntitlements, createProject, updateProject, triggerPreview } from '../lib/api';
 import { uploadImageAsync } from '../lib/storage';
+import Toast from '../components/Toast';
+import { useDebouncePress } from '../lib/hooks';
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -22,18 +25,34 @@ export default function NewProjectForm({ navigation }) {
   const [inputImageUrl, setInputImageUrl] = useState('');
   const [projectId, setProjectId] = useState('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
   const isSmall = H < 740;
   const isVerySmall = H < 680;
-  const debounceTimerRef = useRef(null);
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
+
+  const showToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
+  };
+
+  const triggerHaptic = async (type = 'success') => {
+    try {
+      if (type === 'success') {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch (error) {
+      // Haptics not available on this device
+    }
+  };
 
   useEffect(() => {
     const fetchEntitlements = async () => {
@@ -67,7 +86,8 @@ export default function NewProjectForm({ navigation }) {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (permissionResult.granted === false) {
-        Alert.alert('Permission required', 'Please allow camera roll access to upload photos.');
+        showToast('Permission required', 'error');
+        triggerHaptic('error');
         return;
       }
 
@@ -109,14 +129,13 @@ export default function NewProjectForm({ navigation }) {
       });
 
       // Success!
-      Alert.alert('Success', 'Photo uploaded successfully!');
+      showToast('Photo uploaded!', 'success');
+      triggerHaptic('success');
 
     } catch (error) {
       console.error('Upload failed:', error);
-      Alert.alert(
-        'Upload Failed',
-        error instanceof Error ? error.message : 'Failed to upload photo. Please try again.'
-      );
+      showToast('Upload failed', 'error');
+      triggerHaptic('error');
     } finally {
       setIsUploading(false);
     }
@@ -140,36 +159,34 @@ export default function NewProjectForm({ navigation }) {
     setShowSkillDropdown(!showSkillDropdown);
   };
 
-  const handleGeneratePreview = () => {
-    // Debounce to prevent double taps
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
+  const handleGeneratePreview = async () => {
+    if (!projectId || !inputImageUrl || isGeneratingPreview) return;
 
-    debounceTimerRef.current = setTimeout(async () => {
-      if (!projectId || !inputImageUrl || isGeneratingPreview) return;
+    setIsGeneratingPreview(true);
 
-      setIsGeneratingPreview(true);
+    try {
+      await triggerPreview(projectId, {
+        input_image_url: inputImageUrl,
+        prompt: description,
+      });
 
-      try {
-        await triggerPreview(projectId, {
-          input_image_url: inputImageUrl,
-          prompt: description,
-        });
+      showToast('Preview requested!', 'success');
+      triggerHaptic('success');
 
-        // Navigate to Projects with refresh flag
+      // Navigate to Projects with refresh flag after a short delay
+      setTimeout(() => {
         navigation.navigate('Projects', { refresh: true });
-      } catch (error) {
-        console.error('Preview generation failed:', error);
-        Alert.alert(
-          'Preview Failed',
-          'Preview failed. Try again.'
-        );
-      } finally {
-        setIsGeneratingPreview(false);
-      }
-    }, 300);
+      }, 800);
+    } catch (error) {
+      console.error('Preview generation failed:', error);
+      showToast('Preview failed', 'error');
+      triggerHaptic('error');
+      setIsGeneratingPreview(false);
+    }
   };
+
+  const debouncedGeneratePreview = useDebouncePress(handleGeneratePreview, 300);
+  const debouncedUploadPhoto = useDebouncePress(handleUploadPhoto, 300);
 
   const TILE = isVerySmall ? 88 : isSmall ? 92 : 104;
   const GAP = isSmall ? 10 : 12;
@@ -302,7 +319,7 @@ export default function NewProjectForm({ navigation }) {
         </View>
 
         {/* Bottom: media section with stacked tiles */}
-        <View style={styles.tilesContainer}>
+        <View style={[styles.tilesContainer, { opacity: isUploading || isGeneratingPreview ? 0.6 : 1, pointerEvents: isUploading || isGeneratingPreview ? 'none' : 'auto' }]}>
           <View style={{ 
             marginTop: 12, 
             marginBottom: 8, 
@@ -319,15 +336,18 @@ export default function NewProjectForm({ navigation }) {
 
           {/* Helper text */}
           {!loadingEntitlements && (
-            <Text style={styles.helperText}>
-              {isUploading
-                ? 'Uploading photo...'
-                : !isFormValid
-                ? 'Complete fields to continue'
-                : entitlements.remaining <= 0
-                ? 'Upgrade to continue'
-                : `${entitlements.remaining} of ${entitlements.quota} projects remaining`}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              {isUploading && <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />}
+              <Text style={styles.helperText}>
+                {isUploading
+                  ? 'Uploading photo...'
+                  : !isFormValid
+                  ? 'Complete fields to continue'
+                  : entitlements.remaining <= 0
+                  ? 'Upgrade to continue'
+                  : `${entitlements.remaining} of ${entitlements.quota} projects remaining`}
+              </Text>
+            </View>
           )}
 
           {/* Stacked tiles */}
@@ -381,7 +401,7 @@ export default function NewProjectForm({ navigation }) {
                 transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
                 pointerEvents: !canUpload ? 'none' : 'auto',
               })}
-              onPress={handleUploadPhoto}
+              onPress={debouncedUploadPhoto}
             >
               <Ionicons 
                 name="image" 
@@ -399,21 +419,20 @@ export default function NewProjectForm({ navigation }) {
 
           {/* Generate Preview Button - shows after successful upload */}
           {inputImageUrl && projectId && (
-            <View style={{ marginTop: 16, pointerEvents: isGeneratingPreview ? 'none' : 'auto' }}>
+            <View style={{ marginTop: 16 }}>
               <Pressable
                 disabled={isGeneratingPreview}
                 style={({ pressed }) => [
                   styles.generateButton,
                   {
-                    opacity: isGeneratingPreview ? 0.6 : 1,
                     transform: [{ scale: pressed && !isGeneratingPreview ? 0.98 : 1 }],
                   }
                 ]}
-                onPress={handleGeneratePreview}
+                onPress={debouncedGeneratePreview}
               >
                 {isGeneratingPreview ? (
                   <>
-                    <Ionicons name="sync" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                    <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
                     <Text style={styles.generateButtonText}>Generating preview…</Text>
                   </>
                 ) : (
@@ -427,6 +446,12 @@ export default function NewProjectForm({ navigation }) {
           )}
         </View>
       </View>
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onHide={() => setToast({ ...toast, visible: false })} 
+      />
     </SafeAreaView>
   );
 }
