@@ -30,7 +30,7 @@ export default function HomeScreen() {
           <View style={styles.avatarPlaceholder} />
         </View>
 
-        {/* Content Sheet */}
+        {/* Content Sheet - overlaps gradient */}
         <View style={styles.contentSheet}>
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             {/* Search Bar */}
@@ -47,12 +47,12 @@ export default function HomeScreen() {
             {/* Quick Actions */}
             <View style={styles.quickActionsRow}>
               <TouchableOpacity style={[styles.quickAction, styles.newProjectAction]} onPress={handleNewProject}>
-                <Ionicons name="add" size={38} color={colors.surface} />
+                <Ionicons name="add" size={32} color={colors.surface} />
                 <Text style={styles.newProjectText}>New Project</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={[styles.quickAction, styles.scanRoomAction]} onPress={handleScanRoom}>
-                <Ionicons name="camera" size={38} color={colors.textPrimary} />
+                <Ionicons name="camera" size={32} color={colors.textPrimary} />
                 <Text style={styles.scanRoomText}>Scan Room</Text>
               </TouchableOpacity>
             </View>
@@ -80,12 +80,11 @@ function ProjectCard() {
       
       {/* Content */}
       <View style={styles.cardContent}>
-        {/* Title Line */}
-        <View style={styles.titlePlaceholder} />
+        {/* Title */}
+        <Text style={styles.cardTitle}>DIY Kitchen Cabinet</Text>
         
-        {/* Description Lines */}
-        <View style={styles.descriptionPlaceholder} />
-        <View style={[styles.descriptionPlaceholder, styles.descriptionShort]} />
+        {/* Subtitle */}
+        <Text style={styles.cardSubtitle}>3 steps remaining</Text>
       </View>
       
       {/* Chevron */}
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: layout.containerPadding,
+    paddingHorizontal: 24,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
     shadowColor: colors.black,
@@ -113,11 +112,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+    boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
   },
   topBarTitle: {
     fontSize: 22,
@@ -125,53 +124,43 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     backgroundColor: colors.muted,
-    borderRadius: 20,
+    borderRadius: 19,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.muted,
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
     // Web-specific shadow
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)',
   },
   contentSheet: {
     flex: 1,
     backgroundColor: colors.surface,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    marginTop: spacing.sm,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
-    // Web-specific shadow
-    boxShadow: '0px -4px 16px rgba(0, 0, 0, 0.1)',
+    marginTop: -14, // Overlap gradient by 14px
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: layout.containerPadding,
-    paddingTop: spacing.xl,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.bg,
-    borderRadius: layout.borderRadius.md,
+    borderRadius: 16, // rounded-2xl
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.xl,
+    height: 44,
+    marginBottom: 24,
   },
   searchIcon: {
     marginRight: spacing.sm,
@@ -184,25 +173,25 @@ const styles = StyleSheet.create({
   },
   quickActionsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
+    gap: 16,
+    marginBottom: 20,
   },
   quickAction: {
-    width: 120,
-    height: 120,
-    borderRadius: layout.borderRadius.lg,
+    flex: 1,
+    minHeight: 116,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
     // Web-specific shadow
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
+    boxShadow: '0px 2px 12px rgba(0, 0, 0, 0.04)',
   },
   newProjectAction: {
     backgroundColor: colors.accent,
@@ -213,73 +202,67 @@ const styles = StyleSheet.create({
     borderColor: colors.muted,
   },
   newProjectText: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.surface,
-    marginTop: spacing.xs,
+    marginTop: 8,
     textAlign: 'center',
   },
   scanRoomText: {
-    fontSize: typography.fontSize.sm,
+    fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginTop: spacing.xs,
+    marginTop: 8,
     textAlign: 'center',
   },
   sectionHeader: {
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: colors.textPrimary,
-    marginBottom: spacing.xl,
+    marginTop: 20,
+    marginBottom: 20,
   },
   projectsSection: {
-    gap: spacing.md,
+    gap: 16,
     paddingBottom: spacing.xxxl,
   },
   projectCard: {
     backgroundColor: colors.surface,
-    borderRadius: layout.borderRadius.lg,
-    padding: spacing.lg,
+    borderRadius: 20,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 3,
     // Web-specific shadow
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.05)',
+    boxShadow: '0px 6px 24px rgba(0, 0, 0, 0.08)',
   },
   thumbnailPlaceholder: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     backgroundColor: colors.muted,
-    borderRadius: layout.borderRadius.sm,
+    borderRadius: 12,
     marginRight: spacing.md,
   },
   cardContent: {
     flex: 1,
     justifyContent: 'center',
   },
-  titlePlaceholder: {
-    height: 16,
-    backgroundColor: colors.textSecondary,
-    opacity: 0.3,
-    borderRadius: 4,
-    marginBottom: spacing.sm,
-    width: '70%',
+  cardTitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
-  descriptionPlaceholder: {
-    height: 12,
-    backgroundColor: colors.muted,
-    borderRadius: 3,
-    marginBottom: spacing.xs,
-    width: '100%',
-  },
-  descriptionShort: {
-    width: '60%',
+  cardSubtitle: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textSecondary,
   },
 });
