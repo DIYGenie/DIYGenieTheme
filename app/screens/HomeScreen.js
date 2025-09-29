@@ -9,15 +9,7 @@ import { typography } from '../../theme/typography';
 
 export default function HomeScreen({ navigation }) {
   const handleNewProject = () => {
-    navigation.navigate('HowItWorks');
-  };
-
-  const handleScanRoom = () => {
-    // TODO: Navigate to room scanning
-  };
-
-  const handleUploadPhoto = () => {
-    // TODO: Navigate to photo upload
+    navigation.navigate('NewProjectForm');
   };
 
   return (
@@ -40,16 +32,10 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
         </View>
 
-        {/* CTA Tiles */}
-        <View style={styles.ctaRow}>
-          <TouchableOpacity style={styles.scanRoomTile} onPress={handleScanRoom}>
-            <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
-            <Text style={styles.scanRoomText}>Scan Room</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
-            <Ionicons name="image" size={28} color="#1F2937" style={styles.tileIcon} />
-            <Text style={styles.uploadPhotoText}>Upload Photo</Text>
+        {/* CTA Button */}
+        <View style={styles.ctaSection}>
+          <TouchableOpacity style={styles.startProjectButton} onPress={handleNewProject}>
+            <Text style={styles.startProjectText}>Start Your First Project</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,26 +166,22 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 21, // 1.5 line height
   },
-  ctaRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  ctaSection: {
     alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
     marginTop: 24,
     marginBottom: 32,
   },
-  scanRoomTile: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 120,
-    minHeight: 120,
+  startProjectButton: {
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: '#FBBF24',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 32,
+    width: '70%',
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: colors.black,
     shadowOffset: {
       width: 0,
@@ -211,41 +193,10 @@ const styles = StyleSheet.create({
     // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
-  uploadPhotoTile: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 120,
-    minHeight: 120,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
-  },
-  tileIcon: {
-    marginBottom: 8,
-  },
-  scanRoomText: {
+  startProjectText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#F59E0B',
-    textAlign: 'center',
-  },
-  uploadPhotoText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#1F2937',
     textAlign: 'center',
   },
 });

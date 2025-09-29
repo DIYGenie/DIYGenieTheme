@@ -39,7 +39,7 @@ export default function ProjectsScreen({ navigation }) {
   };
 
   const handleStartProject = () => {
-    navigation.navigate('HowItWorks');
+    navigation.navigate('NewProjectForm');
   };
 
   const filteredProjects = projects.filter(project => {
@@ -103,7 +103,7 @@ export default function ProjectsScreen({ navigation }) {
             <Text style={styles.emptyTitle}>No projects yet</Text>
             <Text style={styles.emptySubtitle}>Start by scanning your room or uploading a photo.</Text>
             <TouchableOpacity style={styles.startProjectButton} onPress={handleStartProject}>
-              <Text style={styles.startProjectText}>Start a Project</Text>
+              <Text style={styles.startProjectText}>Start Your First Project</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -307,7 +307,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   startProjectButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -325,6 +327,6 @@ const styles = StyleSheet.create({
   startProjectText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
+    color: '#F59E0B',
   },
 });
