@@ -47,6 +47,20 @@ The application follows a component-based React Native architecture with the fol
 - **Fixed Overlay Issues**: Converted Budget and Skill dropdowns to use React Native Modal components for proper z-index rendering above all content including photo tiles.
 - **Z-Index Hierarchy**: Skill dropdown (3000) > Budget dropdown (2000) > Photo tiles (0) ensures clean dropdown behavior without visual conflicts.
 
+### Project Creation & Image Upload
+- **API Extensions (app/lib/api.ts)**: Added createProject() for POST /api/projects and updateProject() for PATCH /api/projects/{id} with graceful 404/405 handling.
+- **Storage Layer (app/lib/storage.ts)**: Created Supabase Storage helper with uploadImageAsync() function that uploads images to the 'uploads' bucket and returns public URLs.
+- **Upload Flow**: Upload Photo button now creates a project, launches image picker, uploads to Supabase Storage, stores the public URL in component state, and attempts to PATCH the URL to the project record.
+- **Loading States**: Added isUploading state with conditional helper text ("Uploading photo...") and disabled tiles during upload operation.
+- **Error Handling**: Comprehensive try/catch with Alert.alert for both upload failures and permission denials.
+- **Dependencies**: Installed @supabase/supabase-js and @supabase/functions-js for Supabase integration.
+
+**Note**: The Supabase integration requires the following environment variables to be set before the upload functionality will work:
+- `EXPO_PUBLIC_BASE_URL` - Backend API base URL
+- `EXPO_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous/public key
+- `EXPO_PUBLIC_UPLOADS_BUCKET` - Storage bucket name (optional, defaults to 'uploads')
+
 ## External Dependencies
 
 ### Core Framework Dependencies
