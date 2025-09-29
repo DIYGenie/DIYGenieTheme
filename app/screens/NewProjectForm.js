@@ -116,7 +116,7 @@ export default function NewProjectForm({ navigation }) {
 
       // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaType.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.9,
@@ -221,10 +221,9 @@ export default function NewProjectForm({ navigation }) {
   const debouncedGeneratePreview = useDebouncePress(handleGeneratePreview, 300);
   const debouncedUploadPhoto = useDebouncePress(handleUploadPhoto, 300);
 
-  const TILE = isVerySmall ? 88 : isSmall ? 92 : 104;
-  const GAP = isSmall ? 10 : 12;
-  const ICON_SIZE = isSmall ? 22 : 24;
-  const LABEL_SIZE = isVerySmall ? 12 : 13;
+  const TILE_SIZE = 160;
+  const ICON_SIZE = 24;
+  const LABEL_SIZE = 13;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
@@ -241,6 +240,7 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
           <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
+          {__DEV__ && <Text style={{ fontSize: 11, color: '#999', marginTop: 4 }}>API: {BASE_URL}</Text>}
           {networkError && __DEV__ && (
             <View style={styles.devBanner}>
               <Text style={styles.devBannerText}>Can't reach server. Check BASE_URL or CORS.</Text>
@@ -388,12 +388,12 @@ export default function NewProjectForm({ navigation }) {
           )}
 
           {/* Stacked tiles */}
-          <View style={[styles.tilesWrapper, { gap: GAP }]}>
+          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
             {/* Scan Room */}
             <Pressable
               disabled={!canUpload}
               style={({ pressed }) => ({
-                width: TILE, height: TILE, borderRadius: 16,
+                width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1.5, borderColor: '#FBBF24',
@@ -427,7 +427,7 @@ export default function NewProjectForm({ navigation }) {
             <Pressable
               disabled={!canUpload}
               style={({ pressed }) => ({
-                width: TILE, height: TILE, borderRadius: 16,
+                width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1, borderColor: '#E5E7EB',

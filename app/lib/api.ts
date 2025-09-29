@@ -32,6 +32,7 @@ async function fetchJson<T = any>(
 
   try {
     const url = join(path);
+    if (__DEV__) console.log('[API]', url);
     
     const response = await fetch(url, {
       ...init,
