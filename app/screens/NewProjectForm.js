@@ -89,7 +89,7 @@ export default function NewProjectForm({ navigation }) {
         contentContainerStyle={{ 
           paddingHorizontal: 24,
           paddingTop: 24,
-          paddingBottom: tabBarHeight + insets.bottom + 160,
+          paddingBottom: tabBarHeight + insets.bottom + 240,
           overflow: 'visible',
         }}
         showsVerticalScrollIndicator={false}
@@ -187,6 +187,9 @@ export default function NewProjectForm({ navigation }) {
           </View>
         </View>
 
+        {/* Spacing before action section */}
+        <View style={{ marginTop: 32 }} />
+
       </KeyboardAwareScrollView>
       
       {/* Sticky Bottom Action Bar */}
@@ -206,41 +209,35 @@ export default function NewProjectForm({ navigation }) {
         }}
         pointerEvents={showBudgetDropdown || showSkillDropdown ? 'none' : 'box-none'}
       >
-        <View
-          style={{
-            alignSelf: 'center',
-            width: '100%',
-            maxWidth: 360,
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <TouchableOpacity 
-            style={[
-              styles.squareTile,
-              styles.scanRoomButton,
-              !isFormValid && styles.squareTileDisabled
-            ]}
-            onPress={handleScanRoom}
-            disabled={!isFormValid}
-          >
-            <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-            <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.squareTile,
-              styles.uploadPhotoButton,
-              !isFormValid && styles.squareTileDisabled
-            ]}
-            onPress={handleUploadPhoto}
-            disabled={!isFormValid}
-          >
-            <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
-            <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
-          </TouchableOpacity>
+        <View style={styles.actionSection}>
+          <Text style={styles.sectionTitle}>Add your room photo</Text>
+          <View style={styles.tilesContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.squareTile,
+                styles.scanRoomButton,
+                !isFormValid && styles.squareTileDisabled
+              ]}
+              onPress={handleScanRoom}
+              disabled={!isFormValid}
+            >
+              <Ionicons name="camera" size={28} color={isFormValid ? '#F59E0B' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+              <Text style={[styles.scanRoomText, !isFormValid && styles.actionButtonTextDisabled]}>Scan Room</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.squareTile,
+                styles.uploadPhotoButton,
+                !isFormValid && styles.squareTileDisabled
+              ]}
+              onPress={handleUploadPhoto}
+              disabled={!isFormValid}
+            >
+              <Ionicons name="image" size={28} color={isFormValid ? '#1F2937' : '#9CA3AF'} style={{ marginBottom: 6 }} />
+              <Text style={[styles.uploadPhotoText, !isFormValid && styles.actionButtonTextDisabled]}>Upload Photo</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -347,10 +344,10 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.06,
     shadowRadius: 20,
-    elevation: 24,
+    elevation: 1000,
     // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
-    zIndex: 100,
+    zIndex: 1000,
   },
   dropdownOption: {
     padding: 16,
@@ -362,6 +359,24 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
   },
+  actionSection: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  tilesContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
   squareTile: {
     width: 120,
     height: 120,
@@ -369,8 +384,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
