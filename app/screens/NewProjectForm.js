@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { getEntitlements } from '../lib/api';
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -14,6 +15,8 @@ export default function NewProjectForm({ navigation }) {
   const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'free' });
+  const [loadingEntitlements, setLoadingEntitlements] = useState(true);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -24,15 +27,34 @@ export default function NewProjectForm({ navigation }) {
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
+  const canUpload = isFormValid && entitlements.remaining > 0;
+
+  useEffect(() => {
+    const fetchEntitlements = async () => {
+      try {
+        // TODO: Replace with actual user ID from auth context
+        const mockUserId = 'user-123';
+        const data = await getEntitlements(mockUserId);
+        setEntitlements(data);
+      } catch (error) {
+        console.error('Failed to fetch entitlements:', error);
+        // Keep default state (0 remaining) on error
+      } finally {
+        setLoadingEntitlements(false);
+      }
+    };
+    
+    fetchEntitlements();
+  }, []);
 
   const handleScanRoom = () => {
-    if (isFormValid) {
+    if (canUpload) {
       navigation.navigate('ScanRoomIntro');
     }
   };
 
   const handleUploadPhoto = async () => {
-    if (!isFormValid) return;
+    if (!canUpload) return;
     
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
@@ -222,67 +244,80 @@ export default function NewProjectForm({ navigation }) {
             </Text>
           </View>
 
+          {/* Helper text */}
+          {!loadingEntitlements && (
+            <Text style={styles.helperText}>
+              {!isFormValid
+                ? 'Complete fields to continue'
+                : entitlements.remaining <= 0
+                ? 'Upgrade to continue'
+                : `${entitlements.remaining} of ${entitlements.quota} projects remaining`}
+            </Text>
+          )}
+
           {/* Stacked tiles */}
           <View style={[styles.tilesWrapper, { gap: GAP }]}>
             {/* Scan Room */}
             <Pressable
-              disabled={!isFormValid}
+              disabled={!canUpload}
               style={({ pressed }) => ({
                 width: TILE, height: TILE, borderRadius: 16,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1.5, borderColor: '#FBBF24',
-                opacity: !isFormValid ? 0.6 : 1,
+                opacity: !canUpload ? 0.4 : 1,
                 shadowColor: '#000', 
-                shadowOpacity: !isFormValid ? 0 : 0.06, 
+                shadowOpacity: !canUpload ? 0 : 0.06, 
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 4 }, 
                 elevation: 6,
-                transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
+                transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
+                pointerEvents: !canUpload ? 'none' : 'auto',
               })}
               onPress={handleScanRoom}
             >
               <Ionicons 
                 name="camera" 
                 size={ICON_SIZE} 
-                color={isFormValid ? '#F59E0B' : '#9CA3AF'} 
+                color={canUpload ? '#F59E0B' : '#9CA3AF'} 
                 style={{ marginBottom: 4 }} 
               />
               <Text style={{
                 fontSize: LABEL_SIZE, 
                 fontWeight: '600', 
-                color: isFormValid ? '#F59E0B' : '#9CA3AF'
+                color: canUpload ? '#F59E0B' : '#9CA3AF'
               }}>Scan Room</Text>
             </Pressable>
 
             {/* Upload Photo */}
             <Pressable
-              disabled={!isFormValid}
+              disabled={!canUpload}
               style={({ pressed }) => ({
                 width: TILE, height: TILE, borderRadius: 16,
                 justifyContent: 'center', alignItems: 'center',
                 backgroundColor: '#FFF',
                 borderWidth: 1, borderColor: '#E5E7EB',
-                opacity: !isFormValid ? 0.6 : 1,
+                opacity: !canUpload ? 0.4 : 1,
                 shadowColor: '#000', 
-                shadowOpacity: !isFormValid ? 0 : 0.06, 
+                shadowOpacity: !canUpload ? 0 : 0.06, 
                 shadowRadius: 12,
                 shadowOffset: { width: 0, height: 4 }, 
                 elevation: 6,
-                transform: [{ scale: pressed && isFormValid ? 0.98 : 1 }],
+                transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
+                pointerEvents: !canUpload ? 'none' : 'auto',
               })}
               onPress={handleUploadPhoto}
             >
               <Ionicons 
                 name="image" 
                 size={ICON_SIZE} 
-                color={isFormValid ? '#1F2937' : '#9CA3AF'} 
+                color={canUpload ? '#1F2937' : '#9CA3AF'} 
                 style={{ marginBottom: 4 }} 
               />
               <Text style={{
                 fontSize: LABEL_SIZE, 
                 fontWeight: '600', 
-                color: isFormValid ? '#1F2937' : '#9CA3AF'
+                color: canUpload ? '#1F2937' : '#9CA3AF'
               }}>Upload Photo</Text>
             </Pressable>
           </View>
@@ -416,6 +451,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 0,
     elevation: 0,
+  },
+  helperText: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.inter,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 12,
+    fontWeight: '500',
   },
   dropdownOption: {
     padding: 16,
