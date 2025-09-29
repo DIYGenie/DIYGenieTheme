@@ -25,10 +25,15 @@ export default function HomeScreen() {
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Top Bar */}
-        <View style={styles.topBar}>
+        <LinearGradient
+          colors={[colors.gradientStart, colors.gradientEnd]}
+          style={styles.topBar}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
           <Text style={styles.topBarTitle}>Home</Text>
           <View style={styles.avatarPlaceholder} />
-        </View>
+        </LinearGradient>
 
         {/* Content Sheet - overlaps gradient */}
         <View style={styles.contentSheet}>
@@ -44,37 +49,8 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* How it works section */}
-            <View style={styles.howItWorksSection}>
-              <Text style={styles.howItWorksTitle}>How DIY Genie Works</Text>
-              
-              <View style={styles.stepCardsGrid}>
-                <View style={styles.stepCardRow}>
-                  <View style={styles.stepCard}>
-                    <Ionicons name="camera" size={28} color={colors.textSecondary} style={styles.stepIcon} />
-                    <Text style={styles.stepText}>Add your room</Text>
-                  </View>
-                  
-                  <View style={styles.stepCard}>
-                    <Ionicons name="create" size={28} color={colors.textSecondary} style={styles.stepIcon} />
-                    <Text style={styles.stepText}>Tell us the goal</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.stepCardRow}>
-                  <View style={styles.stepCard}>
-                    <Ionicons name="sparkles" size={28} color={colors.textSecondary} style={styles.stepIcon} />
-                    <Text style={styles.stepText}>See & preview</Text>
-                  </View>
-                  
-                  <View style={styles.stepCard}>
-                    <Ionicons name="clipboard" size={28} color={colors.textSecondary} style={styles.stepIcon} />
-                    <Text style={styles.stepText}>Get your plan</Text>
-                  </View>
-                </View>
-              </View>
-              
-              {/* Medium CTA */}
+            {/* Start a Project CTA */}
+            <View style={styles.ctaSection}>
               <TouchableOpacity style={styles.mediumCTA} onPress={handleNewProject}>
                 <Text style={styles.mediumCtaText}>Start a Project</Text>
               </TouchableOpacity>
@@ -129,7 +105,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: spacing.md,
-    backgroundColor: colors.brandPurpleDeep,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+    // Web-specific shadow
+    boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
   },
   topBarTitle: {
     fontSize: 22,
@@ -234,50 +219,8 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
   },
-  howItWorksSection: {
+  ctaSection: {
     marginBottom: 24,
-  },
-  howItWorksTitle: {
-    fontSize: 18,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    marginBottom: 16,
-  },
-  stepCardsGrid: {
-    marginBottom: 20,
-  },
-  stepCardRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-  },
-  stepCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.08)',
-  },
-  stepIcon: {
-    marginBottom: 8,
-  },
-  stepText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
   mediumCTA: {
     alignSelf: 'center',

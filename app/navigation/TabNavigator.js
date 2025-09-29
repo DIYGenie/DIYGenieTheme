@@ -15,7 +15,12 @@ const Tab = createBottomTabNavigator();
 
 function TabBarBackground() {
   return (
-    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.brandPurpleDeep }]} />
+    <LinearGradient
+      colors={[colors.gradientStart, colors.gradientEnd]}
+      style={StyleSheet.absoluteFillObject}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    />
   );
 }
 
@@ -37,24 +42,24 @@ export default function TabNavigator() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: colors.white,
-        tabBarInactiveTintColor: colors.purpleLight,
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.65)',
         tabBarStyle: {
           backgroundColor: 'transparent',
           borderTopWidth: 1,
-          borderTopColor: colors.muted,
-          elevation: 0,
+          borderTopColor: 'rgba(229, 231, 235, 0.6)',
+          elevation: 3,
           height: 80,
           paddingBottom: spacing.md,
           paddingTop: spacing.sm,
           shadowColor: colors.black,
           shadowOffset: {
             width: 0,
-            height: -2,
+            height: 2,
           },
-          shadowOpacity: 0.05,
-          shadowRadius: 20,
+          shadowOpacity: 0.06,
+          shadowRadius: 16,
           // Web-specific shadow
-          boxShadow: '0px -2px 20px rgba(0, 0, 0, 0.05)',
+          boxShadow: '0px 2px 16px rgba(0, 0, 0, 0.06)',
         },
         tabBarBackground: () => <TabBarBackground />,
         tabBarLabelStyle: {
