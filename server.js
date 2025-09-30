@@ -124,6 +124,18 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
+app.get('/api/projects/:id', async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) return res.status(404).json({ ok: false, error: 'not_found' });
+  return res.json({ ok: true, item: data });
+});
+
 app.patch('/api/projects/:id', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
@@ -154,35 +166,25 @@ app.patch('/api/projects/:id', async (req, res) => {
 });
 
 app.post('/api/projects/:id/preview', async (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  
-  try {
-    const { id } = req.params;
-    const { input_image, prompt, room_type, design_style } = req.body;
-    
-    const { data, error } = await supabase
-      .from('projects')
+  const { id } = req.params;
+
+  // mark as requested
+  await supabase.from('projects')
+    .update({ status: 'preview_requested' })
+    .eq('id', id);
+
+  // respond immediately so UI can start polling
+  res.json({ ok: true });
+
+  // DEV-ONLY: fake generator → mark ready after 4s
+  setTimeout(async () => {
+    await supabase.from('projects')
       .update({
-        status: 'preview_requested',
-        input_image_url: input_image
+        status: 'preview_ready',
+        preview_url: 'https://picsum.photos/1200/800?blur=2'
       })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return res.status(404).json({ ok: false, error: 'Project not found' });
-      }
-      console.error('Supabase update error:', error);
-      return res.status(500).json({ ok: false, error: error.message });
-    }
-    
-    return res.status(200).json({ ok: true, project: data });
-  } catch (err) {
-    console.error('Unexpected error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
-  }
+      .eq('id', id);
+  }, 4000);
 });
 
 app.listen(PORT, '0.0.0.0', () => {

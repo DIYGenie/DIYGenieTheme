@@ -194,7 +194,9 @@ export async function listProjects(userId: string): Promise<any[]> {
  * Get project details by ID
  */
 export async function getProject(projectId: string): Promise<any> {
-  return fetchJson(`/api/projects/${projectId}`);
+  const response = await fetchJson(`/api/projects/${projectId}`);
+  // API returns { ok: true, item: {...} }
+  return response.item || response;
 }
 
 /**
@@ -211,8 +213,8 @@ export async function pollProjectStatus(
     try {
       const project = await getProject(projectId);
       
-      // Check if preview is ready (adjust based on your API response)
-      if (project.preview_image_url || project.status === 'completed') {
+      // Check if preview is ready
+      if (project.status === 'preview_ready' || project.preview_url) {
         return project;
       }
       
