@@ -223,7 +223,8 @@ export default function NewProjectForm({ navigation }) {
       }, 600);
     } catch (error) {
       console.error('Build without preview failed:', error);
-      showToast(error.message || 'Could not build plan', 'error');
+      const errorMessage = error?.response?.data?.error || error?.message || 'Could not build plan';
+      showToast(errorMessage, 'error');
       triggerHaptic('error');
     } finally {
       setIsBuildingPlan(false);
