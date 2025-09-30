@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, triggerPreview, ApiError } from '../lib/api';
+import { getEntitlements, createProject, updateProject, triggerPreview, pollProjectStatus, ApiError } from '../lib/api';
 import { uploadImageAsync, pickImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
@@ -40,6 +40,7 @@ export default function NewProjectForm({ navigation }) {
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
+  const canPreview = entitlements && entitlements.tier !== 'Free' && (entitlements.remaining ?? 0) > 0;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -182,24 +183,35 @@ export default function NewProjectForm({ navigation }) {
     setIsGeneratingPreview(true);
 
     try {
+      // Step 1: Trigger preview generation
       await triggerPreview(projectId, {
         input_image_url: inputImageUrl,
         prompt: description,
       });
 
-      showToast('Preview requested!', 'success');
+      // Step 2: Poll for completion
+      await pollProjectStatus(projectId, { interval: 2000, timeout: 60000 });
+
+      showToast('Preview ready!', 'success');
       triggerHaptic('success');
 
-      // Navigate to Projects with refresh flag after a short delay
+      // Navigate to project details
       setTimeout(() => {
         navigation.navigate('Projects', { refresh: true });
       }, 800);
     } catch (error) {
       console.error('Preview generation failed:', error);
-      showToast('Preview failed', 'error');
+      showToast('Preview failed. Please try again.', 'error');
       triggerHaptic('error');
       setIsGeneratingPreview(false);
     }
+  };
+
+  const handleBuildWithoutPreview = () => {
+    if (!projectId) return;
+    
+    triggerHaptic('success');
+    navigation.navigate('Projects', { refresh: true });
   };
 
   const debouncedGeneratePreview = useDebouncePress(handleGeneratePreview, 300);
