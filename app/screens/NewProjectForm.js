@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, requestPreview, pollProjectStatus, ApiError } from '../lib/api';
+import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError } from '../lib/api';
 import { uploadImageAsync, pickImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
@@ -183,22 +183,26 @@ export default function NewProjectForm({ navigation }) {
     setIsGeneratingPreview(true);
 
     try {
-      // Step 1: Trigger preview generation
       await requestPreview(projectId);
 
-      // Step 2: Poll for completion
-      await pollProjectStatus(projectId, { interval: 2000, timeout: 60000 });
-
-      showToast('Preview ready!', 'success');
-      triggerHaptic('success');
-
-      // Navigate to project details
-      setTimeout(() => {
-        navigation.navigate('Projects', { refresh: true });
-      }, 800);
-    } catch (error) {
-      console.error('Preview generation failed:', error);
-      showToast('Preview failed. Please try again.', 'error');
+      // poll status until ready (60s max)
+      const start = Date.now();
+      while (Date.now() - start < 60000) {
+        const { item } = await getProject(projectId);
+        if (item?.status === 'preview_ready') {
+          showToast('Preview ready!', 'success');
+          triggerHaptic('success');
+          setTimeout(() => {
+            navigation.navigate('Projects', { refresh: true });
+          }, 800);
+          return;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      Alert.alert('Preview timed out. Please try again.');
+      setIsGeneratingPreview(false);
+    } catch (e) {
+      Alert.alert('Preview failed', String(e));
       triggerHaptic('error');
       setIsGeneratingPreview(false);
     }
