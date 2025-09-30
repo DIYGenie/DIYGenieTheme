@@ -52,9 +52,8 @@ export default function NewProjectForm({ navigation }) {
   const hasImage = Boolean(inputImageUrl);
   const canPreview = isFormValid && remaining > 0 && previewAllowed && hasImage;
   
-  // Build without preview requires: valid form AND quota.
-  // (No image required — specs say "without preview".)
-  const canBuild = isFormValid && remaining > 0;
+  // Build without preview requires: valid form AND quota AND image uploaded (project exists).
+  const canBuild = isFormValid && remaining > 0 && hasImage;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });

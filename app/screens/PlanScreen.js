@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchProject } from '../lib/api';
+import { fetchProject, fetchPlan } from '../lib/api';
 import Toast from '../components/Toast';
 
 export default function PlanScreen({ navigation, route }) {
@@ -27,19 +27,31 @@ export default function PlanScreen({ navigation, route }) {
   const loadProject = async () => {
     try {
       setLoading(true);
-      const data = await fetchProject(id);
       
-      if (!data.plan) {
+      // Fetch project basic info first
+      const projectData = await fetchProject(id);
+      
+      // Then fetch the plan using the dedicated /plan endpoint
+      const planData = await fetchPlan(id);
+      
+      // Merge the data
+      const mergedData = {
+        ...projectData,
+        ...(planData.plan && { plan: planData.plan }),
+        ...(planData.plan_text && { plan_text: planData.plan_text }),
+      };
+      
+      if (!mergedData.plan && !mergedData.plan_text) {
         setToast({
           visible: true,
-          message: 'Plan not available yet',
+          message: 'Plan not ready yet',
           type: 'error',
         });
         setTimeout(() => navigation.goBack(), 1500);
         return;
       }
       
-      setProject(data);
+      setProject(mergedData);
     } catch (error) {
       console.error('Failed to load plan:', error);
       setToast({
@@ -88,11 +100,12 @@ export default function PlanScreen({ navigation, route }) {
     );
   }
 
-  if (!project || !project.plan) {
+  if (!project || (!project.plan && !project.plan_text)) {
     return null;
   }
 
   const plan = project.plan;
+  const planText = project.plan_text;
 
   return (
     <LinearGradient colors={['#8B5CF6', '#3B82F6']} style={styles.container}>
@@ -109,9 +122,19 @@ export default function PlanScreen({ navigation, route }) {
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
-            <Text style={styles.planTitle}>{plan.title || project.name || 'Your Project'}</Text>
+            <Text style={styles.planTitle}>{plan?.title || project.name || 'Your Project'}</Text>
 
-            <View style={styles.summaryGrid}>
+            {/* If we have plan_text (stub), display it */}
+            {planText && !plan && (
+              <View style={styles.plainTextCard}>
+                <Text style={styles.plainText}>{planText}</Text>
+              </View>
+            )}
+
+            {/* Otherwise, display the structured plan */}
+            {plan && (
+              <>
+              <View style={styles.summaryGrid}>
               {plan.est_cost && (
                 <View style={styles.summaryCard}>
                   <Ionicons name="cash-outline" size={24} color="#F97316" />
@@ -227,6 +250,8 @@ export default function PlanScreen({ navigation, route }) {
                   ))}
                 </View>
               </View>
+            )}
+              </>
             )}
 
             <View style={{ height: 40 }} />
@@ -393,5 +418,16 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     marginLeft: 12,
     lineHeight: 20,
+  },
+  plainTextCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+  },
+  plainText: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 24,
   },
 });

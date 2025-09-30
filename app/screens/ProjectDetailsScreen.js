@@ -12,12 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
 import { fetchProject, previewProject, buildWithoutPreview, getEntitlements } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
-
-const PLACEHOLDER_PLAN = 'https://api.diygenieapp.com/static/plan-placeholder.pdf';
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
@@ -68,12 +65,18 @@ export default function ProjectDetailsScreen({ navigation, route }) {
   };
 
   const openPlan = () => {
-    const url = project?.plan_url || PLACEHOLDER_PLAN;
-    if (!project || project.status !== 'plan_ready') {
-      showToast('Plan not available yet', 'error');
+    if (!project) {
+      showToast('Project not found', 'error');
       return;
     }
-    Linking.openURL(url);
+    
+    // Check if plan is ready (either 'plan_ready' or 'ready' status)
+    if (!['plan_ready', 'ready'].includes(project.status) && !project.plan && !project.plan_text) {
+      showToast('Plan not ready yet', 'error');
+      return;
+    }
+    
+    navigation.navigate('Plan', { id: project.id });
   };
 
   const handleGeneratePreview = async () => {
