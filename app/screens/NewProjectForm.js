@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -211,15 +211,14 @@ export default function NewProjectForm({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
-      <View style={{
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 6,
-        paddingBottom: tabBarHeight + insets.bottom + 8,
-        justifyContent: 'space-between'
-      }}>
-        {/* Top: title + form */}
-        <View>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 6,
+          paddingBottom: 140,
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
@@ -338,7 +337,6 @@ export default function NewProjectForm({ navigation }) {
               </Modal>
             </View>
           </View>
-        </View>
 
         {/* Bottom: media section with stacked tiles */}
         <View style={[styles.tilesContainer, { opacity: isUploading || isGeneratingPreview ? 0.6 : 1, pointerEvents: isUploading || isGeneratingPreview ? 'none' : 'auto' }]}>
@@ -470,7 +468,7 @@ export default function NewProjectForm({ navigation }) {
             </View>
           )}
         </View>
-      </View>
+      </ScrollView>
       <Toast 
         visible={toast.visible} 
         message={toast.message} 
