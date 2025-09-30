@@ -279,3 +279,19 @@ export async function uploadRoomPhoto(projectId: string, asset: any): Promise<{ 
   
   return r.json();
 }
+
+/**
+ * Build project without preview generation
+ */
+export async function buildWithoutPreview(projectId: string): Promise<{ ok: boolean; error?: string }> {
+  const r = await fetch(`${BASE}/api/projects/${projectId}/build-without-preview`, {
+    method: 'POST',
+  });
+
+  if (!r.ok) {
+    const json = await r.json().catch(() => ({}));
+    throw new Error(json.error || r.statusText || 'Unknown error');
+  }
+
+  return r.json();
+}
