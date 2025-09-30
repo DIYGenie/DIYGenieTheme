@@ -49,12 +49,21 @@ export default function NewProjectForm({ navigation }) {
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
+  // --- GATING LOGIC (Free: 2 plans, no previews; Casual/Pro: previews allowed) ---
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
-  const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
+  const remaining = Number(entitlements?.remaining ?? 0);
+  const previewAllowed = Boolean(entitlements?.previewAllowed);
   
-  // Button logic per spec
-  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0 && inputImageUrl && projectId;
-  const canBuild = isFormValid && entitlements.remaining > 0 && projectId;
+  // Upload is ALWAYS allowed (even on Free tier). We only gate the Preview button.
+  const canUpload = true;
+  
+  // Preview requires: valid form AND plan quota AND previewAllowed AND image uploaded.
+  const hasImage = Boolean(inputImageUrl);
+  const canPreview = isFormValid && remaining > 0 && previewAllowed && hasImage;
+  
+  // Build without preview requires: valid form AND quota.
+  // (No image required — specs say "without preview".)
+  const canBuild = isFormValid && remaining > 0;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -117,7 +126,13 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleUploadPhoto = async () => {
-    if (!canUpload || isUploading) return;
+    // Upload is always allowed, but form must be valid to create project
+    if (!isFormValid) {
+      showToast('Please complete all fields (10+ char description, budget, skill)', 'error');
+      return;
+    }
+    
+    if (isUploading) return;
     
     try {
       const asset = await pickRoomPhoto();
@@ -438,9 +453,9 @@ export default function NewProjectForm({ navigation }) {
                 {isUploading
                   ? 'Uploading photo...'
                   : !isFormValid
-                  ? 'Complete fields to continue'
+                  ? 'Complete fields to upload photo'
                   : entitlements.remaining <= 0
-                  ? 'Upgrade to continue'
+                  ? `Upload allowed • Upgrade for AI preview & plans`
                   : `${entitlements.remaining} of ${entitlements.quota} projects remaining`}
               </Text>
             </View>
@@ -534,7 +549,9 @@ export default function NewProjectForm({ navigation }) {
               {/* Show remaining projects */}
               {!loadingEntitlements && (
                 <Text style={styles.helperText}>
-                  {entitlements.remaining} of {entitlements.quota} projects remaining
+                  {entitlements.remaining <= 0
+                    ? 'Upgrade for AI preview & build plans'
+                    : `${entitlements.remaining} of ${entitlements.quota} projects remaining`}
                 </Text>
               )}
 
