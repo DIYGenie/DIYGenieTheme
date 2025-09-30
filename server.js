@@ -297,6 +297,31 @@ app.get('/api/projects/:id/force-ready', async (req, res) => {
   }
 });
 
+app.post('/api/projects/:id/build-without-preview', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { error } = await supabase.from('projects')
+      .update({ 
+        status: 'ready',
+        preview_url: null
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error(`[BUILD-WITHOUT-PREVIEW ERROR] Project ${id}:`, error.message);
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+
+    console.log(`[BUILD-WITHOUT-PREVIEW] Project ${id} - ready for building`);
+    
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error(`[BUILD-WITHOUT-PREVIEW ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ DIY Genie API server running on port ${PORT}`);
   console.log(`📡 CORS enabled for all origins`);
