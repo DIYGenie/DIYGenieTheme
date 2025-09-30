@@ -2,104 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
-import { supabase } from '../lib/storage';
-import { BASE_URL } from '../config';
 import { useUser } from '../lib/useUser';
-import axios from 'axios';
 
-export default function ProjectsScreen({ navigation, route }) {
-  const { userId, loading: loadingUser } = useUser();
+export default function ProjectsScreen({ navigation }) {
+  const { userId } = useUser();
+  const isFocused = useIsFocused();
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [networkError, setNetworkError] = useState(false);
-  const [lastHealthCheck, setLastHealthCheck] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const fetchProjects = async () => {
     if (!userId) return;
-    
+    setLoading(true);
     try {
       const data = await listProjects(userId);
-      setProjects(data);
-      if (Date.now() - lastHealthCheck < 60000) {
-        setNetworkError(false);
-      }
+      setProjects(data?.items ?? []);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
-      // Axios network errors don't have a response property
-      if (axios.isAxiosError(error) && !error.response) {
-        if (Date.now() - lastHealthCheck >= 60000) {
-          setNetworkError(false); // Don't show error banner if health check succeeded recently
-        }
-      }
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  // Fetch on mount and when screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      if (route.params?.refresh) {
-        fetchProjects();
-        // Clear the refresh param
-        navigation.setParams({ refresh: undefined });
-      }
-    }, [route.params?.refresh])
-  );
-
+  // Refetch whenever screen comes into focus
   useEffect(() => {
-    if (!userId) return;
-    
-    const init = async () => {
-      // Health ping
-      try {
-        const healthResp = await fetch(`${BASE_URL}/health`, { method: 'GET' });
-        if (healthResp.ok) {
-          setLastHealthCheck(Date.now());
-          setNetworkError(false);
-        } else {
-          throw new Error('Health check failed');
-        }
-      } catch (healthErr) {
-        setNetworkError(true);
-      }
-
-      // Fetch projects
+    if (isFocused) {
       fetchProjects();
-    };
-    
-    init();
-  }, [userId]);
-
-  // Polling: check projects every 2-3s while any item is in progress
-  useEffect(() => {
-    if (!userId) return;
-    
-    const hasInProgress = projects.some(p => 
-      ['preview_requested', 'plan_requested'].includes(p.status)
-    );
-
-    if (!hasInProgress) return;
-
-    const pollInterval = setInterval(() => {
-      fetchProjects();
-    }, 2500); // 2.5 seconds
-
-    return () => clearInterval(pollInterval);
-  }, [projects, userId]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchProjects();
-  };
+    }
+  }, [isFocused, userId]);
 
   const handleFilterPress = (filter) => {
     setActiveFilter(filter);
@@ -121,23 +56,16 @@ export default function ProjectsScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
-        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={loading} onRefresh={fetchProjects} />
         }
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Projects</Text>
           <Text style={styles.subtitle}>Manage all your DIY projects in one place</Text>
-          {networkError && __DEV__ && (
-            <View style={{ backgroundColor: '#FEF3C7', padding: 8, borderRadius: 8, marginTop: 8 }}>
-              <Text style={{ fontSize: 12, color: '#92400E', textAlign: 'center' }}>
-                Can't reach server. Check BASE_URL or CORS.
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Search Bar */}
@@ -283,10 +211,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   headerSection: {
     marginBottom: 16,
@@ -301,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.interMedium,
     color: '#475569',
-    lineHeight: 21, // 1.5 line height
+    lineHeight: 21,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -366,7 +294,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 3,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   thumbnailPlaceholder: {
@@ -390,19 +317,6 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  previewChip: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 4,
-  },
-  previewChipText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#D97706',
   },
   statusBadge: {
     borderRadius: 8,
@@ -430,20 +344,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#475569',
     marginBottom: 8,
-  },
-  progressContainer: {
-    width: '100%',
-  },
-  progressBackground: {
-    height: 4,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
-    borderRadius: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -484,7 +384,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 3,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   startProjectText: {
