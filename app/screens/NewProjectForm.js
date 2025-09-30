@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, triggerPreview, pollProjectStatus, ApiError } from '../lib/api';
+import { getEntitlements, createProject, updateProject, requestPreview, pollProjectStatus, ApiError } from '../lib/api';
 import { uploadImageAsync, pickImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
@@ -184,10 +184,7 @@ export default function NewProjectForm({ navigation }) {
 
     try {
       // Step 1: Trigger preview generation
-      await triggerPreview(projectId, {
-        input_image_url: inputImageUrl,
-        prompt: description,
-      });
+      await requestPreview(projectId);
 
       // Step 2: Poll for completion
       await pollProjectStatus(projectId, { interval: 2000, timeout: 60000 });

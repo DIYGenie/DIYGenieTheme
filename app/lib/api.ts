@@ -193,10 +193,19 @@ export async function listProjects(userId: string): Promise<any[]> {
 /**
  * Get project details by ID
  */
-export async function getProject(projectId: string): Promise<any> {
-  const response = await fetchJson(`/api/projects/${projectId}`);
-  // API returns { ok: true, item: {...} }
-  return response.item || response;
+export async function getProject(id: string) {
+  const r = await fetch(`${BASE}/api/projects/${id}`);
+  if (!r.ok) throw new Error('getProject failed');
+  return r.json(); // { ok, item }
+}
+
+/**
+ * Request preview generation for a project
+ */
+export async function requestPreview(id: string) {
+  const r = await fetch(`${BASE}/api/projects/${id}/preview`, { method: 'POST' });
+  if (!r.ok) throw new Error('requestPreview failed');
+  return r.json(); // { ok:true }
 }
 
 /**
@@ -211,7 +220,8 @@ export async function pollProjectStatus(
 
   while (Date.now() - startTime < timeout) {
     try {
-      const project = await getProject(projectId);
+      const response = await getProject(projectId);
+      const project = response.item || response;
       
       // Check if preview is ready
       if (project.status === 'preview_ready' || project.preview_url) {
@@ -220,22 +230,19 @@ export async function pollProjectStatus(
       
       // If failed, throw error
       if (project.status === 'failed') {
-        throw new ApiError('Preview generation failed', 500, project);
+        throw new Error('Preview generation failed');
       }
       
       // Wait before next poll
       await new Promise(resolve => setTimeout(resolve, interval));
     } catch (error) {
-      // If it's a network error or timeout, throw immediately
-      if (error instanceof ApiError && error.status === 0) {
+      // If it's a clear error message, throw immediately
+      if (error.message && error.message.includes('failed')) {
         throw error;
       }
-      // For other errors, continue polling unless it's a clear failure
-      if (error instanceof ApiError && error.status >= 500) {
-        throw error;
-      }
+      // Continue polling for other errors
     }
   }
   
-  throw new ApiError('Preview generation timeout', 0);
+  throw new Error('Preview generation timeout');
 }
