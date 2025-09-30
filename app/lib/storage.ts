@@ -3,6 +3,7 @@
  */
 
 import { Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, UPLOADS_BUCKET } from '../config';
 
@@ -17,6 +18,23 @@ export { supabase };
  */
 function guessMime(uri: string): string {
   return uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+}
+
+/**
+ * Pick an image from the device gallery
+ * Backward compatible - omits mediaTypes for widest SDK compatibility
+ * 
+ * @returns URI string or null if cancelled
+ */
+export async function pickImageAsync(): Promise<string | null> {
+  await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const result = await ImagePicker.launchImageLibraryAsync({
+    allowsMultipleSelection: false,
+    quality: 0.9,
+    exif: false,
+  });
+  if (result.canceled) return null;
+  return result.assets?.[0]?.uri ?? null;
 }
 
 /**

@@ -3,13 +3,12 @@ import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindo
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { getEntitlements, createProject, updateProject, triggerPreview, ApiError } from '../lib/api';
-import { uploadImageAsync, supabase } from '../lib/storage';
+import { uploadImageAsync, pickImageAsync, supabase } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
 import { BASE_URL } from '../config';
@@ -105,28 +104,10 @@ export default function NewProjectForm({ navigation }) {
     if (!canUpload || isUploading) return;
     
     try {
-      // Request permission
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        showToast('Permission required', 'error');
-        triggerHaptic('error');
-        return;
-      }
+      const uri = await pickImageAsync();
+      if (!uri) return;
 
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.9,
-      });
-
-      if (result.canceled) {
-        return;
-      }
-
-      const localUri = result.assets[0].uri;
+      const localUri = uri;
       setIsUploading(true);
 
       // Step 1: Create project

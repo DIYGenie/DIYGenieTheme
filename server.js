@@ -5,25 +5,15 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.set('trust proxy', 1);
+app.use(cors({ origin: true }));
 
-const corsMiddleware = cors({
-  origin: (origin, cb) => cb(null, true),
-  methods: ['GET','POST','PATCH','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: false,
-  optionsSuccessStatus: 204,
-});
-
-app.use(corsMiddleware);
-
-// Ensure headers for any framework edge-cases
 app.use((req, res, next) => {
   const origin = req.headers.origin || '*';
-  res.header('Access-Control-Allow-Origin', origin);
-  res.header('Vary', 'Origin');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+  const reqHeaders = req.headers['access-control-request-headers'];
+  if (reqHeaders) res.setHeader('Access-Control-Allow-Headers', reqHeaders);
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
