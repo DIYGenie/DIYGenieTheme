@@ -41,8 +41,10 @@ export default function NewProjectForm({ navigation }) {
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
-  const canPreview = entitlements && entitlements.tier !== 'Free' && !isGeneratingPreview && inputImageUrl && projectId;
-  const canBuildWithoutPreview = isFormValid && inputImageUrl && projectId && !isBuildingPlan;
+  
+  // Button logic: disable only the one currently running, keep the other clickable
+  const canPreview = inputImageUrl && projectId && entitlements.tier !== 'Free' && !isGeneratingPreview;
+  const canBuildWithoutPreview = inputImageUrl && projectId && !isBuildingPlan;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -158,43 +160,42 @@ export default function NewProjectForm({ navigation }) {
     setShowSkillDropdown(!showSkillDropdown);
   };
 
+  const startPollingStatus = async (projectId) => {
+    const start = Date.now();
+    const timeout = 60000;
+    const pollInterval = 2000;
+
+    while (Date.now() - start < timeout) {
+      await new Promise(r => setTimeout(r, pollInterval));
+      
+      const response = await API.get(`/api/projects/${projectId}`);
+      const project = response.data.item || response.data;
+      
+      if (project.status === 'preview_ready') {
+        showToast('Preview ready!', 'success');
+        triggerHaptic('success');
+        setIsGeneratingPreview(false);
+        
+        setTimeout(() => {
+          navigation.navigate('Project', { id: projectId });
+        }, 800);
+        return;
+      }
+    }
+    
+    // Timeout - keep both buttons enabled
+    showToast('Preview timed out. You can try again or continue without a preview.', 'error');
+    setIsGeneratingPreview(false);
+  };
+
   const handleGeneratePreview = async () => {
     if (!projectId || !inputImageUrl || isGeneratingPreview) return;
 
     setIsGeneratingPreview(true);
 
     try {
-      // POST /api/projects/:id/preview
       await API.post(`/api/projects/${projectId}/preview`);
-
-      // Poll every 2s for up to 30s
-      const start = Date.now();
-      const timeout = 30000;
-      const pollInterval = 2000;
-
-      while (Date.now() - start < timeout) {
-        await new Promise(r => setTimeout(r, pollInterval));
-        
-        const response = await API.get(`/api/projects/${projectId}`);
-        const project = response.data.item || response.data;
-        
-        if (project.status === 'preview_ready') {
-          showToast('Preview ready!', 'success');
-          triggerHaptic('success');
-          
-          // Refetch projects list
-          await API.get('/api/projects', { params: { user_id: userId } });
-          
-          setTimeout(() => {
-            navigation.navigate('Project', { id: projectId });
-          }, 800);
-          return;
-        }
-      }
-      
-      // Timeout
-      showToast('Preview timed out. You can try again or continue without a preview.', 'error');
-      setIsGeneratingPreview(false);
+      await startPollingStatus(projectId);
     } catch (e) {
       console.error('Preview generation failed:', e);
       showToast('Preview failed. Please try again.', 'error');
@@ -209,18 +210,16 @@ export default function NewProjectForm({ navigation }) {
     try {
       setIsBuildingPlan(true);
       
-      // POST /api/projects/:id/build-without-preview
-      await API.post(`/api/projects/${projectId}/build-without-preview`);
+      const r = await API.post(`/api/projects/${projectId}/build-without-preview`);
       
-      showToast('Project ready to build!', 'success');
-      triggerHaptic('success');
-      
-      // Refetch projects list
-      await API.get('/api/projects', { params: { user_id: userId } });
-      
-      setTimeout(() => {
-        navigation.navigate('Project', { id: projectId });
-      }, 600);
+      if (r.data?.ok) {
+        showToast('Project ready to build!', 'success');
+        triggerHaptic('success');
+        
+        setTimeout(() => {
+          navigation.navigate('Project', { id: projectId });
+        }, 600);
+      }
     } catch (error) {
       console.error('Build without preview failed:', error);
       const errorMessage = error?.response?.data?.error || error?.message || 'Could not build plan';
