@@ -212,6 +212,12 @@ function ProjectCard({ project, navigation }) {
   } else if (status === 'preview_requested') {
     badgeText = 'Preview requested';
     badgeColor = '#F59E0B';
+  } else if (status === 'preview_ready') {
+    badgeText = 'Preview ready';
+    badgeColor = '#10B981';
+  } else if (status === 'plan_requested') {
+    badgeText = 'Plan requested';
+    badgeColor = '#F59E0B';
   } else if (status === 'plan_ready') {
     badgeText = 'Plan ready';
     badgeColor = '#10B981';
