@@ -193,7 +193,7 @@ app.post('/api/projects/:id/preview', async (req, res) => {
         .eq('id', id)
         .single();
 
-      const previewUrl = data?.input_image_url || 'https://picsum.photos/1200/800?blur=2';
+      const previewUrl = data?.input_image_url || 'https://placehold.co/600x400?text=Preview';
 
       await supabase.from('projects')
         .update({ status: 'preview_ready', preview_url: previewUrl })
