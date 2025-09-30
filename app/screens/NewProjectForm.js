@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError, uploadRoomPhoto } from '../lib/api';
+import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError, uploadRoomPhoto, buildWithoutPreview } from '../lib/api';
 import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
@@ -208,15 +208,36 @@ export default function NewProjectForm({ navigation }) {
     }
   };
 
-  const handleBuildWithoutPreview = () => {
-    if (!projectId) return;
+  const handleBuildWithoutPreview = async () => {
+    if (!projectId || isUploading) return;
     
-    triggerHaptic('success');
-    navigation.navigate('Projects', { refresh: true });
+    try {
+      setIsUploading(true);
+      
+      const response = await buildWithoutPreview(projectId);
+      
+      if (!response.ok) {
+        throw new Error(response.error || 'Failed to build project');
+      }
+      
+      showToast('Project ready to build!', 'success');
+      triggerHaptic('success');
+      
+      setTimeout(() => {
+        navigation.navigate('Projects', { refresh: true });
+      }, 600);
+    } catch (error) {
+      console.error('Build without preview failed:', error);
+      showToast(error.message || 'Could not build plan', 'error');
+      triggerHaptic('error');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const debouncedGeneratePreview = useDebouncePress(handleGeneratePreview, 300);
   const debouncedUploadPhoto = useDebouncePress(handleUploadPhoto, 300);
+  const debouncedBuildWithoutPreview = useDebouncePress(handleBuildWithoutPreview, 300);
 
   const TILE_SIZE = 160;
   const ICON_SIZE = 24;
@@ -500,13 +521,17 @@ export default function NewProjectForm({ navigation }) {
                 )}
 
                 <Pressable
-                  onPress={handleBuildWithoutPreview}
+                  onPress={debouncedBuildWithoutPreview}
+                  disabled={isUploading}
                   style={({ pressed }) => [
                     styles.outlineButton,
-                    { transform: [{ scale: pressed ? 0.98 : 1 }] }
+                    isUploading && { opacity: 0.5 },
+                    { transform: [{ scale: pressed && !isUploading ? 0.98 : 1 }] }
                   ]}
                 >
-                  <Text style={styles.outlineButtonText}>Build Plan Without Preview</Text>
+                  <Text style={styles.outlineButtonText}>
+                    {isUploading ? 'Building...' : 'Build Plan Without Preview'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
