@@ -22,21 +22,27 @@ function guessMime(uri: string): string {
 
 /**
  * Pick an image from the device gallery
- * Uses new API that works on web & native
+ * Version-safe implementation that works across Expo versions
  * 
  * @returns URI string or null if cancelled
  */
 export async function pickImageAsync(): Promise<string | null> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return null;
+  await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: 'images' as any,
+  const mediaTypes =
+    (ImagePicker as any).MediaType
+      ? [(ImagePicker as any).MediaType.Images]
+      : (ImagePicker as any).MediaTypeOptions?.Images ?? 0;
+
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes,
     quality: 0.9,
     allowsEditing: false,
   });
-  if (result.canceled) return null;
-  return result.assets?.[0]?.uri ?? null;
+
+  if (res.canceled) return null;
+  const asset = res.assets?.[0] ?? (res as any);
+  return asset?.uri ?? null;
 }
 
 /**
