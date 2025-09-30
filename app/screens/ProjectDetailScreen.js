@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getProject, buildWithoutPreview } from '../lib/api';
+import { getProject } from '../lib/api';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 
 export default function ProjectDetailScreen({ navigation, route }) {
-  const { id } = route.params;
+  const { id: projectId } = route.params;
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadProject();
-  }, [id]);
+  }, [projectId]);
 
   const loadProject = async () => {
     try {
-      const { item } = await getProject(id);
+      const { item } = await getProject(projectId);
       setProject(item);
     } catch (error) {
       Alert.alert('Error', 'Failed to load project');
@@ -26,16 +26,27 @@ export default function ProjectDetailScreen({ navigation, route }) {
     }
   };
 
-  const handleBuildWithoutPreview = async () => {
-    if (!project?.id || submitting) return;
-
+  const onBuildWithoutPreview = async () => {
+    if (!projectId) return;
     try {
       setSubmitting(true);
-      await buildWithoutPreview(project.id);
-      Alert.alert('Success', 'Project is ready to build!');
+
+      const resp = await fetch(
+        `${process.env.EXPO_PUBLIC_BASE_URL}/api/projects/${projectId}/build-without-preview`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) throw new Error(json.error || `HTTP ${resp.status}`);
+
+      // Navigate to project details (or Projects screen)
       navigation.navigate('Projects', { refresh: true });
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Could not build plan');
+    } catch (e) {
+      alert(`Build failed: ${e.message || e}`);
     } finally {
       setSubmitting(false);
     }
@@ -84,7 +95,7 @@ export default function ProjectDetailScreen({ navigation, route }) {
         <View style={styles.buttonContainer}>
           <Button
             title={submitting ? "Building…" : "Build Plan Without Preview"}
-            onPress={handleBuildWithoutPreview}
+            onPress={onBuildWithoutPreview}
             disabled={submitting}
           />
         </View>
