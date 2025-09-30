@@ -94,9 +94,8 @@ export default function ProjectDetailScreen({ navigation, route }) {
 
         <View style={styles.buttonContainer}>
           <Button
-            title={submitting ? "Building…" : "Build Plan Without Preview"}
+            title="Build Plan Without Preview"
             onPress={onBuildWithoutPreview}
-            disabled={submitting}
           />
         </View>
       </ScrollView>
