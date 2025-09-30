@@ -4,14 +4,23 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import axios from 'axios';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, ApiError, uploadRoomPhoto } from '../lib/api';
+import { createProject, uploadRoomPhoto } from '../lib/api';
 import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
 import API from '../lib/apiClient';
+
+const BASE = process.env.EXPO_PUBLIC_BASE_URL;
+
+async function loadEntitlements(userId) {
+  const r = await axios.get(`${BASE}/me/entitlements/${userId}`);
+  // r.data => { ok:true, tier, quota, remaining, previewAllowed }
+  return r.data;
+}
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -43,8 +52,8 @@ export default function NewProjectForm({ navigation }) {
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
   
   // Button logic
-  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0 && inputImageUrl && projectId && !isGeneratingPreview;
-  const canBuild = entitlements.remaining > 0 && inputImageUrl && projectId && !isBuildingPlan;
+  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0;
+  const canBuild = entitlements.remaining > 0;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -77,7 +86,7 @@ export default function NewProjectForm({ navigation }) {
 
       // Fetch entitlements
       try {
-        const data = await getEntitlements(userId);
+        const data = await loadEntitlements(userId);
         setEntitlements({
           tier: data.tier || 'Free',
           remaining: data.remaining || 0,
@@ -88,11 +97,7 @@ export default function NewProjectForm({ navigation }) {
           setNetworkError(false);
         }
       } catch (error) {
-        if (error instanceof ApiError && error.status === 0) {
-          if (Date.now() - lastHealthCheck >= 60000) {
-            setNetworkError(true);
-          }
-        }
+        setNetworkError(true);
         setEntitlements({ tier: 'Free', quota: 5, remaining: 5, previewAllowed: false });
       } finally {
         setLoadingEntitlements(false);
@@ -206,7 +211,7 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleGeneratePreview = async () => {
-    if (!canPreview || isGeneratingPreview) return;
+    if (!canPreview || !inputImageUrl || !projectId || isGeneratingPreview) return;
 
     setIsGeneratingPreview(true);
 
@@ -222,7 +227,7 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleBuildWithoutPreview = async () => {
-    if (!canBuild || isBuildingPlan) return;
+    if (!canBuild || !inputImageUrl || !projectId || isBuildingPlan) return;
     
     try {
       setIsBuildingPlan(true);
