@@ -12,9 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import { fetchProject, previewProject, buildWithoutPreview, getEntitlements } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
+
+const PLACEHOLDER_PLAN = 'https://api.diygenieapp.com/static/plan-placeholder.pdf';
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
@@ -64,12 +67,13 @@ export default function ProjectDetailsScreen({ navigation, route }) {
     setToast({ visible: true, message, type });
   };
 
-  const handleOpenPlan = () => {
-    if (!project?.plan) {
+  const openPlan = () => {
+    const url = project?.plan_url || PLACEHOLDER_PLAN;
+    if (!project || project.status !== 'plan_ready') {
       showToast('Plan not available yet', 'error');
       return;
     }
-    navigation.navigate('Plan', { id: project.id });
+    Linking.openURL(url);
   };
 
   const handleGeneratePreview = async () => {
@@ -317,7 +321,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             )}
 
             {hasPlan && (
-              <TouchableOpacity style={styles.openPlanButton} onPress={handleOpenPlan}>
+              <TouchableOpacity style={styles.openPlanButton} onPress={openPlan}>
                 <Ionicons name="document-text-outline" size={20} color="#FFF" />
                 <Text style={styles.openPlanText}>Open Plan</Text>
                 <Ionicons name="chevron-forward" size={20} color="#FFF" />
