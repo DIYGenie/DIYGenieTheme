@@ -17,7 +17,7 @@ export default function ProjectsScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(0);
-  const userId = '00000000-0000-0000-0000-000000000001';
+  const userId = '4e599cea-dfe5-4a8f-9738-bea3631ee4e6';
 
   const fetchProjects = async () => {
     try {

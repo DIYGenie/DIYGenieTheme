@@ -28,7 +28,7 @@ export default function NewProjectForm({ navigation }) {
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [networkError, setNetworkError] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(0);
-  const userId = '00000000-0000-0000-0000-000000000001';
+  const userId = '4e599cea-dfe5-4a8f-9738-bea3631ee4e6';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();

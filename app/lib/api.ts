@@ -189,3 +189,51 @@ export async function listProjects(userId: string): Promise<any[]> {
   }
   return [];
 }
+
+/**
+ * Get project details by ID
+ */
+export async function getProject(projectId: string): Promise<any> {
+  return fetchJson(`/api/projects/${projectId}`);
+}
+
+/**
+ * Poll project status until preview is ready or timeout
+ */
+export async function pollProjectStatus(
+  projectId: string,
+  options: { interval?: number; timeout?: number } = {}
+): Promise<any> {
+  const { interval = 2000, timeout = 60000 } = options;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeout) {
+    try {
+      const project = await getProject(projectId);
+      
+      // Check if preview is ready (adjust based on your API response)
+      if (project.preview_image_url || project.status === 'completed') {
+        return project;
+      }
+      
+      // If failed, throw error
+      if (project.status === 'failed') {
+        throw new ApiError('Preview generation failed', 500, project);
+      }
+      
+      // Wait before next poll
+      await new Promise(resolve => setTimeout(resolve, interval));
+    } catch (error) {
+      // If it's a network error or timeout, throw immediately
+      if (error instanceof ApiError && error.status === 0) {
+        throw error;
+      }
+      // For other errors, continue polling unless it's a clear failure
+      if (error instanceof ApiError && error.status >= 500) {
+        throw error;
+      }
+    }
+  }
+  
+  throw new ApiError('Preview generation timeout', 0);
+}
