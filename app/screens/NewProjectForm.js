@@ -4,24 +4,15 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import axios from 'axios';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { createProject, uploadRoomPhoto } from '../lib/api';
+import { createProject, uploadRoomPhoto, getEntitlements } from '../lib/api';
 import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
 import { useUser } from '../lib/useUser';
 import API from '../lib/apiClient';
-
-const BASE = process.env.EXPO_PUBLIC_BASE_URL;
-
-async function loadEntitlements(userId) {
-  const r = await axios.get(`${BASE}/me/entitlements/${userId}`);
-  // r.data => { ok:true, tier, quota, remaining, previewAllowed }
-  return r.data;
-}
 
 export default function NewProjectForm({ navigation }) {
   const { userId, loading: loadingUser } = useUser();
@@ -98,7 +89,7 @@ export default function NewProjectForm({ navigation }) {
 
       // Fetch entitlements
       try {
-        const data = await loadEntitlements(userId);
+        const data = await getEntitlements(userId);
         setEntitlements({
           tier: data.tier || 'Free',
           remaining: data.remaining || 0,
@@ -141,8 +132,7 @@ export default function NewProjectForm({ navigation }) {
       setIsUploading(true);
 
       // Create project
-      const projectData = await createProject({
-        user_id: userId || 'dev-user',
+      const projectData = await createProject(userId || 'dev-user', {
         name: description.substring(0, 100),
         budget: budget,
         skill: skillLevel,

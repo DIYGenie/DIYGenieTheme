@@ -12,12 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchProject, requestPreview, buildWithoutPreview } from '../lib/api';
+import { fetchProject, previewProject, buildWithoutPreview, getEntitlements } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
-import axios from 'axios';
-
-const BASE = process.env.EXPO_PUBLIC_BASE_URL;
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
@@ -36,10 +33,10 @@ export default function ProjectDetailsScreen({ navigation, route }) {
 
   const loadEntitlements = async () => {
     try {
-      const r = await axios.get(`${BASE}/me/entitlements/${userId}`);
+      const data = await getEntitlements(userId);
       setEntitlements({
-        remaining: r.data.remaining || 0,
-        previewAllowed: r.data.previewAllowed || false,
+        remaining: data.remaining || 0,
+        previewAllowed: data.previewAllowed || false,
       });
     } catch (error) {
       console.error('Failed to load entitlements:', error);
@@ -80,7 +77,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
     
     try {
       setIsRequestingPreview(true);
-      await requestPreview(project.id);
+      await previewProject(project.id, userId);
       showToast('Preview requested', 'success');
       navigation.navigate('Projects');
     } catch (error) {
@@ -96,7 +93,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
     
     try {
       setIsBuildingPlan(true);
-      await buildWithoutPreview(project.id);
+      await buildWithoutPreview(project.id, userId);
       showToast('Plan requested', 'success');
       navigation.navigate('Projects');
     } catch (error) {

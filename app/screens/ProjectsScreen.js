@@ -6,10 +6,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { listProjects, ApiError } from '../lib/api';
+import { listProjects } from '../lib/api';
 import { supabase } from '../lib/storage';
 import { BASE_URL } from '../config';
 import { useUser } from '../lib/useUser';
+import axios from 'axios';
 
 export default function ProjectsScreen({ navigation, route }) {
   const { userId, loading: loadingUser } = useUser();
@@ -31,7 +32,8 @@ export default function ProjectsScreen({ navigation, route }) {
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
-      if (error instanceof ApiError && error.status === 0) {
+      // Axios network errors don't have a response property
+      if (axios.isAxiosError(error) && !error.response) {
         if (Date.now() - lastHealthCheck >= 60000) {
           setNetworkError(false); // Don't show error banner if health check succeeded recently
         }

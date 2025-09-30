@@ -1,326 +1,51 @@
-/**
- * API wrapper with fetch helper and entitlements endpoint
- */
+import axios from 'axios';
 
-import { Platform } from 'react-native';
-import { BASE_URL } from '../config';
+const API = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-const DEFAULT_TIMEOUT = 10000; // 10 seconds
+export const listProjects = (userId: string) =>
+  API.get(`/api/projects`, { params: { user_id: userId } }).then(r => r.data);
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public status?: number,
-    public data?: any
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+export const createProject = (userId: string, payload: any) =>
+  API.post(`/api/projects`, { ...payload, user_id: userId }).then(r => r.data);
 
-/**
- * Generic JSON fetch wrapper with timeout and error handling
- */
-const BASE = BASE_URL.replace(/\/+$/, '');
-const join = (p: string) => `${BASE}${p.startsWith('/') ? p : `/${p}`}`;
-
-async function fetchJson<T = any>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
-
-  try {
-    const url = join(path);
-    if (__DEV__) console.log('[API]', url);
-    
-    const response = await fetch(url, {
-      ...init,
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.error || errorData.message || `HTTP ${response.status}`,
-        response.status,
-        errorData
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-
-    if (error instanceof ApiError) {
-      throw error;
-    }
-
-    if (error.name === 'AbortError') {
-      throw new ApiError('Request timeout', 0);
-    }
-
-    // Network error (CORS, DNS, connection refused, etc.)
-    console.warn('Network/CORS or wrong BASE_URL');
-    throw new ApiError(
-      error.message || 'Network error',
-      0
-    );
-  }
-}
-
-/**
- * User entitlements response
- */
-export interface Entitlements {
-  remaining: number;
-  quota: number;
-  tier: string;
-  status: string;
-  [key: string]: any; // Tolerate extra fields from API
-}
-
-/**
- * Get user entitlements (remaining projects, quota, tier)
- */
-export async function getEntitlements(userId: string): Promise<Entitlements> {
-  return fetchJson<Entitlements>(`/me/entitlements/${userId}`);
-}
-
-/**
- * Project creation payload
- */
-export interface CreateProjectPayload {
-  user_id: string;
-  name: string;
-  budget: '$' | '$$' | '$$$';
-  skill: 'Beginner' | 'Intermediate' | 'Advanced';
-  status?: string;
-}
-
-/**
- * Project creation response
- */
-export interface CreateProjectResponse {
-  id: string;
-  [key: string]: any; // Tolerate extra fields
-}
-
-/**
- * Create a new project via webhook
- */
-export async function createProject(
-  payload: CreateProjectPayload
-): Promise<CreateProjectResponse> {
-  return fetchJson<CreateProjectResponse>('/api/projects', {
-    method: 'POST',
-    body: JSON.stringify({
-      ...payload,
-      status: payload.status || 'pending',
-    }),
-  });
-}
-
-/**
- * Update an existing project (gracefully handles 404/405 if not supported)
- */
-export async function updateProject(
+export const uploadRoomPhoto = (
   projectId: string,
-  patch: Record<string, any>
-): Promise<void> {
-  try {
-    await fetchJson(`/api/projects/${projectId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(patch),
-    });
-  } catch (error) {
-    // Gracefully swallow 404/405 errors if backend doesn't support PATCH yet
-    if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
-      console.warn(`PATCH not supported for project ${projectId}, continuing...`);
-      return;
-    }
-    throw error;
-  }
-}
-
-/**
- * Trigger preview generation for a project
- */
-export async function triggerPreview(
-  projectId: string,
-  payload: {
-    input_image_url: string;
-    prompt?: string;
-    room_type?: string;
-    design_style?: string;
-  }
-): Promise<any> {
-  return fetchJson(`/api/projects/${projectId}/preview`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
-/**
- * List all projects for a user
- */
-export async function listProjects(userId: string): Promise<any[]> {
-  const data = await fetchJson(`/api/projects?user_id=${userId}`);
-  // Handle { ok: true, items: [...] } response
-  if (data.items && Array.isArray(data.items)) {
-    return data.items;
-  }
-  // Tolerate different response shapes
-  if (Array.isArray(data)) {
-    return data;
-  }
-  if (data.projects && Array.isArray(data.projects)) {
-    return data.projects;
-  }
-  if (data.data && Array.isArray(data.data)) {
-    return data.data;
-  }
-  return [];
-}
-
-/**
- * Get project details by ID
- */
-export async function fetchProject(id: string): Promise<any> {
-  const response = await fetchJson(`/api/projects/${id}`);
-  // Handle { ok, item } response shape
-  if (response.ok && response.item) {
-    return response.item;
-  }
-  // Handle direct project object
-  if (response.id) {
-    return response;
-  }
-  // Handle wrapped response
-  return response.item || response;
-}
-
-// Alias for backwards compatibility
-export const getProject = fetchProject;
-
-/**
- * Request preview generation for a project
- */
-export async function requestPreview(id: string) {
-  const r = await fetch(`${BASE}/api/projects/${id}/preview`, { method: 'POST' });
-  if (!r.ok) throw new Error('requestPreview failed');
-  return r.json(); // { ok:true }
-}
-
-/**
- * Poll project status until preview is ready or timeout
- */
-export async function pollProjectStatus(
-  projectId: string,
-  options: { interval?: number; timeout?: number } = {}
-): Promise<any> {
-  const { interval = 2000, timeout = 60000 } = options;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < timeout) {
-    try {
-      const response = await getProject(projectId);
-      const project = response.item || response;
-      
-      // Check if preview is ready
-      if (project.status === 'preview_ready' || project.preview_url) {
-        return project;
-      }
-      
-      // If failed, throw error
-      if (project.status === 'failed') {
-        throw new Error('Preview generation failed');
-      }
-      
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, interval));
-    } catch (error) {
-      // If it's a clear error message, throw immediately
-      if (error.message && error.message.includes('failed')) {
-        throw error;
-      }
-      // Continue polling for other errors
-    }
-  }
-  
-  throw new Error('Preview generation timeout');
-}
-
-/**
- * Upload room photo using FormData (works on web & native)
- * Also supports direct_url for testing
- */
-export async function uploadRoomPhoto(projectId: string, asset: any, directUrl?: string): Promise<{ ok: true; url?: string }> {
-  // If directUrl is provided (for testing), send JSON
+  asset: { uri: string; type?: string; name?: string },
+  directUrl?: string
+) => {
   if (directUrl) {
-    const r = await fetch(`${BASE}/api/projects/${projectId}/image`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direct_url: directUrl }),
-    });
-
-    if (!r.ok) {
-      const json = await r.json().catch(() => ({}));
-      throw new Error(json.error || `Upload failed (${r.status})`);
-    }
-    
-    return r.json();
+    // test path: set by URL
+    return API.post(`/api/projects/${projectId}/image`, { direct_url: directUrl });
   }
-
-  // Otherwise use FormData for file upload
-  let filePart: any = {
+  const form = new FormData();
+  form.append('image', {
     uri: asset.uri,
-    name: asset.fileName || `room-${Date.now()}.jpg`,
-    type: asset.mimeType || 'image/jpeg',
-  };
-
-  if (Platform.OS === 'web') {
-    const resp = await fetch(asset.uri);
-    const blob = await resp.blob();
-    filePart = new File([blob], filePart.name, { type: filePart.type });
-  }
-
-  const fd = new FormData();
-  fd.append('image', filePart as any);
-
-  const r = await fetch(`${BASE}/api/projects/${projectId}/image`, {
-    method: 'POST',
-    body: fd,
+    name: asset.name || 'room.jpg',
+    type: asset.type || 'image/jpeg',
+  } as any);
+  return API.post(`/api/projects/${projectId}/image`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
+};
 
-  if (!r.ok) {
-    const json = await r.json().catch(() => ({}));
-    throw new Error(json.error || `Upload failed (${r.status})`);
-  }
-  
-  return r.json();
-}
+export const previewProject = (projectId: string, userId: string) =>
+  API.post(`/api/projects/${projectId}/preview`, { user_id: userId });
 
-/**
- * Build project without preview generation
- */
-export async function buildWithoutPreview(projectId: string): Promise<{ ok: boolean; error?: string }> {
-  const r = await fetch(`${BASE}/api/projects/${projectId}/build-without-preview`, {
-    method: 'POST',
+export const buildWithoutPreview = (projectId: string, userId: string) =>
+  API.post(`/api/projects/${projectId}/build-without-preview`, { user_id: userId });
+
+export const getEntitlements = (userId: string) =>
+  API.get(`/me/entitlements/${userId}`).then(r => r.data);
+
+export const fetchProject = (projectId: string) =>
+  API.get(`/api/projects/${projectId}`).then(r => {
+    // Handle different response shapes from backend
+    if (r.data.ok && r.data.item) return r.data.item;
+    if (r.data.id) return r.data;
+    return r.data;
   });
-
-  if (!r.ok) {
-    const json = await r.json().catch(() => ({}));
-    throw new Error(json.error || r.statusText || 'Unknown error');
-  }
-
-  return r.json();
-}
