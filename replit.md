@@ -31,6 +31,7 @@ The application utilizes a component-based React Native architecture.
 - **Modal System**: Dropdowns for Budget and Skill utilize React Native Modals to ensure correct z-index rendering.
 - **Image Upload**: Server-side upload using multer (memoryStorage) with FormData. Images are uploaded to Supabase Storage bucket via backend API endpoint POST /api/projects/:id/image. Version-safe image picker handles different Expo SDK versions, supporting platform-specific differences for web and native.
 - **Preview Generation**: Functionality to trigger project preview generation via API calls.
+- **Build Without Preview**: Endpoint POST /api/projects/:id/build-without-preview allows users to bypass preview generation and proceed directly to building their project plan. Sets project status to 'ready' without requiring AI preview generation.
 - **Authentication**: Uses Supabase Auth for user authentication, with a fallback to a development mode for entitlements if no user is authenticated or the API is unreachable.
 - **Error Handling**: Comprehensive API and storage error handling, including network error detection and structured error responses.
 - **UX Enhancements**:
