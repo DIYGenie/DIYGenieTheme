@@ -9,17 +9,20 @@ import { typography } from '../../theme/typography';
 import { listProjects, ApiError } from '../lib/api';
 import { supabase } from '../lib/storage';
 import { BASE_URL } from '../config';
+import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation, route }) {
+  const { userId, loading: loadingUser } = useUser();
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(0);
-  const userId = '4e599cea-dfe5-4a8f-9738-bea3631ee4e6';
 
   const fetchProjects = async () => {
+    if (!userId) return;
+    
     try {
       const data = await listProjects(userId);
       setProjects(data);
@@ -30,7 +33,7 @@ export default function ProjectsScreen({ navigation, route }) {
       console.error('Failed to fetch projects:', error);
       if (error instanceof ApiError && error.status === 0) {
         if (Date.now() - lastHealthCheck >= 60000) {
-          setNetworkError(true);
+          setNetworkError(false); // Don't show error banner if health check succeeded recently
         }
       }
     } finally {
@@ -51,6 +54,8 @@ export default function ProjectsScreen({ navigation, route }) {
   );
 
   useEffect(() => {
+    if (!userId) return;
+    
     const init = async () => {
       // Health ping
       try {
@@ -70,7 +75,24 @@ export default function ProjectsScreen({ navigation, route }) {
     };
     
     init();
-  }, []);
+  }, [userId]);
+
+  // Polling: check projects every 2-3s while any item is in progress
+  useEffect(() => {
+    if (!userId) return;
+    
+    const hasInProgress = projects.some(p => 
+      ['preview_requested', 'plan_requested'].includes(p.status)
+    );
+
+    if (!hasInProgress) return;
+
+    const pollInterval = setInterval(() => {
+      fetchProjects();
+    }, 2500); // 2.5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [projects, userId]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -175,9 +197,25 @@ export default function ProjectsScreen({ navigation, route }) {
 }
 
 function ProjectCard({ project, navigation }) {
-  const hasPreview = project.preview_url;
-  const isPreviewRequested = project.status === 'preview_requested' || project.status === 'pending';
   const projectName = project.name || project.title || 'Untitled Project';
+  const status = project.status;
+  const hasInputImage = !!project.input_image_url;
+  const hasPreviewImage = !!project.preview_url;
+  
+  // Determine badge content based on status
+  let badgeText = '';
+  let badgeColor = '#6B7280';
+  
+  if (status === 'draft' && !hasInputImage) {
+    badgeText = 'Awaiting photo';
+    badgeColor = '#6B7280';
+  } else if (status === 'preview_requested') {
+    badgeText = 'Preview requested';
+    badgeColor = '#F59E0B';
+  } else if (status === 'plan_ready') {
+    badgeText = 'Plan ready';
+    badgeColor = '#10B981';
+  }
   
   const handlePress = () => {
     navigation.navigate('Project', { id: project.id });
@@ -186,13 +224,19 @@ function ProjectCard({ project, navigation }) {
   return (
     <TouchableOpacity style={styles.projectCard} onPress={handlePress}>
       {/* Thumbnail */}
-      {hasPreview ? (
+      {hasPreviewImage ? (
         <Image 
           source={{ uri: project.preview_url }} 
           style={styles.thumbnailImage}
           resizeMode="cover"
         />
-      ) : isPreviewRequested ? (
+      ) : hasInputImage ? (
+        <Image 
+          source={{ uri: project.input_image_url }} 
+          style={styles.thumbnailImage}
+          resizeMode="cover"
+        />
+      ) : status === 'preview_requested' ? (
         <View style={styles.thumbnailSkeleton}>
           <ActivityIndicator size="small" color="#F59E0B" />
         </View>
@@ -204,9 +248,9 @@ function ProjectCard({ project, navigation }) {
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={1}>{projectName}</Text>
         
-        {isPreviewRequested && !hasPreview ? (
-          <View style={styles.previewChip}>
-            <Text style={styles.previewChipText}>Preview requested</Text>
+        {badgeText ? (
+          <View style={[styles.statusBadge, { backgroundColor: `${badgeColor}15` }]}>
+            <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badgeText}</Text>
           </View>
         ) : (
           <Text style={styles.cardSubtitle}>
@@ -217,20 +261,6 @@ function ProjectCard({ project, navigation }) {
               : 'In progress'
             }
           </Text>
-        )}
-        
-        {/* Progress Bar - only show if progress exists */}
-        {project.progress !== undefined && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBackground}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: `${project.progress * 100}%` }
-                ]} 
-              />
-            </View>
-          </View>
         )}
       </View>
       
@@ -365,6 +395,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#D97706',
+  },
+  statusBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.manropeBold,
   },
   cardContent: {
     flex: 1,

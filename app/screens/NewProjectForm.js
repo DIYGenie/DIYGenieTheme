@@ -12,6 +12,7 @@ import { createProject, uploadRoomPhoto } from '../lib/api';
 import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
+import { useUser } from '../lib/useUser';
 import API from '../lib/apiClient';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL;
@@ -23,6 +24,7 @@ async function loadEntitlements(userId) {
 }
 
 export default function NewProjectForm({ navigation }) {
+  const { userId, loading: loadingUser } = useUser();
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [skillLevel, setSkillLevel] = useState('');
@@ -38,7 +40,6 @@ export default function NewProjectForm({ navigation }) {
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [networkError, setNetworkError] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(0);
-  const userId = '4e599cea-dfe5-4a8f-9738-bea3631ee4e6';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -72,6 +73,8 @@ export default function NewProjectForm({ navigation }) {
   };
 
   useEffect(() => {
+    if (!userId) return;
+    
     const init = async () => {
       // Health ping
       try {
@@ -105,7 +108,7 @@ export default function NewProjectForm({ navigation }) {
     };
     
     init();
-  }, []);
+  }, [userId]);
 
   const handleScanRoom = () => {
     if (canUpload) {
@@ -216,8 +219,17 @@ export default function NewProjectForm({ navigation }) {
     setIsGeneratingPreview(true);
 
     try {
-      await API.post(`/api/projects/${projectId}/preview`, { user_id: userId });
-      showToast('Preview requested! Check Projects list.', 'success');
+      const response = await API.post(`/api/projects/${projectId}/preview`, { user_id: userId });
+      
+      // Handle { ok:false, error } responses
+      if (response.data && response.data.ok === false) {
+        showToast(response.data.error || 'Preview failed', 'error');
+        triggerHaptic('error');
+        setIsGeneratingPreview(false);
+        return;
+      }
+      
+      showToast('Preview requested', 'success');
       triggerHaptic('success');
       
       setTimeout(() => {
@@ -225,7 +237,8 @@ export default function NewProjectForm({ navigation }) {
       }, 600);
     } catch (e) {
       console.error('Preview generation failed:', e);
-      showToast('Preview failed. Please try again.', 'error');
+      const errorMsg = e?.response?.data?.error || e?.message || 'Preview failed';
+      showToast(errorMsg, 'error');
       triggerHaptic('error');
       setIsGeneratingPreview(false);
     }
@@ -239,8 +252,16 @@ export default function NewProjectForm({ navigation }) {
       
       const r = await API.post(`/api/projects/${projectId}/build-without-preview`, { user_id: userId });
       
+      // Handle { ok:false, error } responses
+      if (r.data && r.data.ok === false) {
+        showToast(r.data.error || 'Build failed', 'error');
+        triggerHaptic('error');
+        setIsBuildingPlan(false);
+        return;
+      }
+      
       if (r.data?.ok) {
-        showToast('Build started! Check Projects list.', 'success');
+        showToast('Plan requested', 'success');
         triggerHaptic('success');
         
         setTimeout(() => {

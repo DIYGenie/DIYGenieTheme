@@ -250,8 +250,26 @@ export async function pollProjectStatus(
 
 /**
  * Upload room photo using FormData (works on web & native)
+ * Also supports direct_url for testing
  */
-export async function uploadRoomPhoto(projectId: string, asset: any): Promise<{ ok: true; url: string }> {
+export async function uploadRoomPhoto(projectId: string, asset: any, directUrl?: string): Promise<{ ok: true; url?: string }> {
+  // If directUrl is provided (for testing), send JSON
+  if (directUrl) {
+    const r = await fetch(`${BASE}/api/projects/${projectId}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direct_url: directUrl }),
+    });
+
+    if (!r.ok) {
+      const json = await r.json().catch(() => ({}));
+      throw new Error(json.error || `Upload failed (${r.status})`);
+    }
+    
+    return r.json();
+  }
+
+  // Otherwise use FormData for file upload
   let filePart: any = {
     uri: asset.uri,
     name: asset.fileName || `room-${Date.now()}.jpg`,
@@ -273,8 +291,8 @@ export async function uploadRoomPhoto(projectId: string, asset: any): Promise<{ 
   });
 
   if (!r.ok) {
-    const t = await r.text().catch(() => '');
-    throw new Error(`Upload failed (${r.status}): ${t || 'unknown error'}`);
+    const json = await r.json().catch(() => ({}));
+    throw new Error(json.error || `Upload failed (${r.status})`);
   }
   
   return r.json();
