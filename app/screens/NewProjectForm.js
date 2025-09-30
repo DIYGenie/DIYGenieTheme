@@ -106,14 +106,13 @@ export default function NewProjectForm({ navigation }) {
     
     try {
       const asset = await pickRoomPhoto();
-      if (!asset) {
-        showToast('Permission needed to access photos', 'error');
-        return;
-      }
+      if (!asset) return;
 
+      // Show immediately in the UI
+      setInputImageUrl(asset.uri);
       setIsUploading(true);
 
-      // Step 1: Create project
+      // Create project
       const projectData = await createProject({
         user_id: userId || 'dev-user',
         name: description.substring(0, 100),
@@ -125,15 +124,13 @@ export default function NewProjectForm({ navigation }) {
       const currentProjectId = projectData.id;
       setProjectId(currentProjectId);
 
-      // Step 2: Upload via backend (sets input_image_url and status='preview_requested')
-      const { url } = await uploadRoomPhoto(currentProjectId, asset);
-      setInputImageUrl(url);
+      // Upload via backend
+      await uploadRoomPhoto(currentProjectId, asset);
 
-      // Success!
-      showToast('Photo uploaded!', 'success');
+      showToast('Photo uploaded ✨', 'success');
       triggerHaptic('success');
 
-      // Step 3: Start preview flow automatically
+      // Start preview flow automatically
       setIsGeneratingPreview(true);
       
       // poll status until ready (60s max)
@@ -154,7 +151,7 @@ export default function NewProjectForm({ navigation }) {
 
     } catch (error) {
       console.error('Upload failed:', error);
-      showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
+      showToast(error.message || 'Upload failed', 'error');
       triggerHaptic('error');
       setIsGeneratingPreview(false);
     } finally {
