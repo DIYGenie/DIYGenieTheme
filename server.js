@@ -173,37 +173,66 @@ app.patch('/api/projects/:id', async (req, res) => {
 app.post('/api/projects/:id/preview', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log(`[PREVIEW START] Project ${id}`);
+    
     // set requested
     await supabase.from('projects')
       .update({ status: 'preview_requested' })
       .eq('id', id);
 
     // respond immediately so UI can start polling
-    res.json({ ok:true });
+    res.json({ ok: true });
 
     if (running.has(id)) return;
     running.add(id);
 
     // DEV: complete after 5s
     setTimeout(async () => {
-      // get existing image or use placeholder
-      const { data } = await supabase
-        .from('projects')
-        .select('input_image_url')
-        .eq('id', id)
-        .single();
+      try {
+        // get existing image or use placeholder
+        const { data } = await supabase
+          .from('projects')
+          .select('input_image_url')
+          .eq('id', id)
+          .single();
 
-      const previewUrl = data?.input_image_url || 'https://placehold.co/600x400?text=Preview';
+        const previewUrl = data?.input_image_url || 'https://placehold.co/600x400?text=Preview';
 
-      await supabase.from('projects')
-        .update({ status: 'preview_ready', preview_url: previewUrl })
-        .eq('id', id);
+        await supabase.from('projects')
+          .update({ status: 'preview_ready', preview_url: previewUrl })
+          .eq('id', id);
 
-      running.delete(id);
+        console.log(`[PREVIEW FINISH] Project ${id} - preview_url: ${previewUrl}`);
+        running.delete(id);
+      } catch (err) {
+        console.error(`[PREVIEW ERROR] Project ${id}:`, err.message);
+        running.delete(id);
+      }
     }, 5000);
   } catch (e) {
-    // no-op; UI already got {ok:true}
+    console.error(`[PREVIEW ERROR] Project ${req.params.id}:`, e.message);
     running.delete(req.params.id);
+  }
+});
+
+app.get('/api/projects/:id/force-ready', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await supabase.from('projects')
+      .update({ 
+        status: 'preview_ready', 
+        preview_url: 'https://placehold.co/1200x800?text=Preview' 
+      })
+      .eq('id', id);
+
+    console.log(`[DEBUG FORCE-READY] Project ${id}`);
+    
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error(`[DEBUG FORCE-READY ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 
