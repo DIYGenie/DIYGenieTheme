@@ -27,11 +27,12 @@ The application utilizes a component-based React Native architecture.
 
 ### Technical Implementations
 - **Backend API Integration**: Includes an Express.js backend server (`server.js`) running on port 3001 with CORS support for managing projects and user entitlements.
-- **API Wrapper**: A typed configuration module (`app/config.ts`) and an API wrapper (`app/lib/api.ts`) handle API requests, entitlements fetching, project creation, and updates.
+- **API Wrapper**: Dual API approach - axios-based client (`app/lib/apiClient.ts`) for simple requests, and fetch-based wrapper (`app/lib/api.ts`) for complex operations with timeout/error handling.
+- **Entitlements**: Direct axios.get to `/me/entitlements/:userId` returns `{ok, tier, quota, remaining, previewAllowed}` for gating features.
 - **Modal System**: Dropdowns for Budget and Skill utilize React Native Modals to ensure correct z-index rendering.
-- **Image Upload**: Server-side upload using multer (memoryStorage) with FormData. Images are uploaded to Supabase Storage bucket via backend API endpoint POST /api/projects/:id/image. Version-safe image picker handles different Expo SDK versions, supporting platform-specific differences for web and native.
-- **Preview Generation**: Functionality to trigger project preview generation via API calls.
-- **Build Without Preview**: Endpoint POST /api/projects/:id/build-without-preview allows users to bypass preview generation and proceed directly to building their project plan. Sets project status to 'ready' without requiring AI preview generation.
+- **Image Upload**: Server-side upload using multer (memoryStorage) with FormData key 'image'. Images are uploaded to Supabase Storage bucket via backend API endpoint POST /api/projects/:id/image. Version-safe image picker handles different Expo SDK versions, supporting platform-specific differences for web and native. No auto-actions after upload.
+- **Preview Generation**: Explicit user action via "Generate AI Preview" button → POST /api/projects/:id/preview → immediate navigation to Projects list (no polling). Preview button enabled only if previewAllowed=true AND image uploaded.
+- **Build Without Preview**: Explicit user action via button → POST /api/projects/:id/build-without-preview → immediate navigation to Projects list. Button enabled if form valid (description ≥10 chars, budget, skill) and project created.
 - **Authentication**: Uses Supabase Auth for user authentication, with a fallback to a development mode for entitlements if no user is authenticated or the API is unreachable.
 - **Error Handling**: Comprehensive API and storage error handling, including network error detection and structured error responses.
 - **UX Enhancements**:
