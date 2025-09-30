@@ -224,7 +224,7 @@ function ProjectCard({ project, navigation }) {
   }
   
   const handlePress = () => {
-    navigation.navigate('Project', { id: project.id });
+    navigation.navigate('ProjectDetails', { id: project.id });
   };
   
   return (

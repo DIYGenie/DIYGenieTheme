@@ -10,6 +10,8 @@ import NewProjectMedia from '../screens/NewProjectMedia';
 import ScanRoomIntro from '../screens/ScanRoomIntro';
 import ProjectPreview from '../screens/ProjectPreview';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
+import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
+import PlanScreen from '../screens/PlanScreen';
 
 const Stack = createStackNavigator();
 
@@ -30,6 +32,8 @@ export default function AppNavigator() {
       <Stack.Screen name="ScanRoomIntro" component={ScanRoomIntro} />
       <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
       <Stack.Screen name="Project" component={ProjectDetailScreen} />
+      <Stack.Screen name="ProjectDetails" component={ProjectDetailsScreen} />
+      <Stack.Screen name="Plan" component={PlanScreen} />
     </Stack.Navigator>
   );
 }

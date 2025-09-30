@@ -40,6 +40,11 @@ if (!sbUrl || !sbKey) {
 
 const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
 
+const TEST_MODE = process.env.TEST_MODE === 'true' || process.env.NODE_ENV === 'development';
+const TEST_USERS = new Set(['4e599cea-dfe5-4a8f-9738-bea3631ee4e6']);
+
+console.log('🧪 TEST_MODE:', TEST_MODE ? 'ENABLED (quota checks bypassed for test users)' : 'DISABLED');
+
 const running = new Set(); // simple dev guard
 
 app.get('/health', (req, res) => {
@@ -68,28 +73,33 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+async function checkEntitlements(userId) {
+  const { data, error } = await supabase
+    .from('entitlements')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+  
+  if (error || !data) {
+    return { tier: 'Free', quota: 5, remaining: 5, previewAllowed: false };
+  }
+  
+  return {
+    tier: data.tier || 'Free',
+    quota: data.quota || 5,
+    remaining: data.remaining !== undefined ? data.remaining : 5,
+    previewAllowed: data.preview_allowed || false
+  };
+}
+
 app.get('/me/entitlements/:userId', async (req, res) => {
   const { userId } = req.params;
   
   try {
-    const { data, error } = await supabase
-      .from('entitlements')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error || !data) {
-      return res.json({ ok: true, tier: 'Free', quota: 5, remaining: 5 });
-    }
-    
-    return res.json({
-      ok: true,
-      tier: data.tier || 'Free',
-      quota: data.quota || 5,
-      remaining: data.remaining !== undefined ? data.remaining : 5
-    });
+    const ent = await checkEntitlements(userId);
+    return res.json({ ok: true, ...ent });
   } catch (err) {
-    return res.json({ ok: true, tier: 'Free', quota: 5, remaining: 5 });
+    return res.json({ ok: true, tier: 'Free', quota: 5, remaining: 5, previewAllowed: false });
   }
 });
 
@@ -101,6 +111,24 @@ app.post('/api/projects', async (req, res) => {
     
     if (!user_id || !name) {
       return res.status(400).json({ ok: false, error: 'missing_fields' });
+    }
+    
+    const isTestUser = TEST_USERS.has(user_id);
+    const shouldBypassQuota = TEST_MODE && isTestUser;
+    
+    if (!shouldBypassQuota) {
+      const ent = await checkEntitlements(user_id);
+      
+      if (ent.remaining <= 0) {
+        console.log(`[QUOTA EXHAUSTED] User ${user_id} - ${ent.remaining}/${ent.quota}`);
+        return res.status(403).json({ 
+          ok: false, 
+          error: 'quota_exhausted',
+          entitlements: ent
+        });
+      }
+    } else {
+      console.log(`[TEST MODE BYPASS] Allowing project creation for test user ${user_id}`);
     }
     
     const insert = {
@@ -176,6 +204,27 @@ app.patch('/api/projects/:id', async (req, res) => {
 app.post('/api/projects/:id/image', upload.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Support direct_url for testing
+    if (req.body && req.body.direct_url) {
+      const directUrl = req.body.direct_url;
+      
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ 
+          input_image_url: directUrl,
+          status: 'draft'
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('[DIRECT_URL ERROR]', updateError);
+        return res.status(500).json({ ok: false, error: updateError.message });
+      }
+
+      console.log(`[DIRECT_URL SUCCESS] Project ${id} - ${directUrl}`);
+      return res.json({ ok: true, url: directUrl });
+    }
     
     if (!req.file) {
       return res.status(400).json({ ok: false, error: 'No file uploaded' });

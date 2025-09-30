@@ -194,11 +194,22 @@ export async function listProjects(userId: string): Promise<any[]> {
 /**
  * Get project details by ID
  */
-export async function getProject(id: string) {
-  const r = await fetch(`${BASE}/api/projects/${id}`);
-  if (!r.ok) throw new Error('getProject failed');
-  return r.json(); // { ok, item }
+export async function fetchProject(id: string): Promise<any> {
+  const response = await fetchJson(`/api/projects/${id}`);
+  // Handle { ok, item } response shape
+  if (response.ok && response.item) {
+    return response.item;
+  }
+  // Handle direct project object
+  if (response.id) {
+    return response;
+  }
+  // Handle wrapped response
+  return response.item || response;
 }
+
+// Alias for backwards compatibility
+export const getProject = fetchProject;
 
 /**
  * Request preview generation for a project
