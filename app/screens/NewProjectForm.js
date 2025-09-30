@@ -171,6 +171,7 @@ export default function NewProjectForm({ navigation }) {
       const response = await API.get(`/api/projects/${projectId}`);
       const project = response.data.item || response.data;
       
+      // preview_ready → show preview_url
       if (project.status === 'preview_ready') {
         showToast('Preview ready!', 'success');
         triggerHaptic('success');
@@ -181,6 +182,17 @@ export default function NewProjectForm({ navigation }) {
         }, 800);
         return;
       }
+      
+      // preview_failed → show "Try again" with error from API
+      if (project.status === 'preview_failed') {
+        const errorMessage = project.error || 'Preview generation failed';
+        showToast(`Try again: ${errorMessage}`, 'error');
+        triggerHaptic('error');
+        setIsGeneratingPreview(false);
+        return;
+      }
+      
+      // preview_requested → continue showing spinner (loop continues)
     }
     
     // Timeout - keep both buttons enabled
