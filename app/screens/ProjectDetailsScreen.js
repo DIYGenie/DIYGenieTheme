@@ -189,7 +189,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
   const remaining = Number(entitlements?.remaining ?? 0);
   const previewAllowed = Boolean(entitlements?.previewAllowed);
   const canPreview = isFormValid && remaining > 0 && previewAllowed && hasInputImage && !hasPreview && !hasPlan;
-  const canBuild = isFormValid && remaining > 0 && !hasPlan;
+  const canBuild = isFormValid && remaining > 0 && hasInputImage && !hasPlan;
 
   return (
     <LinearGradient colors={['#8B5CF6', '#3B82F6']} style={styles.container}>
