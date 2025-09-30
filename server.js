@@ -5,13 +5,38 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({
-  origin: true,
+app.set('trust proxy', 1);
+
+const corsMiddleware = cors({
+  origin: (origin, cb) => cb(null, true),
+  methods: ['GET','POST','PATCH','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
   credentials: false,
-  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  optionsSuccessStatus: 204,
+});
+
+app.use(corsMiddleware);
+
+// Ensure headers for any framework edge-cases
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.json());
+
+// Debug middleware
+app.use((req, _res, next) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[REQ]', req.method, req.path, 'origin:', req.headers.origin);
+  }
+  next();
+});
 
 const sbUrl = process.env.SUPABASE_URL;
 const sbKey = process.env.SUPABASE_SERVICE_KEY;
@@ -24,6 +49,10 @@ const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } })
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'healthy' });
+});
+
+app.get('/_debug/origin', (req, res) => {
+  res.json({ origin: req.headers.origin || null });
 });
 
 app.get('/api/projects', async (req, res) => {
