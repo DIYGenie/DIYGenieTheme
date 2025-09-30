@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors({ origin: true }));
 
@@ -167,6 +170,64 @@ app.patch('/api/projects/:id', async (req, res) => {
   } catch (err) {
     console.error('Unexpected error:', err);
     return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/projects/:id/image', upload.single('file'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: 'No file uploaded' });
+    }
+
+    const bucket = process.env.EXPO_PUBLIC_UPLOADS_BUCKET;
+    if (!bucket) {
+      return res.status(500).json({ ok: false, error: 'Uploads bucket not configured' });
+    }
+
+    const ext = req.file.mimetype === 'image/png' ? 'png' : 'jpg';
+    const fileName = `${Date.now()}.${ext}`;
+    const path = `projects/${id}/${fileName}`;
+
+    const { error: uploadError } = await supabase
+      .storage
+      .from(bucket)
+      .upload(path, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('[UPLOAD ERROR]', uploadError);
+      return res.status(500).json({ ok: false, error: uploadError.message });
+    }
+
+    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(path);
+    const publicUrl = publicUrlData?.publicUrl;
+
+    if (!publicUrl) {
+      return res.status(500).json({ ok: false, error: 'Failed to get public URL' });
+    }
+
+    const { error: updateError } = await supabase
+      .from('projects')
+      .update({ 
+        input_image_url: publicUrl,
+        status: 'preview_requested'
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('[UPDATE ERROR]', updateError);
+      return res.status(500).json({ ok: false, error: updateError.message });
+    }
+
+    console.log(`[UPLOAD SUCCESS] Project ${id} - ${publicUrl}`);
+    return res.json({ ok: true, url: publicUrl });
+  } catch (e) {
+    console.error('[UPLOAD ERROR]', e.message);
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 
