@@ -165,7 +165,7 @@ export default function ProjectsScreen({ navigation, route }) {
         ) : (
           <View style={styles.projectsList}>
             {filteredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} navigation={navigation} />
             ))}
           </View>
         )}
@@ -174,13 +174,17 @@ export default function ProjectsScreen({ navigation, route }) {
   );
 }
 
-function ProjectCard({ project }) {
+function ProjectCard({ project, navigation }) {
   const hasPreview = project.preview_url;
   const isPreviewRequested = project.status === 'preview_requested' || project.status === 'pending';
   const projectName = project.name || project.title || 'Untitled Project';
   
+  const handlePress = () => {
+    navigation.navigate('Project', { id: project.id });
+  };
+  
   return (
-    <TouchableOpacity style={styles.projectCard}>
+    <TouchableOpacity style={styles.projectCard} onPress={handlePress}>
       {/* Thumbnail */}
       {hasPreview ? (
         <Image 

@@ -9,6 +9,7 @@ import NewProjectForm from '../screens/NewProjectForm';
 import NewProjectMedia from '../screens/NewProjectMedia';
 import ScanRoomIntro from '../screens/ScanRoomIntro';
 import ProjectPreview from '../screens/ProjectPreview';
+import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,7 @@ export default function AppNavigator() {
       <Stack.Screen name="NewProjectMedia" component={NewProjectMedia} />
       <Stack.Screen name="ScanRoomIntro" component={ScanRoomIntro} />
       <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
+      <Stack.Screen name="Project" component={ProjectDetailScreen} />
     </Stack.Navigator>
   );
 }
