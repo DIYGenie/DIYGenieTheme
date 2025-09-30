@@ -7,22 +7,44 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchProject } from '../lib/api';
+import { fetchProject, requestPreview, buildWithoutPreview } from '../lib/api';
+import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
+import axios from 'axios';
+
+const BASE = process.env.EXPO_PUBLIC_BASE_URL;
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
+  const { userId } = useUser();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [entitlements, setEntitlements] = useState({ remaining: 0, previewAllowed: false });
+  const [isRequestingPreview, setIsRequestingPreview] = useState(false);
+  const [isBuildingPlan, setIsBuildingPlan] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
   useEffect(() => {
     loadProject();
-  }, [id]);
+    if (userId) loadEntitlements();
+  }, [id, userId]);
+
+  const loadEntitlements = async () => {
+    try {
+      const r = await axios.get(`${BASE}/me/entitlements/${userId}`);
+      setEntitlements({
+        remaining: r.data.remaining || 0,
+        previewAllowed: r.data.previewAllowed || false,
+      });
+    } catch (error) {
+      console.error('Failed to load entitlements:', error);
+    }
+  };
 
   const loadProject = async () => {
     try {
@@ -51,6 +73,38 @@ export default function ProjectDetailsScreen({ navigation, route }) {
       return;
     }
     navigation.navigate('Plan', { id: project.id });
+  };
+
+  const handleGeneratePreview = async () => {
+    if (isRequestingPreview) return;
+    
+    try {
+      setIsRequestingPreview(true);
+      await requestPreview(project.id);
+      showToast('Preview requested', 'success');
+      navigation.navigate('Projects');
+    } catch (error) {
+      console.error('Failed to request preview:', error);
+      showToast(error.message || 'Failed to request preview', 'error');
+    } finally {
+      setIsRequestingPreview(false);
+    }
+  };
+
+  const handleBuildWithoutPreview = async () => {
+    if (isBuildingPlan) return;
+    
+    try {
+      setIsBuildingPlan(true);
+      await buildWithoutPreview(project.id);
+      showToast('Plan requested', 'success');
+      navigation.navigate('Projects');
+    } catch (error) {
+      console.error('Failed to request plan:', error);
+      showToast(error.message || 'Failed to request plan', 'error');
+    } finally {
+      setIsBuildingPlan(false);
+    }
   };
 
   const getStatusBadge = (status, hasInputImage) => {
@@ -130,6 +184,13 @@ export default function ProjectDetailsScreen({ navigation, route }) {
   const hasPlan = ['plan_ready', 'ready'].includes(project.status) || !!project.plan;
   const isProcessing = ['preview_requested', 'plan_requested'].includes(project.status);
 
+  // Gating logic for buttons
+  const isFormValid = (project.description?.trim()?.length ?? 0) >= 10 && !!project.budget && !!project.skill;
+  const remaining = Number(entitlements?.remaining ?? 0);
+  const previewAllowed = Boolean(entitlements?.previewAllowed);
+  const canPreview = isFormValid && remaining > 0 && previewAllowed && hasInputImage && !hasPreview && !hasPlan;
+  const canBuild = isFormValid && remaining > 0 && !hasPlan;
+
   return (
     <LinearGradient colors={['#8B5CF6', '#3B82F6']} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -179,6 +240,66 @@ export default function ProjectDetailsScreen({ navigation, route }) {
                   <Ionicons name="image-outline" size={48} color="rgba(255,255,255,0.3)" />
                   <Text style={styles.placeholderText}>No photo uploaded</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Action buttons - only show if not processing and no plan yet */}
+            {hasInputImage && !hasPreview && !hasPlan && !isProcessing && (
+              <View style={styles.actionButtons}>
+                {/* Preview Button */}
+                <Pressable
+                  onPress={handleGeneratePreview}
+                  disabled={!canPreview || isRequestingPreview}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    (!canPreview || isRequestingPreview) && styles.primaryButtonDisabled,
+                    { transform: [{ scale: pressed && canPreview ? 0.98 : 1 }] }
+                  ]}
+                >
+                  {isRequestingPreview ? (
+                    <>
+                      <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.primaryButtonText}>Requesting...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
+                    </>
+                  )}
+                </Pressable>
+
+                {/* Hint under preview button */}
+                {!previewAllowed && (
+                  <View style={styles.hintContainer}>
+                    <Text style={styles.hintText}>
+                      Preview isn't included in your current plan.{' '}
+                      <Text style={styles.hintLink} onPress={() => navigation.navigate('Profile')}>
+                        Upgrade
+                      </Text>
+                    </Text>
+                  </View>
+                )}
+
+                {/* Build Button */}
+                <Pressable
+                  onPress={handleBuildWithoutPreview}
+                  disabled={!canBuild || isBuildingPlan}
+                  style={({ pressed }) => [
+                    styles.secondaryButton,
+                    (!canBuild || isBuildingPlan) && { opacity: 0.5 },
+                    { transform: [{ scale: pressed && canBuild ? 0.98 : 1 }] }
+                  ]}
+                >
+                  {isBuildingPlan ? (
+                    <>
+                      <ActivityIndicator size="small" color="#1F2937" style={{ marginRight: 8 }} />
+                      <Text style={styles.secondaryButtonText}>Requesting...</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
+                  )}
+                </Pressable>
               </View>
             )}
 
@@ -366,5 +487,56 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginLeft: 8,
     marginRight: 8,
+  },
+  actionButtons: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F97316',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  primaryButtonDisabled: {
+    backgroundColor: 'rgba(249, 115, 22, 0.5)',
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  hintContainer: {
+    marginTop: -4,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  hintText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+  },
+  hintLink: {
+    color: '#F97316',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
