@@ -2,6 +2,7 @@
  * API wrapper with fetch helper and entitlements endpoint
  */
 
+import { Platform } from 'react-native';
 import { BASE_URL } from '../config';
 
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
@@ -245,4 +246,36 @@ export async function pollProjectStatus(
   }
   
   throw new Error('Preview generation timeout');
+}
+
+/**
+ * Upload room photo using FormData (works on web & native)
+ */
+export async function uploadRoomPhoto(projectId: string, asset: any): Promise<{ ok: true; url: string }> {
+  let filePart: any = {
+    uri: asset.uri,
+    name: asset.fileName || `room-${Date.now()}.jpg`,
+    type: asset.mimeType || 'image/jpeg',
+  };
+
+  if (Platform.OS === 'web') {
+    const resp = await fetch(asset.uri);
+    const blob = await resp.blob();
+    filePart = new File([blob], filePart.name, { type: filePart.type });
+  }
+
+  const fd = new FormData();
+  fd.append('file', filePart as any);
+
+  const r = await fetch(`${BASE}/api/projects/${projectId}/image`, {
+    method: 'POST',
+    body: fd,
+  });
+
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw new Error(`Upload failed (${r.status}): ${t || 'unknown error'}`);
+  }
+  
+  return r.json();
 }
