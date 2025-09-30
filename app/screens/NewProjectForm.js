@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, useWindowDimensions, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -7,11 +7,11 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError, uploadRoomPhoto, buildWithoutPreview } from '../lib/api';
+import { getEntitlements, createProject, ApiError, uploadRoomPhoto } from '../lib/api';
 import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
-import { BASE_URL } from '../config';
+import API from '../lib/apiClient';
 
 export default function NewProjectForm({ navigation }) {
   const [description, setDescription] = useState('');
@@ -19,12 +19,13 @@ export default function NewProjectForm({ navigation }) {
   const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
-  const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'free' });
+  const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'Free' });
   const [loadingEntitlements, setLoadingEntitlements] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [inputImageUrl, setInputImageUrl] = useState('');
   const [projectId, setProjectId] = useState('');
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [isBuildingPlan, setIsBuildingPlan] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [networkError, setNetworkError] = useState(false);
   const [lastHealthCheck, setLastHealthCheck] = useState(0);
@@ -40,7 +41,8 @@ export default function NewProjectForm({ navigation }) {
 
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
-  const canPreview = entitlements && entitlements.tier !== 'Free' && (entitlements.remaining ?? 0) > 0;
+  const canPreview = entitlements && entitlements.tier !== 'Free' && !isGeneratingPreview && inputImageUrl && projectId;
+  const canBuildWithoutPreview = isFormValid && inputImageUrl && projectId && !isBuildingPlan;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -62,12 +64,10 @@ export default function NewProjectForm({ navigation }) {
     const init = async () => {
       // Health ping
       try {
-        const healthResp = await fetch(`${BASE_URL}/health`, { method: 'GET' });
-        if (healthResp.ok) {
+        const healthResp = await API.get('/health');
+        if (healthResp.status === 200) {
           setLastHealthCheck(Date.now());
           setNetworkError(false);
-        } else {
-          throw new Error('Health check failed');
         }
       } catch (healthErr) {
         setNetworkError(true);
@@ -108,8 +108,6 @@ export default function NewProjectForm({ navigation }) {
       const asset = await pickRoomPhoto();
       if (!asset) return;
 
-      // Show immediately in the UI
-      setInputImageUrl(asset.uri);
       setIsUploading(true);
 
       // Create project
@@ -127,33 +125,16 @@ export default function NewProjectForm({ navigation }) {
       // Upload via backend
       await uploadRoomPhoto(currentProjectId, asset);
 
+      // Show immediately in the UI
+      setInputImageUrl(asset.uri);
+
       showToast('Photo uploaded ✨', 'success');
       triggerHaptic('success');
-
-      // Start preview flow automatically
-      setIsGeneratingPreview(true);
-      
-      // poll status until ready (60s max)
-      const start = Date.now();
-      while (Date.now() - start < 60000) {
-        const { item } = await getProject(currentProjectId);
-        if (item?.status === 'preview_ready') {
-          showToast('Preview ready!', 'success');
-          triggerHaptic('success');
-          setIsGeneratingPreview(false);
-          return;
-        }
-        await new Promise(r => setTimeout(r, 2000));
-      }
-      
-      showToast('Preview timeout', 'error');
-      setIsGeneratingPreview(false);
 
     } catch (error) {
       console.error('Upload failed:', error);
       showToast(error.message || 'Upload failed', 'error');
       triggerHaptic('error');
-      setIsGeneratingPreview(false);
     } finally {
       setIsUploading(false);
     }
@@ -183,55 +164,69 @@ export default function NewProjectForm({ navigation }) {
     setIsGeneratingPreview(true);
 
     try {
-      await requestPreview(projectId);
+      // POST /api/projects/:id/preview
+      await API.post(`/api/projects/${projectId}/preview`);
 
-      // poll status until ready (60s max)
+      // Poll every 2s for up to 30s
       const start = Date.now();
-      while (Date.now() - start < 60000) {
-        const { item } = await getProject(projectId);
-        if (item?.status === 'preview_ready') {
+      const timeout = 30000;
+      const pollInterval = 2000;
+
+      while (Date.now() - start < timeout) {
+        await new Promise(r => setTimeout(r, pollInterval));
+        
+        const response = await API.get(`/api/projects/${projectId}`);
+        const project = response.data.item || response.data;
+        
+        if (project.status === 'preview_ready') {
           showToast('Preview ready!', 'success');
           triggerHaptic('success');
+          
+          // Refetch projects list
+          await API.get('/api/projects', { params: { user_id: userId } });
+          
           setTimeout(() => {
-            navigation.navigate('Projects', { refresh: true });
+            navigation.navigate('Project', { id: projectId });
           }, 800);
           return;
         }
-        await new Promise(r => setTimeout(r, 2000));
       }
-      Alert.alert('Preview timed out. Please try again.');
+      
+      // Timeout
+      showToast('Preview timed out. You can try again or continue without a preview.', 'error');
       setIsGeneratingPreview(false);
     } catch (e) {
-      Alert.alert('Preview failed', String(e));
+      console.error('Preview generation failed:', e);
+      showToast('Preview failed. Please try again.', 'error');
       triggerHaptic('error');
       setIsGeneratingPreview(false);
     }
   };
 
   const handleBuildWithoutPreview = async () => {
-    if (!projectId || isUploading) return;
+    if (!projectId || !inputImageUrl || isBuildingPlan) return;
     
     try {
-      setIsUploading(true);
+      setIsBuildingPlan(true);
       
-      const response = await buildWithoutPreview(projectId);
-      
-      if (!response.ok) {
-        throw new Error(response.error || 'Failed to build project');
-      }
+      // POST /api/projects/:id/build-without-preview
+      await API.post(`/api/projects/${projectId}/build-without-preview`);
       
       showToast('Project ready to build!', 'success');
       triggerHaptic('success');
       
+      // Refetch projects list
+      await API.get('/api/projects', { params: { user_id: userId } });
+      
       setTimeout(() => {
-        navigation.navigate('Projects', { refresh: true });
+        navigation.navigate('Project', { id: projectId });
       }, 600);
     } catch (error) {
       console.error('Build without preview failed:', error);
       showToast(error.message || 'Could not build plan', 'error');
       triggerHaptic('error');
     } finally {
-      setIsUploading(false);
+      setIsBuildingPlan(false);
     }
   };
 
@@ -257,7 +252,7 @@ export default function NewProjectForm({ navigation }) {
         <View style={styles.header}>
           <Text style={styles.title}>Start a New Project</Text>
           <Text style={styles.subtitle}>Tell us what you'd like DIY Genie to help you build</Text>
-          {__DEV__ && <Text style={{ fontSize: 11, color: '#999', marginTop: 4 }}>API: {BASE_URL}</Text>}
+          {__DEV__ && <Text style={{ fontSize: 11, color: '#999', marginTop: 4 }}>API: {process.env.EXPO_PUBLIC_BASE_URL}</Text>}
           {networkError && __DEV__ && (
             <View style={styles.devBanner}>
               <Text style={styles.devBannerText}>Can't reach server. Check BASE_URL or CORS.</Text>
@@ -373,7 +368,7 @@ export default function NewProjectForm({ navigation }) {
           </View>
 
         {/* Bottom: media section */}
-        <View style={[styles.tilesContainer, { opacity: isUploading || isGeneratingPreview ? 0.6 : 1, pointerEvents: isUploading || isGeneratingPreview ? 'none' : 'auto' }]}>
+        <View style={[styles.tilesContainer, { opacity: isUploading ? 0.6 : 1, pointerEvents: isUploading ? 'none' : 'auto' }]}>
           <View style={{ 
             marginTop: 12, 
             marginBottom: 8, 
@@ -491,7 +486,7 @@ export default function NewProjectForm({ navigation }) {
               <View style={styles.ctaCol}>
                 <Pressable
                   onPress={debouncedGeneratePreview}
-                  disabled={!canPreview || isGeneratingPreview}
+                  disabled={!canPreview}
                   style={({ pressed }) => [
                     styles.primaryButton,
                     (!canPreview || isGeneratingPreview) && styles.primaryButtonDisabled,
@@ -511,7 +506,7 @@ export default function NewProjectForm({ navigation }) {
                   )}
                 </Pressable>
 
-                {!canPreview && (
+                {entitlements.tier === 'Free' && (
                   <Text style={styles.planNote}>
                     Preview isn't included in your current plan.{' '}
                     <Text style={styles.upgradeLink} onPress={() => navigation.navigate('Profile')}>
@@ -522,16 +517,21 @@ export default function NewProjectForm({ navigation }) {
 
                 <Pressable
                   onPress={debouncedBuildWithoutPreview}
-                  disabled={isUploading}
+                  disabled={!canBuildWithoutPreview}
                   style={({ pressed }) => [
                     styles.outlineButton,
-                    isUploading && { opacity: 0.5 },
-                    { transform: [{ scale: pressed && !isUploading ? 0.98 : 1 }] }
+                    (!canBuildWithoutPreview || isBuildingPlan) && { opacity: 0.5 },
+                    { transform: [{ scale: pressed && canBuildWithoutPreview && !isBuildingPlan ? 0.98 : 1 }] }
                   ]}
                 >
-                  <Text style={styles.outlineButtonText}>
-                    {isUploading ? 'Building...' : 'Build Plan Without Preview'}
-                  </Text>
+                  {isBuildingPlan ? (
+                    <>
+                      <ActivityIndicator size="small" color="#1F2937" style={{ marginRight: 8 }} />
+                      <Text style={styles.outlineButtonText}>Building…</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.outlineButtonText}>Build Plan Without Preview</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -648,7 +648,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 6,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
     maxWidth: 300,
   },
@@ -663,6 +662,17 @@ const styles = StyleSheet.create({
   },
   skillDropdownPosition: {
     marginTop: 0,
+  },
+  dropdownOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textPrimary,
   },
   tilesContainer: {
     zIndex: 0,
@@ -681,101 +691,45 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontWeight: '500',
   },
-  dropdownOption: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  dropdownOptionText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textPrimary,
-  },
-  scanRoomText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#F59E0B',
-  },
-  uploadPhotoText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#1F2937',
-  },
-  actionButtonTextDisabled: {
-    color: '#9CA3AF',
-  },
-  generateButton: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  generateButtonText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#FFFFFF',
-  },
-  devBanner: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 8,
-    alignSelf: 'flex-start',
-  },
-  devBannerText: {
-    fontSize: 11,
-    fontFamily: typography.fontFamily.inter,
-    color: '#D97706',
-    fontWeight: '600',
-  },
   photoSection: {
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
     paddingVertical: 12,
   },
   roomPhoto: {
-    width: '92%',
-    aspectRatio: 4 / 3,
-    borderRadius: 14,
-    backgroundColor: '#F2F3F5',
+    width: '100%',
+    height: 240,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    marginBottom: 12,
   },
   changeLink: {
-    paddingVertical: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
   changeLinkText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.interMedium,
     color: '#2563EB',
     fontWeight: '600',
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
   },
   ctaCol: {
-    width: '92%',
+    width: '100%',
     gap: 12,
-    marginTop: 4,
   },
   primaryButton: {
     backgroundColor: '#F59E0B',
     borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
   },
   primaryButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -784,15 +738,28 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#FFFFFF',
+    color: '#FFF',
+  },
+  planNote: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.inter,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: -4,
+    marginBottom: 4,
+  },
+  upgradeLink: {
+    color: '#2563EB',
+    fontWeight: '700',
   },
   outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -801,15 +768,15 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.manropeBold,
     color: '#1F2937',
   },
-  planNote: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: -4,
-    textAlign: 'center',
-    fontFamily: typography.fontFamily.inter,
+  devBanner: {
+    backgroundColor: '#FEF3C7',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 8,
   },
-  upgradeLink: {
-    color: '#2563EB',
-    fontWeight: '700',
+  devBannerText: {
+    fontSize: 12,
+    color: '#92400E',
+    textAlign: 'center',
   },
 });
