@@ -1,13 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { listProjects } from '../lib/api';
+import { useUser } from '../lib/useUser';
 
 export default function HomeScreen({ navigation }) {
+  const { userId } = useUser();
+  const isFocused = useIsFocused();
+  const [recent, setRecent] = useState([]);
+
+  const load = async () => {
+    if (!userId) return;
+    try {
+      const data = await listProjects(userId);
+      const items = (data?.items ?? [])
+        .sort((a, b) => new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf())
+        .slice(0, 2);
+      setRecent(items);
+    } catch (error) {
+      console.error('Failed to load recent projects:', error);
+    }
+  };
+
+  useEffect(() => { load(); }, [isFocused, userId]);
+
   const handleNewProject = () => {
     navigation.navigate('NewProject');
   };
@@ -44,27 +66,37 @@ export default function HomeScreen({ navigation }) {
 
         {/* Project Cards */}
         <View style={styles.projectsSection}>
-          <ProjectCard />
-          <ProjectCard />
+          {recent.map((project) => (
+            <ProjectCard key={project.id} project={project} navigation={navigation} />
+          ))}
+          {recent.length === 0 && (
+            <Text style={styles.emptyText}>No recent projects yet</Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function ProjectCard() {
+function ProjectCard({ project, navigation }) {
+  const handlePress = () => {
+    navigation.navigate('ProjectDetails', { id: project.id });
+  };
+
   return (
-    <TouchableOpacity style={styles.projectCard}>
+    <TouchableOpacity style={styles.projectCard} onPress={handlePress}>
       {/* Thumbnail Placeholder */}
       <View style={styles.thumbnailPlaceholder} />
       
       {/* Content */}
       <View style={styles.cardContent}>
         {/* Title */}
-        <Text style={styles.cardTitle}>DIY Kitchen Cabinet</Text>
+        <Text style={styles.cardTitle}>{project.name || 'Untitled Project'}</Text>
         
         {/* Subtitle */}
-        <Text style={styles.cardSubtitle}>3 steps remaining</Text>
+        <Text style={styles.cardSubtitle}>
+          {project.status === 'plan_ready' ? 'Plan ready' : project.status === 'preview_ready' ? 'Preview ready' : 'In progress'}
+        </Text>
       </View>
       
       {/* Chevron */}
@@ -198,5 +230,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.manropeBold,
     color: '#F59E0B',
     textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });
