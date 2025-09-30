@@ -350,7 +350,7 @@ export default function NewProjectForm({ navigation }) {
             </View>
           </View>
 
-        {/* Bottom: media section with stacked tiles */}
+        {/* Bottom: media section */}
         <View style={[styles.tilesContainer, { opacity: isUploading || isGeneratingPreview ? 0.6 : 1, pointerEvents: isUploading || isGeneratingPreview ? 'none' : 'auto' }]}>
           <View style={{ 
             marginTop: 12, 
@@ -366,7 +366,7 @@ export default function NewProjectForm({ navigation }) {
           </View>
 
           {/* Helper text */}
-          {!loadingEntitlements && (
+          {!loadingEntitlements && !inputImageUrl && (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
               {isUploading && <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />}
               <Text style={styles.helperText}>
@@ -381,102 +381,133 @@ export default function NewProjectForm({ navigation }) {
             </View>
           )}
 
-          {/* Stacked tiles */}
-          <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
-            {/* Scan Room */}
-            <Pressable
-              disabled={!canUpload}
-              style={({ pressed }) => ({
-                width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
-                justifyContent: 'center', alignItems: 'center',
-                backgroundColor: '#FFF',
-                borderWidth: 1.5, borderColor: '#FBBF24',
-                opacity: !canUpload ? 0.4 : 1,
-                shadowColor: '#000', 
-                shadowOpacity: !canUpload ? 0 : 0.06, 
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 4 }, 
-                elevation: 6,
-                transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
-                pointerEvents: !canUpload ? 'none' : 'auto',
-              })}
-              onPress={handleScanRoom}
-            >
-              <Ionicons 
-                name="camera" 
-                size={ICON_SIZE} 
-                color={canUpload ? '#F59E0B' : '#9CA3AF'} 
-                style={{ marginBottom: 4 }} 
-              />
-              <Text style={{
-                fontSize: LABEL_SIZE, 
-                fontWeight: '600', 
-                color: canUpload ? '#F59E0B' : '#9CA3AF'
-              }}>
-                Scan Room
-              </Text>
-            </Pressable>
-
-            {/* Upload Photo */}
-            <Pressable
-              disabled={!canUpload}
-              style={({ pressed }) => ({
-                width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
-                justifyContent: 'center', alignItems: 'center',
-                backgroundColor: '#FFF',
-                borderWidth: 1, borderColor: '#E5E7EB',
-                opacity: !canUpload ? 0.4 : 1,
-                shadowColor: '#000', 
-                shadowOpacity: !canUpload ? 0 : 0.06, 
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 4 }, 
-                elevation: 6,
-                transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
-                pointerEvents: !canUpload ? 'none' : 'auto',
-              })}
-              onPress={debouncedUploadPhoto}
-            >
-              <Ionicons 
-                name="image" 
-                size={ICON_SIZE} 
-                color={canUpload ? '#1F2937' : '#9CA3AF'} 
-                style={{ marginBottom: 4 }} 
-              />
-              <Text style={{
-                fontSize: LABEL_SIZE, 
-                fontWeight: '600', 
-                color: canUpload ? '#1F2937' : '#9CA3AF'
-              }}>
-                Upload Photo
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Generate Preview Button - shows after successful upload */}
-          {inputImageUrl && projectId && (
-            <View style={{ marginTop: 16 }}>
+          {!inputImageUrl ? (
+            /* Show tiles when no image uploaded */
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
+              {/* Scan Room */}
               <Pressable
-                disabled={isGeneratingPreview}
-                style={({ pressed }) => [
-                  styles.generateButton,
-                  {
-                    transform: [{ scale: pressed && !isGeneratingPreview ? 0.98 : 1 }],
-                  }
-                ]}
-                onPress={debouncedGeneratePreview}
+                disabled={!canUpload}
+                style={({ pressed }) => ({
+                  width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
+                  justifyContent: 'center', alignItems: 'center',
+                  backgroundColor: '#FFF',
+                  borderWidth: 1.5, borderColor: '#FBBF24',
+                  opacity: !canUpload ? 0.4 : 1,
+                  shadowColor: '#000', 
+                  shadowOpacity: !canUpload ? 0 : 0.06, 
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 4 }, 
+                  elevation: 6,
+                  transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
+                  pointerEvents: !canUpload ? 'none' : 'auto',
+                })}
+                onPress={handleScanRoom}
               >
-                {isGeneratingPreview ? (
-                  <>
-                    <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.generateButtonText}>Generating preview...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.generateButtonText}>Generate Preview</Text>
-                  </>
-                )}
+                <Ionicons 
+                  name="camera" 
+                  size={ICON_SIZE} 
+                  color={canUpload ? '#F59E0B' : '#9CA3AF'} 
+                  style={{ marginBottom: 4 }} 
+                />
+                <Text style={{
+                  fontSize: LABEL_SIZE, 
+                  fontWeight: '600', 
+                  color: canUpload ? '#F59E0B' : '#9CA3AF'
+                }}>
+                  Scan Room
+                </Text>
               </Pressable>
+
+              {/* Upload Photo */}
+              <Pressable
+                disabled={!canUpload}
+                style={({ pressed }) => ({
+                  width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
+                  justifyContent: 'center', alignItems: 'center',
+                  backgroundColor: '#FFF',
+                  borderWidth: 1, borderColor: '#E5E7EB',
+                  opacity: !canUpload ? 0.4 : 1,
+                  shadowColor: '#000', 
+                  shadowOpacity: !canUpload ? 0 : 0.06, 
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 4 }, 
+                  elevation: 6,
+                  transform: [{ scale: pressed && canUpload ? 0.98 : 1 }],
+                  pointerEvents: !canUpload ? 'none' : 'auto',
+                })}
+                onPress={debouncedUploadPhoto}
+              >
+                <Ionicons 
+                  name="image" 
+                  size={ICON_SIZE} 
+                  color={canUpload ? '#1F2937' : '#9CA3AF'} 
+                  style={{ marginBottom: 4 }} 
+                />
+                <Text style={{
+                  fontSize: LABEL_SIZE, 
+                  fontWeight: '600', 
+                  color: canUpload ? '#1F2937' : '#9CA3AF'
+                }}>
+                  Upload Photo
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            /* Show uploaded photo with CTAs */
+            <View style={styles.photoSection}>
+              <Image source={{ uri: inputImageUrl }} style={styles.roomPhoto} resizeMode="cover" />
+              <TouchableOpacity 
+                onPress={debouncedUploadPhoto} 
+                disabled={isUploading} 
+                style={styles.changeLink}
+              >
+                <Text style={styles.changeLinkText}>
+                  {isUploading ? 'Changing...' : 'Change photo'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.ctaCol}>
+                <Pressable
+                  onPress={debouncedGeneratePreview}
+                  disabled={!canPreview || isGeneratingPreview}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    (!canPreview || isGeneratingPreview) && styles.primaryButtonDisabled,
+                    { transform: [{ scale: pressed && canPreview && !isGeneratingPreview ? 0.98 : 1 }] }
+                  ]}
+                >
+                  {isGeneratingPreview ? (
+                    <>
+                      <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.primaryButtonText}>Generating…</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
+                    </>
+                  )}
+                </Pressable>
+
+                {!canPreview && (
+                  <Text style={styles.planNote}>
+                    Preview isn't included in your current plan.{' '}
+                    <Text style={styles.upgradeLink} onPress={() => navigation.navigate('Profile')}>
+                      Upgrade
+                    </Text>
+                  </Text>
+                )}
+
+                <Pressable
+                  onPress={handleBuildWithoutPreview}
+                  style={({ pressed }) => [
+                    styles.outlineButton,
+                    { transform: [{ scale: pressed ? 0.98 : 1 }] }
+                  ]}
+                >
+                  <Text style={styles.outlineButtonText}>Build Plan Without Preview</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>
