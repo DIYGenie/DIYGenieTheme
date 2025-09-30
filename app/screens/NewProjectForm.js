@@ -51,9 +51,9 @@ export default function NewProjectForm({ navigation }) {
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
   
-  // Button logic
-  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0;
-  const canBuild = entitlements.remaining > 0;
+  // Button logic per spec
+  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0 && inputImageUrl && projectId;
+  const canBuild = isFormValid && entitlements.remaining > 0 && projectId;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -211,13 +211,18 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleGeneratePreview = async () => {
-    if (!canPreview || !inputImageUrl || !projectId || isGeneratingPreview) return;
+    if (!canPreview || isGeneratingPreview) return;
 
     setIsGeneratingPreview(true);
 
     try {
       await API.post(`/api/projects/${projectId}/preview`, { user_id: userId });
-      await startPollingStatus(projectId);
+      showToast('Preview requested! Check Projects list.', 'success');
+      triggerHaptic('success');
+      
+      setTimeout(() => {
+        navigation.navigate('Projects');
+      }, 600);
     } catch (e) {
       console.error('Preview generation failed:', e);
       showToast('Preview failed. Please try again.', 'error');
@@ -227,7 +232,7 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleBuildWithoutPreview = async () => {
-    if (!canBuild || !inputImageUrl || !projectId || isBuildingPlan) return;
+    if (!canBuild || isBuildingPlan) return;
     
     try {
       setIsBuildingPlan(true);
@@ -235,11 +240,11 @@ export default function NewProjectForm({ navigation }) {
       const r = await API.post(`/api/projects/${projectId}/build-without-preview`, { user_id: userId });
       
       if (r.data?.ok) {
-        showToast('Project ready to build!', 'success');
+        showToast('Build started! Check Projects list.', 'success');
         triggerHaptic('success');
         
         setTimeout(() => {
-          navigation.navigate('Project', { id: projectId });
+          navigation.navigate('Projects');
         }, 600);
       }
     } catch (error) {

@@ -265,7 +265,7 @@ export async function uploadRoomPhoto(projectId: string, asset: any): Promise<{ 
   }
 
   const fd = new FormData();
-  fd.append('file', filePart as any);
+  fd.append('image', filePart as any);
 
   const r = await fetch(`${BASE}/api/projects/${projectId}/image`, {
     method: 'POST',
