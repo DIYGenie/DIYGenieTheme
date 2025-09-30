@@ -19,7 +19,7 @@ export default function NewProjectForm({ navigation }) {
   const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
-  const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'Free' });
+  const [entitlements, setEntitlements] = useState({ remaining: 0, quota: 0, tier: 'Free', previewAllowed: false });
   const [loadingEntitlements, setLoadingEntitlements] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [inputImageUrl, setInputImageUrl] = useState('');
@@ -42,9 +42,9 @@ export default function NewProjectForm({ navigation }) {
   const isFormValid = description.trim().length >= 10 && budget && skillLevel;
   const canUpload = isFormValid && entitlements.remaining > 0 && !isUploading;
   
-  // Button logic: disable only the one currently running, keep the other clickable
-  const canPreview = inputImageUrl && projectId && entitlements.tier !== 'Free' && !isGeneratingPreview;
-  const canBuildWithoutPreview = inputImageUrl && projectId && !isBuildingPlan;
+  // Button logic
+  const canPreview = entitlements.previewAllowed && entitlements.remaining > 0 && inputImageUrl && projectId && !isGeneratingPreview;
+  const canBuild = entitlements.remaining > 0 && inputImageUrl && projectId && !isBuildingPlan;
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -78,7 +78,12 @@ export default function NewProjectForm({ navigation }) {
       // Fetch entitlements
       try {
         const data = await getEntitlements(userId);
-        setEntitlements(data);
+        setEntitlements({
+          tier: data.tier || 'Free',
+          remaining: data.remaining || 0,
+          quota: data.quota || 0,
+          previewAllowed: data.previewAllowed || false,
+        });
         if (Date.now() - lastHealthCheck < 60000) {
           setNetworkError(false);
         }
@@ -88,7 +93,7 @@ export default function NewProjectForm({ navigation }) {
             setNetworkError(true);
           }
         }
-        setEntitlements({ tier: 'Free', quota: 5, remaining: 5 });
+        setEntitlements({ tier: 'Free', quota: 5, remaining: 5, previewAllowed: false });
       } finally {
         setLoadingEntitlements(false);
       }
@@ -201,12 +206,12 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleGeneratePreview = async () => {
-    if (!projectId || !inputImageUrl || isGeneratingPreview) return;
+    if (!canPreview || isGeneratingPreview) return;
 
     setIsGeneratingPreview(true);
 
     try {
-      await API.post(`/api/projects/${projectId}/preview`);
+      await API.post(`/api/projects/${projectId}/preview`, { user_id: userId });
       await startPollingStatus(projectId);
     } catch (e) {
       console.error('Preview generation failed:', e);
@@ -217,12 +222,12 @@ export default function NewProjectForm({ navigation }) {
   };
 
   const handleBuildWithoutPreview = async () => {
-    if (!projectId || !inputImageUrl || isBuildingPlan) return;
+    if (!canBuild || isBuildingPlan) return;
     
     try {
       setIsBuildingPlan(true);
       
-      const r = await API.post(`/api/projects/${projectId}/build-without-preview`);
+      const r = await API.post(`/api/projects/${projectId}/build-without-preview`, { user_id: userId });
       
       if (r.data?.ok) {
         showToast('Project ready to build!', 'success');
@@ -495,14 +500,21 @@ export default function NewProjectForm({ navigation }) {
                 </Text>
               </TouchableOpacity>
 
+              {/* Show remaining projects */}
+              {!loadingEntitlements && (
+                <Text style={styles.helperText}>
+                  {entitlements.remaining} of {entitlements.quota} projects remaining
+                </Text>
+              )}
+
               <View style={styles.ctaCol}>
                 <Pressable
                   onPress={debouncedGeneratePreview}
                   disabled={!canPreview}
                   style={({ pressed }) => [
                     styles.primaryButton,
-                    (!canPreview || isGeneratingPreview) && styles.primaryButtonDisabled,
-                    { transform: [{ scale: pressed && canPreview && !isGeneratingPreview ? 0.98 : 1 }] }
+                    !canPreview && styles.primaryButtonDisabled,
+                    { transform: [{ scale: pressed && canPreview ? 0.98 : 1 }] }
                   ]}
                 >
                   {isGeneratingPreview ? (
@@ -518,9 +530,9 @@ export default function NewProjectForm({ navigation }) {
                   )}
                 </Pressable>
 
-                {entitlements.tier === 'Free' && (
+                {!entitlements.previewAllowed && (
                   <Text style={styles.planNote}>
-                    Preview isn't included in your current plan.{' '}
+                    Preview isn't in your plan.{' '}
                     <Text style={styles.upgradeLink} onPress={() => navigation.navigate('Profile')}>
                       Upgrade
                     </Text>
@@ -529,11 +541,11 @@ export default function NewProjectForm({ navigation }) {
 
                 <Pressable
                   onPress={debouncedBuildWithoutPreview}
-                  disabled={!canBuildWithoutPreview}
+                  disabled={!canBuild}
                   style={({ pressed }) => [
                     styles.outlineButton,
-                    (!canBuildWithoutPreview || isBuildingPlan) && { opacity: 0.5 },
-                    { transform: [{ scale: pressed && canBuildWithoutPreview && !isBuildingPlan ? 0.98 : 1 }] }
+                    !canBuild && { opacity: 0.5 },
+                    { transform: [{ scale: pressed && canBuild ? 0.98 : 1 }] }
                   ]}
                 >
                   {isBuildingPlan ? (
