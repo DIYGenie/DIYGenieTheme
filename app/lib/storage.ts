@@ -46,6 +46,30 @@ export async function pickImageAsync(): Promise<string | null> {
 }
 
 /**
+ * Pick room photo and return full asset object
+ * Version-safe implementation for FormData uploads
+ * 
+ * @returns Asset object with uri, fileName, mimeType or null if cancelled
+ */
+export async function pickRoomPhoto(): Promise<any | null> {
+  await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  const mediaTypes =
+    (ImagePicker as any).MediaType
+      ? [(ImagePicker as any).MediaType.Images]
+      : (ImagePicker as any).MediaTypeOptions?.Images ?? 0;
+
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes,
+    quality: 0.9,
+    allowsEditing: false,
+  });
+
+  if (res.canceled) return null;
+  return res.assets?.[0] ?? (res as any);
+}
+
+/**
  * Upload an image to Supabase Storage and return its public URL
  * 
  * @param projectId - Project ID for organizing uploads

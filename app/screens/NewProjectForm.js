@@ -7,8 +7,8 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError } from '../lib/api';
-import { uploadImageAsync, pickImageAsync, supabase } from '../lib/storage';
+import { getEntitlements, createProject, updateProject, requestPreview, getProject, ApiError, uploadRoomPhoto } from '../lib/api';
+import { pickRoomPhoto } from '../lib/storage';
 import Toast from '../components/Toast';
 import { useDebouncePress } from '../lib/hooks';
 import { BASE_URL } from '../config';
@@ -105,19 +105,18 @@ export default function NewProjectForm({ navigation }) {
     if (!canUpload || isUploading) return;
     
     try {
-      const uri = await pickImageAsync();
-      if (!uri) {
+      const asset = await pickRoomPhoto();
+      if (!asset) {
         showToast('Permission needed to access photos', 'error');
         return;
       }
 
-      const localUri = uri;
       setIsUploading(true);
 
       // Step 1: Create project
       const projectData = await createProject({
         user_id: userId || 'dev-user',
-        name: description.substring(0, 100), // Use description as name
+        name: description.substring(0, 100),
         budget: budget,
         skill: skillLevel,
         status: 'pending',
@@ -126,34 +125,38 @@ export default function NewProjectForm({ navigation }) {
       const currentProjectId = projectData.id;
       setProjectId(currentProjectId);
 
-      // Step 2: Upload image to Supabase Storage
-      const publicUrl = await uploadImageAsync(currentProjectId, localUri);
-      setInputImageUrl(publicUrl);
-
-      // Step 3: Try to PATCH the image URL to the project (graceful if not supported)
-      await updateProject(currentProjectId, {
-        input_image_url: publicUrl,
-      });
+      // Step 2: Upload via backend (sets input_image_url and status='preview_requested')
+      const { url } = await uploadRoomPhoto(currentProjectId, asset);
+      setInputImageUrl(url);
 
       // Success!
       showToast('Photo uploaded!', 'success');
       triggerHaptic('success');
 
+      // Step 3: Start preview flow automatically
+      setIsGeneratingPreview(true);
+      
+      // poll status until ready (60s max)
+      const start = Date.now();
+      while (Date.now() - start < 60000) {
+        const { item } = await getProject(currentProjectId);
+        if (item?.status === 'preview_ready') {
+          showToast('Preview ready!', 'success');
+          triggerHaptic('success');
+          setIsGeneratingPreview(false);
+          return;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      
+      showToast('Preview timeout', 'error');
+      setIsGeneratingPreview(false);
+
     } catch (error) {
       console.error('Upload failed:', error);
-      
-      // Distinguish storage errors from API errors
-      if (error instanceof ApiError) {
-        // API error - might trigger network banner
-        if (error.status === 0 && Date.now() - lastHealthCheck >= 60000) {
-          setNetworkError(true);
-        }
-        showToast('Upload failed', 'error');
-      } else {
-        // Storage error - show detailed message, no network banner
-        showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
-      }
+      showToast(`Upload failed: ${error.message || 'Unknown error'}`, 'error');
       triggerHaptic('error');
+      setIsGeneratingPreview(false);
     } finally {
       setIsUploading(false);
     }
