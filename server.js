@@ -37,6 +37,8 @@ if (!sbUrl || !sbKey) {
 
 const supabase = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
 
+const running = new Set(); // simple dev guard
+
 app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'healthy' });
 });
@@ -125,15 +127,18 @@ app.post('/api/projects', async (req, res) => {
 });
 
 app.get('/api/projects/:id', async (req, res) => {
-  const { id } = req.params;
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) return res.status(404).json({ ok: false, error: 'not_found' });
-  return res.json({ ok: true, item: data });
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error || !data) return res.status(404).json({ ok:false, error:'not_found' });
+    return res.json({ ok:true, item: data });
+  } catch (e) {
+    return res.status(500).json({ ok:false, error: String(e.message || e) });
+  }
 });
 
 app.patch('/api/projects/:id', async (req, res) => {
@@ -166,25 +171,40 @@ app.patch('/api/projects/:id', async (req, res) => {
 });
 
 app.post('/api/projects/:id/preview', async (req, res) => {
-  const { id } = req.params;
-
-  // mark as requested
-  await supabase.from('projects')
-    .update({ status: 'preview_requested' })
-    .eq('id', id);
-
-  // respond immediately so UI can start polling
-  res.json({ ok: true });
-
-  // DEV-ONLY: fake generator → mark ready after 4s
-  setTimeout(async () => {
+  try {
+    const { id } = req.params;
+    // set requested
     await supabase.from('projects')
-      .update({
-        status: 'preview_ready',
-        preview_url: 'https://picsum.photos/1200/800?blur=2'
-      })
+      .update({ status: 'preview_requested' })
       .eq('id', id);
-  }, 4000);
+
+    // respond immediately so UI can start polling
+    res.json({ ok:true });
+
+    if (running.has(id)) return;
+    running.add(id);
+
+    // DEV: complete after 5s
+    setTimeout(async () => {
+      // get existing image or use placeholder
+      const { data } = await supabase
+        .from('projects')
+        .select('input_image_url')
+        .eq('id', id)
+        .single();
+
+      const previewUrl = data?.input_image_url || 'https://picsum.photos/1200/800?blur=2';
+
+      await supabase.from('projects')
+        .update({ status: 'preview_ready', preview_url: previewUrl })
+        .eq('id', id);
+
+      running.delete(id);
+    }, 5000);
+  } catch (e) {
+    // no-op; UI already got {ok:true}
+    running.delete(req.params.id);
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
