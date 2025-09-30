@@ -29,7 +29,7 @@ The application utilizes a component-based React Native architecture.
 - **Backend API Integration**: Includes an Express.js backend server (`server.js`) running on port 3001 with CORS support for managing projects and user entitlements.
 - **API Wrapper**: A typed configuration module (`app/config.ts`) and an API wrapper (`app/lib/api.ts`) handle API requests, entitlements fetching, project creation, and updates.
 - **Modal System**: Dropdowns for Budget and Skill utilize React Native Modals to ensure correct z-index rendering.
-- **Image Upload**: Integrates Supabase Storage for image uploads with version-safe image picker that handles different Expo SDK versions, supporting platform-specific differences for web and native.
+- **Image Upload**: Server-side upload using multer (memoryStorage) with FormData. Images are uploaded to Supabase Storage bucket via backend API endpoint POST /api/projects/:id/image. Version-safe image picker handles different Expo SDK versions, supporting platform-specific differences for web and native.
 - **Preview Generation**: Functionality to trigger project preview generation via API calls.
 - **Authentication**: Uses Supabase Auth for user authentication, with a fallback to a development mode for entitlements if no user is authenticated or the API is unreachable.
 - **Error Handling**: Comprehensive API and storage error handling, including network error detection and structured error responses.
