@@ -105,7 +105,10 @@ export default function NewProjectForm({ navigation }) {
     
     try {
       const uri = await pickImageAsync();
-      if (!uri) return;
+      if (!uri) {
+        showToast('Permission needed to access photos', 'error');
+        return;
+      }
 
       const localUri = uri;
       setIsUploading(true);

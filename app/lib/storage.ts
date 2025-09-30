@@ -22,16 +22,18 @@ function guessMime(uri: string): string {
 
 /**
  * Pick an image from the device gallery
- * Backward compatible - omits mediaTypes for widest SDK compatibility
+ * Uses new API that works on web & native
  * 
  * @returns URI string or null if cancelled
  */
 export async function pickImageAsync(): Promise<string | null> {
-  await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) return null;
+
   const result = await ImagePicker.launchImageLibraryAsync({
-    allowsMultipleSelection: false,
+    mediaTypes: 'images' as any,
     quality: 0.9,
-    exif: false,
+    allowsEditing: false,
   });
   if (result.canceled) return null;
   return result.assets?.[0]?.uri ?? null;
