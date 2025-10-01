@@ -137,7 +137,7 @@ function ProjectCard({ project, navigation }) {
   const hasPreviewImage = !!project.preview_url;
   
   const handlePress = () => {
-    navigation.navigate('ProjectDetails', { id: project.id });
+    navigation.navigate('ProjectDetails', { project });
   };
   
   return (
