@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import HomeScreen from '../screens/HomeScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
+import BuildPlanScreen from '../screens/BuildPlanScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NewProjectForm from '../screens/NewProjectForm';
 
@@ -22,6 +23,7 @@ function ProjectsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProjectsList" component={ProjectsScreen} />
       <Stack.Screen name="ProjectDetails" component={ProjectDetailsScreen} />
+      <Stack.Screen name="BuildPlan" component={BuildPlanScreen} />
     </Stack.Navigator>
   );
 }

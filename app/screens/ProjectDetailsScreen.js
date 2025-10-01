@@ -1,11 +1,13 @@
 // app/screens/ProjectDetailsScreen.js
 import React, { useMemo } from 'react';
-import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet } from 'react-native';
-import AccordionCard from '../components/AccordionCard';
+import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import ExpandableCard from '../components/ExpandableCard';
+import { buildPlanFromProject } from '../lib/plan';
 
-export default function ProjectDetailsScreen({ route }) {
+export default function ProjectDetailsScreen({ route, navigation }) {
   const project = route?.params?.project || {};
-  const plan = useMemo(() => normalizePlan(project), [project]);
+  const plan = useMemo(() => buildPlanFromProject(project), [project]);
 
   const photoUri =
     project?.input_image_url ||
@@ -13,6 +15,10 @@ export default function ProjectDetailsScreen({ route }) {
     'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=1200&q=60&auto=format&fit=crop';
 
   const status = (project?.status || 'ready').replace('_', ' ');
+
+  const handleGetDetailedPlan = () => {
+    navigation.navigate('BuildPlan', { projectId: project.id, project });
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -30,39 +36,94 @@ export default function ProjectDetailsScreen({ route }) {
         <Text style={styles.sectionLabel}>Room Photo</Text>
         <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
 
+        <TouchableOpacity style={styles.ctaButton} onPress={handleGetDetailedPlan}>
+          <Text style={styles.ctaText}>Get detailed build plan</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+
         <Text style={styles.sectionLabel}>Plan</Text>
-        <AccordionCard title="Overview"  items={plan.outline} />
-        <AccordionCard title="Materials" items={plan.materials} />
-        <AccordionCard title="Steps"     items={plan.steps} />
-        <AccordionCard
-          title="Shopping"
-          items={plan.shopping}
-          renderItem={(item) => (
-            <View style={styles.shopRow}>
-              <Text style={styles.rowText}>• {item.name}</Text>
-              {!!item.price && <Text style={styles.price}>{item.price}</Text>}
+        
+        <ExpandableCard title="Overview" count={plan.overview.length}>
+          {plan.overview.map((item, idx) => (
+            <View key={idx} style={styles.row}>
+              <Text style={styles.rowText}>• {item}</Text>
             </View>
-          )}
-        />
+          ))}
+        </ExpandableCard>
+
+        <ExpandableCard 
+          title="Materials & Tools" 
+          count={plan.materials.length + plan.tools.length}
+          footer={
+            <View>
+              <Text style={styles.estimatedLabel}>Estimated Total</Text>
+              <Text style={styles.estimatedValue}>${plan.estimatedTotal.toFixed(2)}</Text>
+            </View>
+          }
+        >
+          <Text style={styles.subsectionLabel}>Materials</Text>
+          {plan.materials.map((mat, idx) => (
+            <View key={`mat-${idx}`} style={styles.materialRow}>
+              <View style={styles.materialInfo}>
+                <Text style={styles.rowText}>• {mat.name}</Text>
+                <Text style={styles.materialDetails}>
+                  {mat.qty} {mat.unit} @ ${mat.unitPrice.toFixed(2)}
+                </Text>
+              </View>
+              <Text style={styles.materialPrice}>
+                ${(mat.qty * mat.unitPrice).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+          
+          <Text style={[styles.subsectionLabel, { marginTop: 12 }]}>Tools</Text>
+          {plan.tools.map((tool, idx) => (
+            <View key={`tool-${idx}`} style={styles.row}>
+              <Text style={styles.rowText}>• {tool.name}</Text>
+              {tool.substitute && (
+                <Text style={styles.substitute}> (or {tool.substitute})</Text>
+              )}
+            </View>
+          ))}
+        </ExpandableCard>
+
+        <ExpandableCard title="Steps" count={plan.steps.length}>
+          {plan.steps.map((step, idx) => (
+            <View key={idx} style={styles.stepRow}>
+              <Text style={styles.stepNumber}>{step.stepNumber}.</Text>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepDescription}>{step.description}</Text>
+                {step.estimatedTime && (
+                  <Text style={styles.stepTime}>⏱ {step.estimatedTime}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </ExpandableCard>
+
+        <ExpandableCard title="Cut List" count={plan.cutList.length}>
+          {plan.cutList.map((item, idx) => (
+            <View key={idx} style={styles.cutListRow}>
+              <Text style={styles.cutListPart}>{item.part}</Text>
+              <Text style={styles.cutListDetails}>
+                Qty: {item.qty} | {item.length} x {item.width} x {item.thickness}
+              </Text>
+              {item.notes && (
+                <Text style={styles.cutListNotes}>{item.notes}</Text>
+              )}
+            </View>
+          ))}
+        </ExpandableCard>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function normalizePlan(p) {
-  const plan = p?.plan || {};
-  const outline   = plan.outline?.length   ? plan.outline   : ['Assemble the main frame using wood glue','Secure joints with screws or nails','Install hardware and finishing touches','Sand, prime, and paint','Locate studs and mount safely','Final cleanup and styling'];
-  const materials = plan.materials?.length ? plan.materials : ['2x4 lumber','Wood glue','1 1/4 inch screws','Primer','Paint','Stud anchors'];
-  const steps     = plan.steps?.length     ? plan.steps     : ['Measure and mark wall layout','Cut boards to length','Dry-fit and adjust','Glue and fasten the frame','Fill, sand, and finish','Locate studs and mount unit'];
-  const shopping  = plan.shopping?.length  ? plan.shopping  : [{ name:'Anchor screws (10-pack)', price:'$6.99' },{ name:'Stud finder', price:'$19.99' },{ name:"Painter's caulk", price:'$4.59' }];
-  return { outline, materials, steps, shopping };
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F6F7FB' },
   scroll: { flex: 1 },
-  // flexGrow + minHeight guarantees scroll on RN Web
-  content: { padding: 16, paddingBottom: 140, flexGrow: 1, minHeight: '100%' },
+  content: { padding: 16, paddingBottom: 96, flexGrow: 1, minHeight: '100%' },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   title: { fontSize: 24, fontWeight: '800', color: '#0F172A', flexShrink: 1, paddingRight: 8 },
@@ -70,9 +131,137 @@ const styles = StyleSheet.create({
   pillText: { color: '#065F46', fontWeight: '700' },
 
   sectionLabel: { marginTop: 8, marginBottom: 8, fontSize: 16, fontWeight: '700', color: '#111827' },
-  photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: '#E5E7EB', marginBottom: 12 },
+  photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: '#E5E7EB', marginBottom: 16 },
 
-  shopRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  rowText: { fontSize: 16, color: '#2B2F37' },
-  price: { fontSize: 16, fontWeight: '700', color: '#0F172A', marginLeft: 12 },
+  ctaButton: {
+    backgroundColor: '#E39A33',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: '#E39A33',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    gap: 8,
+  },
+  ctaText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  row: { flexDirection: 'row', marginBottom: 4 },
+  rowText: { fontSize: 16, color: '#2B2F37', lineHeight: 24 },
+
+  subsectionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+
+  materialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  materialInfo: {
+    flex: 1,
+  },
+  materialDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 12,
+    marginTop: 2,
+  },
+  materialPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginLeft: 12,
+  },
+
+  substitute: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+
+  estimatedLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  estimatedValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#E39A33',
+  },
+
+  stepRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  stepNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#E39A33',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 15,
+    color: '#4B5563',
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  stepTime: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+
+  cutListRow: {
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  cutListPart: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  cutListDetails: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  cutListNotes: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
 });
