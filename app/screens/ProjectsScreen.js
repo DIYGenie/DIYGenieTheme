@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Refres
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
+import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
-import StatusBadge from '../components/StatusBadge';
 
 export default function ProjectsScreen({ navigation }) {
   const { userId } = useUser();
@@ -55,14 +55,16 @@ export default function ProjectsScreen({ navigation }) {
   const showEmptyState = filteredProjects.length === 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchProjects} />
-        }
-      >
+    <Screen>
+      <SafeAreaView style={styles.container}>
+        <ScrollView 
+          contentContainerStyle={{ padding: space.lg, paddingBottom: 120 }}
+          style={{ backgroundColor: "#fff" }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={fetchProjects} />
+          }
+        >
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.title}>Projects</Text>
@@ -123,7 +125,8 @@ export default function ProjectsScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -138,37 +141,42 @@ function ProjectCard({ project, navigation }) {
   };
   
   return (
-    <TouchableOpacity style={styles.projectCard} onPress={handlePress}>
-      {/* Thumbnail */}
-      {hasPreviewImage ? (
-        <Image 
-          source={{ uri: project.preview_url }} 
-          style={styles.thumbnailImage}
-          resizeMode="cover"
-        />
-      ) : hasInputImage ? (
-        <Image 
-          source={{ uri: project.input_image_url }} 
-          style={styles.thumbnailImage}
-          resizeMode="cover"
-        />
-      ) : status === 'preview_requested' ? (
-        <View style={styles.thumbnailSkeleton}>
-          <ActivityIndicator size="small" color="#F59E0B" />
+    <Card onPress={handlePress} style={{ marginBottom: space.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {/* Thumbnail */}
+        {hasPreviewImage ? (
+          <Image 
+            source={{ uri: project.preview_url }} 
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+        ) : hasInputImage ? (
+          <Image 
+            source={{ uri: project.input_image_url }} 
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+        ) : status === 'preview_requested' ? (
+          <View style={styles.thumbnailSkeleton}>
+            <ActivityIndicator size="small" color="#F59E0B" />
+          </View>
+        ) : (
+          <View style={styles.thumbnailPlaceholder} />
+        )}
+        
+        {/* Content */}
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={[ui.h2, { marginBottom: 6 }]} numberOfLines={1}>{projectName}</Text>
+          <Badge
+            text={status === "preview_ready" ? "Preview ready" : status === "plan_ready" ? "Plan ready" : "In progress"}
+            tone={status?.includes("ready") ? "success" : "muted"}
+          />
         </View>
-      ) : (
-        <View style={styles.thumbnailPlaceholder} />
-      )}
-      
-      {/* Content */}
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={1}>{projectName}</Text>
-        <StatusBadge status={status} hasInputImage={hasInputImage} />
+        
+        {/* Chevron */}
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       </View>
-      
-      {/* Chevron */}
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-    </TouchableOpacity>
+    </Card>
   );
 }
 
