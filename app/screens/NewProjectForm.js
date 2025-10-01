@@ -133,10 +133,11 @@ export default function NewProjectForm({ navigation }) {
       // Create project with error handling
       let projectData;
       try {
-        projectData = await createProject(userId || 'dev-user', {
+        projectData = await createProject({
           name: description.substring(0, 100),
           budget: budget,
           skill: skillLevel,
+          user_id: userId || 'dev-user',
           status: 'pending',
         });
 

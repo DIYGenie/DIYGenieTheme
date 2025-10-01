@@ -10,8 +10,8 @@ const API = axios.create({
 export const listProjects = (userId: string) =>
   API.get(`/api/projects`, { params: { user_id: userId } }).then(r => r.data);
 
-export const createProject = (userId: string, payload: any) =>
-  API.post(`/api/projects`, { ...payload, user_id: userId }).then(r => r.data);
+export const createProject = (payload: { name: string; budget: string; skill: string; user_id: string; status?: string }) =>
+  API.post(`/api/projects`, payload).then(r => r.data);
 
 export const uploadRoomPhoto = async (
   projectId: string,
