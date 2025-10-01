@@ -17,8 +17,9 @@ The application utilizes a component-based React Native architecture.
 - **Font Management**: Integrates Expo Google Fonts (Manrope and Inter) with asynchronous loading.
 
 ### Visual Design Architecture
-- **Color Scheme**: A purple-to-blue gradient theme (#8B5CF6 to #3B82F6) with orange accents (#F97316) for CTAs.
-- **Layout System**: Uses SafeAreaView and consistent spacing tokens for responsive and scalable design.
+- **Color Scheme**: Clean, modern design with white backgrounds (#FFFFFF), dark text (#111827), and orange primary color (#E39A33) for CTAs. Success states use green (#E8F6EE bg, #2E7D32 text), muted states use gray (#F3F4F6 bg, #374151 text).
+- **Design System**: Centralized UI kit in `app/ui/` with reusable components (Screen, ScreenScroll, Card, Badge, ButtonPrimary, SectionTitle) and theme tokens (colors, radii, space, shadow, ui styles) from `app/ui/theme.ts` and `app/ui/components.tsx`.
+- **Layout System**: Uses SafeAreaView and consistent spacing tokens (xs: 6, sm: 10, md: 14, lg: 20, xl: 28) for responsive and scalable design.
 - **Icon Strategy**: Leverages Ionicons for consistent iconography.
 
 ### Component Architecture

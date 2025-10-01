@@ -16,14 +16,12 @@ import Toast from '../components/Toast';
 import SummaryCard from '../components/SummaryCard';
 import PlanOutline from '../components/PlanOutline';
 import { getPlanStubs } from '../lib/planStubs';
-import { ScreenScroll, ButtonPrimary, Badge, ui, space } from '../ui/components';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { ScreenScroll, ButtonPrimary, Badge, ui, space, colors } from '../ui/components';
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
   const { userId } = useUser();
+  
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [entitlements, setEntitlements] = useState({ remaining: 0, previewAllowed: false });
@@ -122,14 +120,14 @@ export default function ProjectDetailsScreen({ navigation, route }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Project Details</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.loadingText}>Loading project...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[ui.sub, { marginTop: 16 }]}>Loading project...</Text>
         </View>
       </SafeAreaView>
     );
@@ -140,13 +138,13 @@ export default function ProjectDetailsScreen({ navigation, route }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Project Details</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centerContent}>
-          <Text style={styles.errorText}>Project not found</Text>
+          <Text style={ui.h1}>Project not found</Text>
         </View>
       </SafeAreaView>
     );
@@ -167,7 +165,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Project Details</Text>
         <View style={{ width: 40 }} />
@@ -183,132 +181,132 @@ export default function ProjectDetailsScreen({ navigation, route }) {
         />
 
         {(project.budget || project.skill) && (
-            <View style={styles.metaRow}>
-              {project.budget && (
-                <View style={styles.metaItem}>
-                  <Ionicons name="cash-outline" size={16} color={colors.textSecondary} />
-                  <Text style={styles.metaText}>{project.budget}</Text>
-                </View>
-              )}
-              {project.skill && (
-                <View style={styles.metaItem}>
-                  <Ionicons name="star-outline" size={16} color={colors.textSecondary} />
-                  <Text style={styles.metaText}>{project.skill}</Text>
-                </View>
-              )}
-            </View>
-          )}
+          <View style={styles.metaRow}>
+            {project.budget && (
+              <View style={styles.metaItem}>
+                <Ionicons name="cash-outline" size={16} color={colors.sub} />
+                <Text style={[ui.sub, { marginLeft: 6 }]}>{project.budget}</Text>
+              </View>
+            )}
+            {project.skill && (
+              <View style={styles.metaItem}>
+                <Ionicons name="star-outline" size={16} color={colors.sub} />
+                <Text style={[ui.sub, { marginLeft: 6 }]}>{project.skill}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {project.description && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.descriptionText}>{project.description}</Text>
-            </View>
-          )}
+          <View style={styles.section}>
+            <Text style={[ui.h2, { marginBottom: 12 }]}>Description</Text>
+            <Text style={[ui.p, { lineHeight: 22 }]}>{project.description}</Text>
+          </View>
+        )}
 
         {hasInputImage && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Room Photo</Text>
-              <View style={styles.photoCard}>
-                <Image source={{ uri: project.input_image_url }} style={styles.photoImage} resizeMode="cover" />
-              </View>
+          <View style={styles.section}>
+            <Text style={[ui.h2, { marginBottom: 12 }]}>Room Photo</Text>
+            <View style={styles.photoCard}>
+              <Image source={{ uri: project.input_image_url }} style={styles.photoImage} resizeMode="cover" />
             </View>
-          )}
+          </View>
+        )}
 
         {!hasInputImage && (
-            <View style={styles.section}>
-              <View style={styles.placeholderCard}>
-                <Ionicons name="image-outline" size={48} color={colors.muted} />
-                <Text style={styles.placeholderText}>No photo uploaded</Text>
-              </View>
+          <View style={styles.section}>
+            <View style={styles.placeholderCard}>
+              <Ionicons name="image-outline" size={48} color={colors.sub} />
+              <Text style={[ui.sub, { marginTop: 12 }]}>No photo uploaded</Text>
             </View>
-          )}
+          </View>
+        )}
 
         {hasInputImage && !hasPreview && !hasPlan && !isProcessing && (
-            <View style={styles.actionButtons}>
-              <Pressable
-                onPress={handleGeneratePreview}
-                disabled={!canPreview || isRequestingPreview}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  (!canPreview || isRequestingPreview) && styles.primaryButtonDisabled,
-                  { transform: [{ scale: pressed && canPreview ? 0.98 : 1 }] }
-                ]}
-              >
-                {isRequestingPreview ? (
-                  <>
-                    <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryButtonText}>Requesting...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
-                  </>
-                )}
-              </Pressable>
-
-              {!previewAllowed && (
-                <View style={styles.hintContainer}>
-                  <Text style={styles.hintText}>
-                    Preview isn't included in your current plan.{' '}
-                    <Text style={styles.hintLink} onPress={() => navigation.navigate('Profile')}>
-                      Upgrade
-                    </Text>
-                  </Text>
-                </View>
+          <View style={styles.actionButtons}>
+            <Pressable
+              onPress={handleGeneratePreview}
+              disabled={!canPreview || isRequestingPreview}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (!canPreview || isRequestingPreview) && styles.primaryButtonDisabled,
+                { transform: [{ scale: pressed && canPreview ? 0.98 : 1 }] }
+              ]}
+            >
+              {isRequestingPreview ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.primaryButtonText}>Requesting...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
+                </>
               )}
+            </Pressable>
 
-              <Pressable
-                onPress={handleBuildWithoutPreview}
-                disabled={!canBuild || isBuildingPlan}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  (!canBuild || isBuildingPlan) && { opacity: 0.5 },
-                  { transform: [{ scale: pressed && canBuild ? 0.98 : 1 }] }
-                ]}
-              >
-                {isBuildingPlan ? (
-                  <>
-                    <ActivityIndicator size="small" color={colors.textPrimary} style={{ marginRight: 8 }} />
-                    <Text style={styles.secondaryButtonText}>Requesting...</Text>
-                  </>
-                ) : (
-                  <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
-                )}
-              </Pressable>
-            </View>
-          )}
+            {!previewAllowed && (
+              <View style={styles.hintContainer}>
+                <Text style={[ui.sub, { textAlign: 'center' }]}>
+                  Preview isn't included in your current plan.{' '}
+                  <Text style={styles.hintLink} onPress={() => navigation.navigate('Profile')}>
+                    Upgrade
+                  </Text>
+                </Text>
+              </View>
+            )}
+
+            <Pressable
+              onPress={handleBuildWithoutPreview}
+              disabled={!canBuild || isBuildingPlan}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                (!canBuild || isBuildingPlan) && { opacity: 0.5 },
+                { transform: [{ scale: pressed && canBuild ? 0.98 : 1 }] }
+              ]}
+            >
+              {isBuildingPlan ? (
+                <>
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.secondaryButtonText}>Requesting...</Text>
+                </>
+              ) : (
+                <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
+              )}
+            </Pressable>
+          </View>
+        )}
 
         {hasPreview && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>AI Preview</Text>
-              <View style={styles.photoCard}>
-                <Image source={{ uri: project.preview_url }} style={styles.photoImage} resizeMode="cover" />
-              </View>
+          <View style={styles.section}>
+            <Text style={[ui.h2, { marginBottom: 12 }]}>AI Preview</Text>
+            <View style={styles.photoCard}>
+              <Image source={{ uri: project.preview_url }} style={styles.photoImage} resizeMode="cover" />
             </View>
-          )}
+          </View>
+        )}
 
         {isProcessing && (
-            <View style={styles.processingHint}>
-              <ActivityIndicator size="small" color={colors.accent} style={{ marginRight: 8 }} />
-              <Text style={styles.processingText}>
-                {project.status === 'preview_requested' ? 'Generating preview...' : 'Building plan...'}
-              </Text>
-            </View>
-          )}
+          <View style={styles.processingHint}>
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={ui.sub}>
+              {project.status === 'preview_requested' ? 'Generating preview...' : 'Building plan...'}
+            </Text>
+          </View>
+        )}
 
         {hasPlan && (
-            <>
-              <SummaryCard project={project} />
-              <ButtonPrimary 
-                title="📄 Open Plan" 
-                onPress={openPlan} 
-                style={{ marginTop: space.md, marginBottom: space.md }} 
-              />
-              <PlanOutline planData={planData} />
-            </>
-          )}
+          <>
+            <SummaryCard project={project} />
+            <ButtonPrimary 
+              title="📄 Open Plan" 
+              onPress={openPlan} 
+              style={{ marginTop: space.md, marginBottom: space.md }} 
+            />
+            <PlanOutline planData={planData} />
+          </>
+        )}
       </ScreenScroll>
 
       <Toast
@@ -324,7 +322,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
@@ -333,7 +331,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.muted,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.bg,
   },
   backButton: {
     width: 40,
@@ -344,16 +343,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    fontWeight: '700',
+    color: colors.text,
   },
   centerContent: {
     flex: 1,
@@ -361,138 +352,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-  },
-  errorText: {
-    fontSize: 18,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  projectName: {
-    fontSize: 22,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    flex: 1,
-    marginRight: 12,
-  },
   metaRow: {
     flexDirection: 'row',
     marginBottom: 20,
-    gap: 8,
+    gap: 16,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 8,
-  },
-  metaText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-    marginLeft: 6,
   },
   section: {
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  descriptionText: {
-    fontSize: 15,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
   photoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   photoImage: {
     width: '100%',
     aspectRatio: 16 / 9,
   },
   placeholderCard: {
-    backgroundColor: colors.bg,
-    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderRadius: 14,
     aspectRatio: 16 / 9,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
-  },
-  placeholderText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   processingHint: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: colors.bg,
-    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderRadius: 14,
     marginBottom: 16,
-  },
-  processingText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-  },
-  openPlanButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accent,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    marginTop: 8,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  openPlanText: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
-    marginLeft: 8,
-    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   actionButtons: {
     marginTop: 8,
@@ -502,56 +403,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: 8,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
   },
   primaryButtonDisabled: {
-    backgroundColor: colors.muted,
+    backgroundColor: colors.border,
   },
   primaryButtonText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.white,
+    fontWeight: '700',
+    color: colors.primaryText,
   },
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.primary,
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: colors.accent,
+    fontWeight: '700',
+    color: colors.primary,
   },
   hintContainer: {
     marginTop: -4,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
-  hintText: {
-    fontSize: 13,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
   hintLink: {
-    color: colors.accent,
-    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.primary,
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
 });
