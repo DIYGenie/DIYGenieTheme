@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Image,
   TouchableOpacity,
   ActivityIndicator,
@@ -14,10 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchProject, previewProject, buildWithoutPreview, getEntitlements } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
-import StatusBadge from '../components/StatusBadge';
 import SummaryCard from '../components/SummaryCard';
 import PlanOutline from '../components/PlanOutline';
 import { getPlanStubs } from '../lib/planStubs';
+import { ScreenScroll, ButtonPrimary, Badge, ui, space } from '../ui/components';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -174,14 +173,16 @@ export default function ProjectDetailsScreen({ navigation, route }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <Text style={styles.projectName}>{project.name || 'Untitled Project'}</Text>
-            <StatusBadge status={project.status} hasInputImage={hasInputImage} />
-          </View>
+      <ScreenScroll>
+        <Text style={[ui.h1, { marginBottom: space.xs }]}>{project.name || 'Untitled Project'}</Text>
 
-          {(project.budget || project.skill) && (
+        <Badge
+          text={project.status === "plan_ready" ? "Plan ready" : project.status || "In progress"}
+          tone={project.status === "plan_ready" ? "success" : "muted"}
+          style={{ marginBottom: space.md }}
+        />
+
+        {(project.budget || project.skill) && (
             <View style={styles.metaRow}>
               {project.budget && (
                 <View style={styles.metaItem}>
@@ -198,14 +199,14 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {project.description && (
+        {project.description && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Description</Text>
               <Text style={styles.descriptionText}>{project.description}</Text>
             </View>
           )}
 
-          {hasInputImage && (
+        {hasInputImage && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Room Photo</Text>
               <View style={styles.photoCard}>
@@ -214,7 +215,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {!hasInputImage && (
+        {!hasInputImage && (
             <View style={styles.section}>
               <View style={styles.placeholderCard}>
                 <Ionicons name="image-outline" size={48} color={colors.muted} />
@@ -223,7 +224,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {hasInputImage && !hasPreview && !hasPlan && !isProcessing && (
+        {hasInputImage && !hasPreview && !hasPlan && !isProcessing && (
             <View style={styles.actionButtons}>
               <Pressable
                 onPress={handleGeneratePreview}
@@ -279,7 +280,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {hasPreview && (
+        {hasPreview && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>AI Preview</Text>
               <View style={styles.photoCard}>
@@ -288,7 +289,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {isProcessing && (
+        {isProcessing && (
             <View style={styles.processingHint}>
               <ActivityIndicator size="small" color={colors.accent} style={{ marginRight: 8 }} />
               <Text style={styles.processingText}>
@@ -297,19 +298,18 @@ export default function ProjectDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-          {hasPlan && (
+        {hasPlan && (
             <>
               <SummaryCard project={project} />
-              <TouchableOpacity style={styles.openPlanButton} onPress={openPlan}>
-                <Ionicons name="document-text-outline" size={20} color="#FFF" />
-                <Text style={styles.openPlanText}>Open Plan</Text>
-                <Ionicons name="chevron-forward" size={20} color="#FFF" />
-              </TouchableOpacity>
+              <ButtonPrimary 
+                title="📄 Open Plan" 
+                onPress={openPlan} 
+                style={{ marginTop: space.md, marginBottom: space.md }} 
+              />
               <PlanOutline planData={planData} />
             </>
           )}
-        </View>
-      </ScrollView>
+      </ScreenScroll>
 
       <Toast
         visible={toast.visible}
