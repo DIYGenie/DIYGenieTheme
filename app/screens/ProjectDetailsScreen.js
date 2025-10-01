@@ -32,6 +32,8 @@ export default function ProjectDetailsScreen({ navigation, route }) {
   const [isBuildingPlan, setIsBuildingPlan] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
+  const planData = useMemo(() => getPlanStubs(project?.id), [project?.id]);
+
   useEffect(() => {
     loadProject();
     if (userId) loadEntitlements();
@@ -151,18 +153,16 @@ export default function ProjectDetailsScreen({ navigation, route }) {
     );
   }
 
-  const hasInputImage = !!project.input_image_url;
-  const hasPreview = !!project.preview_url;
-  const hasPlan = ['plan_ready', 'ready'].includes(project.status) || !!project.plan;
-  const isProcessing = ['preview_requested', 'plan_requested'].includes(project.status);
+  const hasInputImage = !!project?.input_image_url;
+  const hasPreview = !!project?.preview_url;
+  const hasPlan = project && (['plan_ready', 'ready'].includes(project.status) || !!project.plan);
+  const isProcessing = project && ['preview_requested', 'plan_requested'].includes(project.status);
 
-  const isFormValid = (project.description?.trim()?.length ?? 0) >= 10 && !!project.budget && !!project.skill;
+  const isFormValid = project && (project.description?.trim()?.length ?? 0) >= 10 && !!project.budget && !!project.skill;
   const remaining = Number(entitlements?.remaining ?? 0);
   const previewAllowed = Boolean(entitlements?.previewAllowed);
   const canPreview = isFormValid && remaining > 0 && previewAllowed && hasInputImage && !hasPreview && !hasPlan;
   const canBuild = isFormValid && remaining > 0 && hasInputImage && !hasPlan;
-
-  const planData = useMemo(() => getPlanStubs(project?.id), [project?.id]);
 
   return (
     <SafeAreaView style={styles.container}>
