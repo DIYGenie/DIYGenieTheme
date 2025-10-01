@@ -130,13 +130,34 @@ export default function NewProjectForm({ navigation }) {
 
       setIsUploading(true);
 
-      // Create project
-      const projectData = await createProject(userId || 'dev-user', {
-        name: description.substring(0, 100),
-        budget: budget,
-        skill: skillLevel,
-        status: 'pending',
-      });
+      // Create project with error handling
+      let projectData;
+      try {
+        projectData = await createProject(userId || 'dev-user', {
+          name: description.substring(0, 100),
+          budget: budget,
+          skill: skillLevel,
+          status: 'pending',
+        });
+
+        // Check for permission errors or failed responses
+        if (projectData.ok === false || !projectData.id) {
+          showToast("Couldn't create your project (permission). Try again or contact support.", 'error');
+          triggerHaptic('error');
+          setIsUploading(false);
+          return;
+        }
+      } catch (createError) {
+        // Handle 403 or other errors
+        if (createError.response && createError.response.status === 403) {
+          showToast("Couldn't create your project (permission). Try again or contact support.", 'error');
+        } else {
+          showToast(createError.message || 'Failed to create project', 'error');
+        }
+        triggerHaptic('error');
+        setIsUploading(false);
+        return;
+      }
 
       const currentProjectId = projectData.id;
       setProjectId(currentProjectId);
