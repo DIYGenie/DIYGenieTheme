@@ -15,6 +15,7 @@ import { fetchProject, previewProject, buildWithoutPreview, getEntitlements } fr
 import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
 import StatusBadge from '../components/StatusBadge';
+import SummaryCard from '../components/SummaryCard';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -78,7 +79,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
       return;
     }
     
-    navigation.navigate('Plan', { id: project.id });
+    navigation.navigate('PlanTabs', { id: project.id });
   };
 
   const handleGeneratePreview = async () => {
@@ -293,11 +294,14 @@ export default function ProjectDetailsScreen({ navigation, route }) {
           )}
 
           {hasPlan && (
-            <TouchableOpacity style={styles.openPlanButton} onPress={openPlan}>
-              <Ionicons name="document-text-outline" size={20} color="#FFF" />
-              <Text style={styles.openPlanText}>Open Plan</Text>
-              <Ionicons name="chevron-forward" size={20} color="#FFF" />
-            </TouchableOpacity>
+            <>
+              <SummaryCard project={project} />
+              <TouchableOpacity style={styles.openPlanButton} onPress={openPlan}>
+                <Ionicons name="document-text-outline" size={20} color="#FFF" />
+                <Text style={styles.openPlanText}>Open Plan</Text>
+                <Ionicons name="chevron-forward" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </ScrollView>
