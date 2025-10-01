@@ -8,6 +8,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
+import StatusBadge from '../components/StatusBadge';
 
 export default function ProjectsScreen({ navigation }) {
   const { userId } = useUser();
@@ -132,27 +133,6 @@ function ProjectCard({ project, navigation }) {
   const hasInputImage = !!project.input_image_url;
   const hasPreviewImage = !!project.preview_url;
   
-  // Determine badge content based on status
-  let badgeText = '';
-  let badgeColor = '#6B7280';
-  
-  if (status === 'draft' && !hasInputImage) {
-    badgeText = 'Awaiting photo';
-    badgeColor = '#6B7280';
-  } else if (status === 'preview_requested') {
-    badgeText = 'Preview requested';
-    badgeColor = '#F59E0B';
-  } else if (status === 'preview_ready') {
-    badgeText = 'Preview ready';
-    badgeColor = '#10B981';
-  } else if (status === 'plan_requested') {
-    badgeText = 'Plan requested';
-    badgeColor = '#F59E0B';
-  } else if (status === 'plan_ready') {
-    badgeText = 'Plan ready';
-    badgeColor = '#10B981';
-  }
-  
   const handlePress = () => {
     navigation.navigate('ProjectDetails', { id: project.id });
   };
@@ -183,21 +163,7 @@ function ProjectCard({ project, navigation }) {
       {/* Content */}
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={1}>{projectName}</Text>
-        
-        {badgeText ? (
-          <View style={[styles.statusBadge, { backgroundColor: `${badgeColor}15` }]}>
-            <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badgeText}</Text>
-          </View>
-        ) : (
-          <Text style={styles.cardSubtitle}>
-            {project.status === 'completed' 
-              ? 'Completed' 
-              : project.stepsRemaining 
-              ? `${project.stepsRemaining} steps remaining`
-              : 'In progress'
-            }
-          </Text>
-        )}
+        <StatusBadge status={status} hasInputImage={hasInputImage} />
       </View>
       
       {/* Chevron */}
@@ -317,17 +283,6 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  statusBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 4,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.manropeBold,
   },
   cardContent: {
     flex: 1,
