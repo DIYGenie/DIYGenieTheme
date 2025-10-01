@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 The application utilizes a component-based React Native architecture.
-- **Navigation**: Employs React Navigation v7 with a hybrid stack and tab navigation approach, starting with a welcome screen.
+- **Navigation**: Employs React Navigation v7 with a hybrid stack and tab navigation approach, starting with a welcome screen. Projects tab uses a nested stack navigator (ProjectsStack) containing ProjectsList and ProjectDetails screens, ensuring the tab bar remains visible when viewing project details. Built with @react-navigation/native-stack for nested navigation within tabs.
 - **UI Framework**: Built on Expo SDK 54 for rapid cross-platform development.
 - **Design System**: Features a centralized theme system for consistent styling across colors, typography, and spacing.
 - **State Management**: Primarily uses React's built-in state management (useState, useEffect), with potential for more advanced solutions as the app grows.
