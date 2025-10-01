@@ -56,6 +56,7 @@ export default function ProjectDetailsScreen({ route }) {
   );
 }
 
+/** Fallback/stub plan content while real plans are wired */
 function normalizePlan(p) {
   const plan = p?.plan || {};
 
@@ -66,15 +67,15 @@ function normalizePlan(p) {
           'Assemble the main frame using wood glue',
           'Secure joints with screws or nails',
           'Install hardware and finishing touches',
-          'Sand, prime, and paint',
+          'Sand → prime → paint',
           'Locate studs and mount safely',
-          'Final cleanup and styling',
+          'Final cleanup & styling',
         ];
 
   const materials =
     Array.isArray(plan.materials) && plan.materials.length
       ? plan.materials
-      : ['2x4 lumber', 'Wood glue', '1 1/4 inch screws', 'Primer', 'Paint', 'Stud anchors'];
+      : ['2×4 lumber', 'Wood glue', '1 1/4" screws', 'Primer', 'Paint', 'Stud anchors'];
 
   const steps =
     Array.isArray(plan.steps) && plan.steps.length
@@ -94,7 +95,7 @@ function normalizePlan(p) {
       : [
           { name: 'Anchor screws (pack of 10)', price: '$6.99' },
           { name: 'Stud finder', price: '$19.99' },
-          { name: 'Painter caulk', price: '$4.59' },
+          { name: 'Painter’s caulk', price: '$4.59' },
         ];
 
   return { outline, materials, steps, shopping };
