@@ -16,7 +16,7 @@ import Toast from '../components/Toast';
 import SummaryCard from '../components/SummaryCard';
 import PlanOutline from '../components/PlanOutline';
 import { getPlanStubs } from '../lib/planStubs';
-import { ScreenScroll, ButtonPrimary, Badge, ui, space, colors } from '../ui/components';
+import { ScreenScroll, ButtonPrimary, Badge, Card, SectionTitle, ui, space, colors } from '../ui/components';
 
 export default function ProjectDetailsScreen({ navigation, route }) {
   const { id } = route.params;
@@ -80,7 +80,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
       return;
     }
     
-    navigation.navigate('PlanTabs', { id: project.id });
+    navigation.navigate('OpenPlan', { id: project.id });
   };
 
   const handleGeneratePreview = async () => {
@@ -298,12 +298,19 @@ export default function ProjectDetailsScreen({ navigation, route }) {
 
         {hasPlan && (
           <>
-            <SummaryCard project={project} />
             <ButtonPrimary 
               title="📄 Open Plan" 
               onPress={openPlan} 
-              style={{ marginTop: space.md, marginBottom: space.md }} 
+              style={{ marginTop: space.md }} 
             />
+            <Card style={{ marginTop: space.md }}>
+              <SectionTitle>Summary</SectionTitle>
+              <Text style={ui.p}>Description: {project?.name || "—"}</Text>
+              <Text style={ui.p}>Budget: {project?.budget || "—"}</Text>
+              <Text style={ui.p}>Skill: {project?.skill || "—"}</Text>
+              <Text style={ui.p}>Status: {project?.status || "—"}</Text>
+              <Text style={ui.p}>Photo: {project?.input_image_url ? "Attached" : "Missing"}</Text>
+            </Card>
             <PlanOutline planData={planData} />
           </>
         )}

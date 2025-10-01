@@ -13,6 +13,7 @@ import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
 import PlanScreen from '../screens/PlanScreen';
 import PlanTabsScreen from '../screens/PlanTabsScreen';
+import OpenPlanScreen from '../screens/OpenPlanScreen';
 
 const Stack = createStackNavigator();
 
@@ -36,6 +37,7 @@ export default function AppNavigator() {
       <Stack.Screen name="ProjectDetails" component={ProjectDetailsScreen} />
       <Stack.Screen name="Plan" component={PlanScreen} />
       <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />
+      <Stack.Screen name="OpenPlan" component={OpenPlanScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
