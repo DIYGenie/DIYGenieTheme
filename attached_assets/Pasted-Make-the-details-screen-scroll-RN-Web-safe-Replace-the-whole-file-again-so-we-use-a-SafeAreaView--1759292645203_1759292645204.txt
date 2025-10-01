@@ -1,3 +1,7 @@
+Make the details screen scroll (RN Web-safe)
+
+Replace the whole file again so we use a SafeAreaView and pad the bottom enough so the tab bar never blocks content.
+
 // app/screens/ProjectDetailsScreen.js
 import React, { useMemo } from 'react';
 import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet } from 'react-native';
@@ -51,10 +55,10 @@ export default function ProjectDetailsScreen({ route }) {
 
 function normalizePlan(p) {
   const plan = p?.plan || {};
-  const outline   = plan.outline?.length   ? plan.outline   : ['Assemble the main frame using wood glue','Secure joints with screws or nails','Install hardware and finishing touches','Sand, prime, and paint','Locate studs and mount safely','Final cleanup and styling'];
-  const materials = plan.materials?.length ? plan.materials : ['2x4 lumber','Wood glue','1 1/4 inch screws','Primer','Paint','Stud anchors'];
+  const outline   = plan.outline?.length   ? plan.outline   : ['Assemble the main frame using wood glue','Secure joints with screws or nails','Install hardware and finishing touches','Sand → prime → paint','Locate studs and mount safely','Final cleanup & styling'];
+  const materials = plan.materials?.length ? plan.materials : ['2×4 lumber','Wood glue','1 1/4" screws','Primer','Paint','Stud anchors'];
   const steps     = plan.steps?.length     ? plan.steps     : ['Measure and mark wall layout','Cut boards to length','Dry-fit and adjust','Glue and fasten the frame','Fill, sand, and finish','Locate studs and mount unit'];
-  const shopping  = plan.shopping?.length  ? plan.shopping  : [{ name:'Anchor screws (10-pack)', price:'$6.99' },{ name:'Stud finder', price:'$19.99' },{ name:"Painter's caulk", price:'$4.59' }];
+  const shopping  = plan.shopping?.length  ? plan.shopping  : [{ name:'Anchor screws (10-pack)', price:'$6.99' },{ name:'Stud finder', price:'$19.99' },{ name:'Painter’s caulk', price:'$4.59' }];
   return { outline, materials, steps, shopping };
 }
 
