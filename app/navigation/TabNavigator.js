@@ -1,11 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import HomeScreen from '../screens/HomeScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
+import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NewProjectForm from '../screens/NewProjectForm';
 
@@ -13,6 +15,16 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function ProjectsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ProjectsList" component={ProjectsScreen} />
+      <Stack.Screen name="ProjectDetails" component={ProjectDetailsScreen} />
+    </Stack.Navigator>
+  );
+}
 
 function TabBarBackground() {
   return (
@@ -78,7 +90,7 @@ export default function TabNavigator() {
         component={NewProjectForm} 
         options={{ tabBarLabel: 'New Project' }}
       />
-      <Tab.Screen name="Projects" component={ProjectsScreen} />
+      <Tab.Screen name="Projects" component={ProjectsStack} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
