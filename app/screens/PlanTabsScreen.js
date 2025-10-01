@@ -6,53 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { getPlanStubs } from '../lib/planStubs';
 
 const Tab = createMaterialTopTabNavigator();
 
-const STUBBED_DATA = {
-  overview: {
-    intro: "This plan will guide you through building your custom furniture piece step by step. Follow each stage carefully and don't hesitate to ask for help if needed.",
-    steps: [
-      { id: 1, title: 'Prepare your workspace', completed: true },
-      { id: 2, title: 'Measure and mark materials', completed: true },
-      { id: 3, title: 'Cut wood pieces to size', completed: false },
-      { id: 4, title: 'Sand all surfaces smooth', completed: false },
-      { id: 5, title: 'Assemble the frame', completed: false },
-      { id: 6, title: 'Apply finish or paint', completed: false },
-      { id: 7, title: 'Final assembly and inspection', completed: false },
-    ],
-  },
-  materials: [
-    { name: '2x4 Pine boards', quantity: '6 pieces (8ft each)', cost: '$48' },
-    { name: 'Wood screws (3 inch)', quantity: '1 box', cost: '$12' },
-    { name: 'Wood glue', quantity: '1 bottle', cost: '$8' },
-    { name: 'Sandpaper (various grits)', quantity: '1 pack', cost: '$10' },
-    { name: 'Wood stain or paint', quantity: '1 quart', cost: '$25' },
-    { name: 'Polyurethane finish', quantity: '1 quart', cost: '$22' },
-  ],
-  tools: [
-    { name: 'Circular saw', substitute: 'Hand saw (slower)' },
-    { name: 'Power drill', substitute: 'Manual screwdriver' },
-    { name: 'Measuring tape', substitute: null },
-    { name: 'Level', substitute: 'Smartphone level app' },
-    { name: 'Clamps (4-6)', substitute: 'Heavy books or weights' },
-    { name: 'Safety glasses', substitute: null },
-    { name: 'Dust mask', substitute: null },
-  ],
-  tips: [
-    'Always measure twice and cut once to avoid wasting materials',
-    'Work in a well-ventilated area when applying finishes',
-    'Use clamps to hold pieces together while the glue dries',
-    'Sand with the grain of the wood for the best finish',
-    'Apply thin coats of finish rather than one thick coat',
-    'Let each coat dry completely before applying the next',
-    'Keep your workspace clean to avoid accidents',
-    'Don\'t rush - quality takes time',
-  ],
-};
-
 function OverviewTab({ projectId }) {
-  const data = useMemo(() => STUBBED_DATA.overview, [projectId]);
+  const planData = useMemo(() => getPlanStubs(projectId), [projectId]);
+  const data = planData.overview;
 
   return (
     <ScrollView style={styles.tabContent}>
@@ -64,20 +24,10 @@ function OverviewTab({ projectId }) {
         <Text style={styles.sectionTitle}>Steps</Text>
         {data.steps.map((step, index) => (
           <View key={step.id} style={styles.stepItem}>
-            <View style={[
-              styles.stepDot,
-              step.completed && styles.stepDotCompleted
-            ]}>
-              {step.completed ? (
-                <Ionicons name="checkmark" size={16} color="#FFF" />
-              ) : (
-                <Text style={styles.stepNumber}>{index + 1}</Text>
-              )}
+            <View style={styles.stepDot}>
+              <Text style={styles.stepNumber}>{index + 1}</Text>
             </View>
-            <Text style={[
-              styles.stepTitle,
-              step.completed && styles.stepTitleCompleted
-            ]}>
+            <Text style={styles.stepTitle}>
               {step.title}
             </Text>
           </View>
@@ -88,14 +38,12 @@ function OverviewTab({ projectId }) {
 }
 
 function MaterialsTab({ projectId }) {
-  const data = useMemo(() => STUBBED_DATA.materials, [projectId]);
+  const planData = useMemo(() => getPlanStubs(projectId), [projectId]);
+  const data = planData.materials;
 
   const totalCost = useMemo(() => {
-    const sum = data.reduce((acc, item) => {
-      const cost = parseFloat(item.cost.replace('$', ''));
-      return acc + cost;
-    }, 0);
-    return `$${sum}`;
+    const sum = data.reduce((acc, item) => acc + (item.estCost || 0), 0);
+    return `$${sum.toFixed(2)}`;
   }, [data]);
 
   return (
@@ -105,15 +53,19 @@ function MaterialsTab({ projectId }) {
         <Text style={styles.sectionSubtitle}>Estimated total: {totalCost}</Text>
       </View>
 
-      {data.map((item, index) => (
-        <View key={index} style={styles.materialItem}>
+      {data.map((item) => (
+        <View key={item.id} style={styles.materialItem}>
           <View style={styles.materialHeader}>
             <Ionicons name="cube-outline" size={20} color={colors.accent} />
             <Text style={styles.materialName}>{item.name}</Text>
           </View>
           <View style={styles.materialDetails}>
-            <Text style={styles.materialQuantity}>{item.quantity}</Text>
-            <Text style={styles.materialCost}>{item.cost}</Text>
+            <Text style={styles.materialQuantity}>
+              {item.qty} {item.unit || 'units'}
+            </Text>
+            <Text style={styles.materialCost}>
+              ${item.estCost?.toFixed(2) || '0.00'}
+            </Text>
           </View>
         </View>
       ))}
@@ -122,7 +74,8 @@ function MaterialsTab({ projectId }) {
 }
 
 function ToolsTab({ projectId }) {
-  const data = useMemo(() => STUBBED_DATA.tools, [projectId]);
+  const planData = useMemo(() => getPlanStubs(projectId), [projectId]);
+  const data = planData.tools;
 
   return (
     <ScrollView style={styles.tabContent}>
@@ -131,16 +84,16 @@ function ToolsTab({ projectId }) {
         <Text style={styles.sectionSubtitle}>Make sure you have these before starting</Text>
       </View>
 
-      {data.map((tool, index) => (
-        <View key={index} style={styles.toolItem}>
+      {data.map((tool) => (
+        <View key={tool.id} style={styles.toolItem}>
           <View style={styles.toolHeader}>
             <Ionicons name="construct-outline" size={20} color={colors.accent} />
             <Text style={styles.toolName}>{tool.name}</Text>
           </View>
-          {tool.substitute && (
+          {tool.alt && (
             <View style={styles.substituteRow}>
               <Ionicons name="swap-horizontal-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.substituteText}>Alternative: {tool.substitute}</Text>
+              <Text style={styles.substituteText}>Alternative: {tool.alt}</Text>
             </View>
           )}
         </View>
@@ -150,7 +103,8 @@ function ToolsTab({ projectId }) {
 }
 
 function TipsTab({ projectId }) {
-  const data = useMemo(() => STUBBED_DATA.tips, [projectId]);
+  const planData = useMemo(() => getPlanStubs(projectId), [projectId]);
+  const data = planData.tips;
 
   return (
     <ScrollView style={styles.tabContent}>
@@ -159,10 +113,10 @@ function TipsTab({ projectId }) {
         <Text style={styles.sectionSubtitle}>Pro advice for better results</Text>
       </View>
 
-      {data.map((tip, index) => (
-        <View key={index} style={styles.tipItem}>
+      {data.map((tip) => (
+        <View key={tip.id} style={styles.tipItem}>
           <Ionicons name="bulb-outline" size={20} color={colors.accent} />
-          <Text style={styles.tipText}>{tip}</Text>
+          <Text style={styles.tipText}>{tip.body}</Text>
         </View>
       ))}
     </ScrollView>
@@ -313,9 +267,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  stepDotCompleted: {
-    backgroundColor: colors.accent,
-  },
   stepNumber: {
     fontSize: 14,
     fontFamily: typography.fontFamily.manropeBold,
@@ -326,10 +277,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: typography.fontFamily.inter,
     color: colors.textPrimary,
-  },
-  stepTitleCompleted: {
-    color: colors.textSecondary,
-    textDecorationLine: 'line-through',
   },
   materialItem: {
     backgroundColor: colors.surface,
