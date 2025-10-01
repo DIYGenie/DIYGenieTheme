@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import { useUser } from '../lib/useUser';
 import Toast from '../components/Toast';
 import StatusBadge from '../components/StatusBadge';
 import SummaryCard from '../components/SummaryCard';
+import PlanOutline from '../components/PlanOutline';
+import { getPlanStubs } from '../lib/planStubs';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -160,6 +162,8 @@ export default function ProjectDetailsScreen({ navigation, route }) {
   const canPreview = isFormValid && remaining > 0 && previewAllowed && hasInputImage && !hasPreview && !hasPlan;
   const canBuild = isFormValid && remaining > 0 && hasInputImage && !hasPlan;
 
+  const planData = useMemo(() => getPlanStubs(project?.id), [project?.id]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -301,6 +305,7 @@ export default function ProjectDetailsScreen({ navigation, route }) {
                 <Text style={styles.openPlanText}>Open Plan</Text>
                 <Ionicons name="chevron-forward" size={20} color="#FFF" />
               </TouchableOpacity>
+              <PlanOutline planData={planData} />
             </>
           )}
         </View>
