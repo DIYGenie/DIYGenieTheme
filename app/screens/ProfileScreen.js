@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, AppState, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,10 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { useUser } from '../lib/useUser';
 
-const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
-
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 const ENDPOINTS = {
   entitlementsShort: `${BASE}/me/entitlements`,
   entitlementsWithId: (id) => `${BASE}/me/entitlements/${id}`,
@@ -18,14 +16,31 @@ const ENDPOINTS = {
   devUpgrade: `${BASE}/api/billing/upgrade`,
 };
 
+const CURRENT_USER_ID = globalThis.__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
+
+const api = async (url, opts = {}) => {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 12000);
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    signal: controller.signal,
+    ...opts,
+  });
+  clearTimeout(t);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) throw new Error('Non-JSON response');
+  return res.json();
+};
+
 const openExternal = async (url) => {
   try {
     if (Platform.OS === 'web') {
       window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
-    const supported = await Linking.canOpenURL(url);
-    if (!supported) throw new Error('Cannot open URL');
+    const can = await Linking.canOpenURL(url);
+    if (!can) throw new Error('Cannot open URL');
     await Linking.openURL(url);
   } catch (e) {
     Alert.alert('Billing', 'Could not open link. Please try again.');
@@ -33,104 +48,51 @@ const openExternal = async (url) => {
 };
 
 export default function ProfileScreen() {
-  const { userId } = useUser();
-  const [tier, setTier] = useState('free');
-  const [remaining, setRemaining] = useState(0);
-  const [previewAllowed, setPreviewAllowed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [showUpgradePicker, setShowUpgradePicker] = useState(false);
-  
-  const appState = useRef(AppState.currentState);
-  const lastFetchTime = useRef(0);
+  const [busy, setBusy] = React.useState(false);
+  const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
+  const [showUpgradePicker, setShowUpgradePicker] = React.useState(false);
 
-  const api = async (url, opts = {}) => {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 12000);
-    
+  const getEntitlements = React.useCallback(async () => {
     try {
-      const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        ...opts,
-      });
-      clearTimeout(t);
-      
-      if (!res.ok) {
-        throw new Error(`${res.status} ${res.statusText}`);
-      }
-      
-      const ct = res.headers.get('content-type') || '';
-      if (!ct.includes('application/json')) {
-        throw new Error('Non-JSON response');
-      }
-      
-      return await res.json();
-    } catch (error) {
-      clearTimeout(t);
-      if (error.name === 'AbortError') {
-        throw new Error('Network is slow—try again or use Sync Plan');
-      }
-      throw error;
-    }
-  };
-
-  const getEntitlements = async () => {
-    if (!userId) return;
-    
-    const now = Date.now();
-    if (now - lastFetchTime.current < 2000) {
-      return;
-    }
-    lastFetchTime.current = now;
-
-    try {
-      const data = await api(`${ENDPOINTS.entitlementsShort}?user_id=${userId}`);
-      setTier(data.tier || 'free');
-      setRemaining(data.remaining || 0);
-      setPreviewAllowed(data.previewAllowed || false);
-    } catch (e) {
-      if (String(e.message).startsWith('404')) {
+      const data = await api(`${ENDPOINTS.entitlementsShort}?user_id=${encodeURIComponent(CURRENT_USER_ID)}`);
+      setEnts({ tier: data.tier, remaining: data.remaining, previewAllowed: !!data.previewAllowed });
+    } catch (err) {
+      if (String(err.message).startsWith('404')) {
         try {
-          const data = await api(ENDPOINTS.entitlementsWithId(userId));
-          setTier(data.tier || 'free');
-          setRemaining(data.remaining || 0);
-          setPreviewAllowed(data.previewAllowed || false);
+          const data = await api(ENDPOINTS.entitlementsWithId(CURRENT_USER_ID));
+          setEnts({ tier: data.tier, remaining: data.remaining, previewAllowed: !!data.previewAllowed });
           return;
-        } catch {}
+        } catch (_) {}
       }
-      Alert.alert('Billing', 'Could not load your plan right now. You can still try Upgrade or Manage, then tap Sync Plan.');
+      Alert.alert('Billing', 'Could not load your plan. Use Sync Plan to retry.');
     }
-  };
+  }, []);
 
   const openPortal = async () => {
-    if (!userId) return;
-    
     setBusy(true);
     try {
       const { url } = await api(ENDPOINTS.portal, {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: CURRENT_USER_ID }),
       });
       await openExternal(url);
     } catch (e) {
       if (String(e.message).startsWith('501')) {
-        Alert.alert('Billing', 'Portal not set up for this user yet.');
+        Alert.alert('Billing', 'Portal not available for this user yet.');
       } else {
-        Alert.alert('Billing', 'Portal is unavailable (404). If you just need to change plans, use Upgrade for now.');
+        Alert.alert('Billing', 'Portal is unavailable. Try again later.');
       }
     } finally {
       setBusy(false);
     }
   };
 
-  const openCheckout = async (selectedTier) => {
-    if (!userId) return;
-    
+  const openCheckout = async (tier) => {
     setBusy(true);
     try {
       const { url } = await api(ENDPOINTS.checkout, {
         method: 'POST',
-        body: JSON.stringify({ tier: selectedTier, user_id: userId }),
+        body: JSON.stringify({ tier, user_id: CURRENT_USER_ID }),
       });
       await openExternal(url);
     } catch (e) {
@@ -138,20 +100,31 @@ export default function ProfileScreen() {
         try {
           await api(ENDPOINTS.devUpgrade, {
             method: 'POST',
-            body: JSON.stringify({ tier: selectedTier, user_id: userId }),
+            body: JSON.stringify({ tier, user_id: CURRENT_USER_ID }),
           });
-          Alert.alert('Billing', `Upgraded to ${selectedTier} in dev mode. Syncing...`);
+          Alert.alert('Billing', `Upgraded to ${tier} in dev mode. Syncing...`);
           await getEntitlements();
         } catch {
-          Alert.alert('Billing', 'Upgrade fallback failed. Try Sync Plan or contact support.');
+          Alert.alert('Billing', 'Upgrade fallback failed. Use Sync Plan or try again.');
         }
       } else {
-        Alert.alert('Billing', 'Checkout is unavailable right now. Try again shortly.');
+        Alert.alert('Billing', 'Checkout is unavailable. Try again later.');
       }
     } finally {
       setBusy(false);
     }
   };
+
+  React.useEffect(() => {
+    getEntitlements();
+  }, [getEntitlements]);
+
+  React.useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') getEntitlements();
+    });
+    return () => sub.remove();
+  }, [getEntitlements]);
 
   const handleManagePlan = () => {
     openPortal();
@@ -173,31 +146,9 @@ export default function ProfileScreen() {
     // TODO: Handle logout
   };
 
-  useEffect(() => {
-    if (userId) {
-      getEntitlements();
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        getEntitlements();
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [userId]);
-
   const getPlanDescription = () => {
-    if (tier === 'pro') return '25 projects/month + previews';
-    if (tier === 'casual') return '5 projects/month + previews';
+    if (ents.tier === 'pro') return '25 projects/month + previews';
+    if (ents.tier === 'casual') return '5 projects/month + previews';
     return '2 projects/month, no previews';
   };
 
@@ -231,23 +182,23 @@ export default function ProfileScreen() {
           <View style={styles.planCard}>
             <View style={styles.planContent}>
               <View>
-                <Text style={styles.planTitle}>Current Plan: {formatTier(tier)}</Text>
+                <Text style={styles.planTitle}>Current Plan: {formatTier(ents.tier)}</Text>
                 <Text style={styles.planSubtitle}>{getPlanDescription()}</Text>
               </View>
-              <TouchableOpacity onPress={handleManagePlan} disabled={busy || !userId}>
-                <Text style={[styles.manageButton, (busy || !userId) && styles.disabledButton]}>
+              <TouchableOpacity onPress={handleManagePlan} disabled={busy}>
+                <Text style={[styles.manageButton, busy && styles.disabledButton]}>
                   Manage
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {tier !== 'pro' && (
+          {ents.tier !== 'pro' && (
             <>
               <TouchableOpacity 
                 style={styles.upgradeButton} 
                 onPress={() => setShowUpgradePicker(v => !v)}
-                disabled={busy || !userId}
+                disabled={busy}
               >
                 <Text style={styles.upgradeButtonText}>
                   {showUpgradePicker ? 'Cancel' : 'Upgrade Plan'}
@@ -287,9 +238,9 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.syncButton} 
             onPress={getEntitlements}
-            disabled={busy || !userId}
+            disabled={busy}
           >
-            <Text style={[styles.syncButtonText, (busy || !userId) && styles.disabledText]}>
+            <Text style={[styles.syncButtonText, busy && styles.disabledText]}>
               {busy ? 'Syncing...' : 'Sync Plan'}
             </Text>
           </TouchableOpacity>
