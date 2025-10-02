@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, AppState, Linking, Alert, Platform, ActionSheetIOS } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, AppState, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,49 +9,64 @@ import { typography } from '../../theme/typography';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
 
+const CURRENT_USER_ID = undefined;
+
 const ENDPOINTS = {
   checkout: `${BASE}/api/billing/checkout`,
   portal: `${BASE}/api/billing/portal`,
-  entitlements: `${BASE}/me/entitlements`,
+  entitlementsShort: `${BASE}/me/entitlements`,
+  entitlementsWithId: (id) => `${BASE}/me/entitlements/${id}`,
   devUpgrade: `${BASE}/api/billing/upgrade`,
+};
+
+const openExternal = async (url) => {
+  try {
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) throw new Error('Cannot open URL');
+    await Linking.openURL(url);
+  } catch (e) {
+    Alert.alert('Billing', 'Could not open link. Please try again.');
+  }
 };
 
 export default function ProfileScreen() {
   const [tier, setTier] = useState('free');
   const [remaining, setRemaining] = useState(0);
   const [previewAllowed, setPreviewAllowed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [showUpgradePicker, setShowUpgradePicker] = useState(false);
   
   const appState = useRef(AppState.currentState);
   const lastFetchTime = useRef(0);
 
-  const api = async (path, { method = 'GET', body } = {}) => {
+  const api = async (url, opts = {}) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
+    const t = setTimeout(() => controller.abort(), 12000);
+    
     try {
-      const options = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-      };
-
-      if (body) {
-        options.body = JSON.stringify(body);
-      }
-
-      const res = await fetch(path, options);
-      clearTimeout(timeoutId);
-
+        ...opts,
+      });
+      clearTimeout(t);
+      
       if (!res.ok) {
         throw new Error(`${res.status} ${res.statusText}`);
       }
-
+      
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        throw new Error('Non-JSON response');
+      }
+      
       return await res.json();
     } catch (error) {
-      clearTimeout(timeoutId);
+      clearTimeout(t);
       if (error.name === 'AbortError') {
         throw new Error('Network is slow—try again or use Sync Plan');
       }
@@ -67,101 +82,61 @@ export default function ProfileScreen() {
     lastFetchTime.current = now;
 
     try {
-      const data = await api(ENDPOINTS.entitlements);
+      const data = await api(ENDPOINTS.entitlementsShort);
       setTier(data.tier || 'free');
       setRemaining(data.remaining || 0);
       setPreviewAllowed(data.previewAllowed || false);
-    } catch (error) {
-      console.error('Failed to fetch entitlements:', error);
-      Alert.alert('Billing', 'Could not fetch plan details. Please try again.');
+    } catch (e) {
+      if (String(e.message).startsWith('404') && CURRENT_USER_ID) {
+        try {
+          const data = await api(ENDPOINTS.entitlementsWithId(CURRENT_USER_ID));
+          setTier(data.tier || 'free');
+          setRemaining(data.remaining || 0);
+          setPreviewAllowed(data.previewAllowed || false);
+          return;
+        } catch {}
+      }
+      Alert.alert('Billing', 'Could not load your plan right now. You can still try Upgrade or Manage, then tap Sync Plan.');
     }
   };
 
   const openPortal = async () => {
-    setLoading(true);
+    setBusy(true);
     try {
-      const data = await api(ENDPOINTS.portal, { method: 'POST' });
-      if (data.url) {
-        await Linking.openURL(data.url);
-      }
-    } catch (error) {
-      console.error('Failed to open portal:', error);
-      Alert.alert('Billing', 'Could not open billing portal. Please try again later.');
+      const { url } = await api(ENDPOINTS.portal, { method: 'POST' });
+      await openExternal(url);
+    } catch (e) {
+      Alert.alert('Billing', 'Portal is unavailable (404). If you just need to change plans, use Upgrade for now.');
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const maybeDevUpgrade = async (selectedTier) => {
-    try {
-      await api(ENDPOINTS.devUpgrade, {
-        method: 'POST',
-        body: { tier: selectedTier },
-      });
-      await getEntitlements();
-      Alert.alert('Billing', `Plan updated to ${selectedTier}!`);
-    } catch (error) {
-      console.error('Dev upgrade failed:', error);
-      Alert.alert('Billing', 'Could not upgrade plan. Please try again.');
+      setBusy(false);
     }
   };
 
   const openCheckout = async (selectedTier) => {
-    setLoading(true);
+    setBusy(true);
     try {
-      const data = await api(ENDPOINTS.checkout, {
+      const { url } = await api(ENDPOINTS.checkout, {
         method: 'POST',
-        body: { tier: selectedTier },
+        body: JSON.stringify({ tier: selectedTier }),
       });
-      if (data.url) {
-        await Linking.openURL(data.url);
-      }
-    } catch (error) {
-      console.error('Checkout failed:', error);
-      const statusMatch = error.message.match(/^(\d+)/);
-      const status = statusMatch ? parseInt(statusMatch[1]) : 0;
-      
-      if (status === 404 || status === 501) {
-        await maybeDevUpgrade(selectedTier);
+      await openExternal(url);
+    } catch (e) {
+      if (String(e.message).startsWith('404') || String(e.message).startsWith('501')) {
+        try {
+          await api(ENDPOINTS.devUpgrade, {
+            method: 'POST',
+            body: JSON.stringify({ tier: selectedTier }),
+          });
+          Alert.alert('Billing', `Upgraded to ${selectedTier} in dev mode. Syncing...`);
+          await getEntitlements();
+        } catch {
+          Alert.alert('Billing', 'Upgrade fallback failed. Try Sync Plan or contact support.');
+        }
       } else {
-        Alert.alert('Billing', 'Could not open checkout. Please try again later.');
+        Alert.alert('Billing', 'Checkout is unavailable right now. Try again shortly.');
       }
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpgrade = () => {
-    const options = [
-      { label: 'Casual — 5 projects/mo + previews', value: 'casual' },
-      { label: 'Pro — 25 projects/mo + previews', value: 'pro' },
-    ];
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', ...options.map(o => o.label)],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex > 0) {
-            openCheckout(options[buttonIndex - 1].value);
-          }
-        }
-      );
-    } else {
-      Alert.alert(
-        'Choose a Plan',
-        '',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          ...options.map(opt => ({
-            text: opt.label,
-            onPress: () => openCheckout(opt.value),
-          })),
-        ],
-        { cancelable: true }
-      );
+      setBusy(false);
     }
   };
 
@@ -242,33 +217,63 @@ export default function ProfileScreen() {
                 <Text style={styles.planTitle}>Current Plan: {formatTier(tier)}</Text>
                 <Text style={styles.planSubtitle}>{getPlanDescription()}</Text>
               </View>
-              <TouchableOpacity onPress={handleManagePlan} disabled={loading}>
-                <Text style={[styles.manageButton, loading && styles.disabledButton]}>
-                  {loading ? 'Loading...' : 'Manage'}
+              <TouchableOpacity onPress={handleManagePlan} disabled={busy}>
+                <Text style={[styles.manageButton, busy && styles.disabledButton]}>
+                  Manage
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {tier !== 'pro' && (
-            <TouchableOpacity 
-              style={styles.upgradeButton} 
-              onPress={handleUpgrade}
-              disabled={loading}
-            >
-              <Text style={styles.upgradeButtonText}>
-                {loading ? 'Loading...' : 'Upgrade Plan'}
-              </Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity 
+                style={styles.upgradeButton} 
+                onPress={() => setShowUpgradePicker(v => !v)}
+                disabled={busy}
+              >
+                <Text style={styles.upgradeButtonText}>
+                  {showUpgradePicker ? 'Cancel' : 'Upgrade Plan'}
+                </Text>
+              </TouchableOpacity>
+
+              {showUpgradePicker && (
+                <View style={styles.pickerCard}>
+                  <Text style={styles.pickerTitle}>Choose a plan</Text>
+                  
+                  <TouchableOpacity
+                    style={[styles.planOptionButton, busy && styles.disabledPlanButton]}
+                    onPress={() => {
+                      setShowUpgradePicker(false);
+                      openCheckout('casual');
+                    }}
+                    disabled={busy}
+                  >
+                    <Text style={styles.planOptionText}>Casual — 5 projects/mo + previews</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.planOptionButton, busy && styles.disabledPlanButton]}
+                    onPress={() => {
+                      setShowUpgradePicker(false);
+                      openCheckout('pro');
+                    }}
+                    disabled={busy}
+                  >
+                    <Text style={styles.planOptionText}>Pro — 25 projects/mo + previews</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
 
           <TouchableOpacity 
             style={styles.syncButton} 
             onPress={getEntitlements}
-            disabled={loading}
+            disabled={busy}
           >
-            <Text style={[styles.syncButtonText, loading && styles.disabledText]}>
-              Sync Plan
+            <Text style={[styles.syncButtonText, busy && styles.disabledText]}>
+              {busy ? 'Syncing...' : 'Sync Plan'}
             </Text>
           </TouchableOpacity>
 
@@ -429,6 +434,42 @@ const styles = StyleSheet.create({
   },
   upgradeButtonText: {
     fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#FFFFFF',
+  },
+  pickerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
+    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#111827',
+    marginBottom: 12,
+  },
+  planOptionButton: {
+    backgroundColor: '#F59E0B',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  disabledPlanButton: {
+    backgroundColor: '#9CA3AF',
+  },
+  planOptionText: {
+    fontSize: 15,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#FFFFFF',
   },
