@@ -6,16 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { useUser } from '../lib/useUser';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
 
-const CURRENT_USER_ID = undefined;
-
 const ENDPOINTS = {
-  checkout: `${BASE}/api/billing/checkout`,
-  portal: `${BASE}/api/billing/portal`,
   entitlementsShort: `${BASE}/me/entitlements`,
   entitlementsWithId: (id) => `${BASE}/me/entitlements/${id}`,
+  checkout: `${BASE}/api/billing/checkout`,
+  portal: `${BASE}/api/billing/portal`,
   devUpgrade: `${BASE}/api/billing/upgrade`,
 };
 
@@ -34,6 +33,7 @@ const openExternal = async (url) => {
 };
 
 export default function ProfileScreen() {
+  const { userId } = useUser();
   const [tier, setTier] = useState('free');
   const [remaining, setRemaining] = useState(0);
   const [previewAllowed, setPreviewAllowed] = useState(false);
@@ -75,6 +75,8 @@ export default function ProfileScreen() {
   };
 
   const getEntitlements = async () => {
+    if (!userId) return;
+    
     const now = Date.now();
     if (now - lastFetchTime.current < 2000) {
       return;
@@ -82,14 +84,14 @@ export default function ProfileScreen() {
     lastFetchTime.current = now;
 
     try {
-      const data = await api(ENDPOINTS.entitlementsShort);
+      const data = await api(`${ENDPOINTS.entitlementsShort}?user_id=${userId}`);
       setTier(data.tier || 'free');
       setRemaining(data.remaining || 0);
       setPreviewAllowed(data.previewAllowed || false);
     } catch (e) {
-      if (String(e.message).startsWith('404') && CURRENT_USER_ID) {
+      if (String(e.message).startsWith('404')) {
         try {
-          const data = await api(ENDPOINTS.entitlementsWithId(CURRENT_USER_ID));
+          const data = await api(ENDPOINTS.entitlementsWithId(userId));
           setTier(data.tier || 'free');
           setRemaining(data.remaining || 0);
           setPreviewAllowed(data.previewAllowed || false);
@@ -101,23 +103,34 @@ export default function ProfileScreen() {
   };
 
   const openPortal = async () => {
+    if (!userId) return;
+    
     setBusy(true);
     try {
-      const { url } = await api(ENDPOINTS.portal, { method: 'POST' });
+      const { url } = await api(ENDPOINTS.portal, {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId }),
+      });
       await openExternal(url);
     } catch (e) {
-      Alert.alert('Billing', 'Portal is unavailable (404). If you just need to change plans, use Upgrade for now.');
+      if (String(e.message).startsWith('501')) {
+        Alert.alert('Billing', 'Portal not set up for this user yet.');
+      } else {
+        Alert.alert('Billing', 'Portal is unavailable (404). If you just need to change plans, use Upgrade for now.');
+      }
     } finally {
       setBusy(false);
     }
   };
 
   const openCheckout = async (selectedTier) => {
+    if (!userId) return;
+    
     setBusy(true);
     try {
       const { url } = await api(ENDPOINTS.checkout, {
         method: 'POST',
-        body: JSON.stringify({ tier: selectedTier }),
+        body: JSON.stringify({ tier: selectedTier, user_id: userId }),
       });
       await openExternal(url);
     } catch (e) {
@@ -125,7 +138,7 @@ export default function ProfileScreen() {
         try {
           await api(ENDPOINTS.devUpgrade, {
             method: 'POST',
-            body: JSON.stringify({ tier: selectedTier }),
+            body: JSON.stringify({ tier: selectedTier, user_id: userId }),
           });
           Alert.alert('Billing', `Upgraded to ${selectedTier} in dev mode. Syncing...`);
           await getEntitlements();
@@ -161,8 +174,12 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    getEntitlements();
+    if (userId) {
+      getEntitlements();
+    }
+  }, [userId]);
 
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -176,7 +193,7 @@ export default function ProfileScreen() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [userId]);
 
   const getPlanDescription = () => {
     if (tier === 'pro') return '25 projects/month + previews';
@@ -217,8 +234,8 @@ export default function ProfileScreen() {
                 <Text style={styles.planTitle}>Current Plan: {formatTier(tier)}</Text>
                 <Text style={styles.planSubtitle}>{getPlanDescription()}</Text>
               </View>
-              <TouchableOpacity onPress={handleManagePlan} disabled={busy}>
-                <Text style={[styles.manageButton, busy && styles.disabledButton]}>
+              <TouchableOpacity onPress={handleManagePlan} disabled={busy || !userId}>
+                <Text style={[styles.manageButton, (busy || !userId) && styles.disabledButton]}>
                   Manage
                 </Text>
               </TouchableOpacity>
@@ -230,7 +247,7 @@ export default function ProfileScreen() {
               <TouchableOpacity 
                 style={styles.upgradeButton} 
                 onPress={() => setShowUpgradePicker(v => !v)}
-                disabled={busy}
+                disabled={busy || !userId}
               >
                 <Text style={styles.upgradeButtonText}>
                   {showUpgradePicker ? 'Cancel' : 'Upgrade Plan'}
@@ -270,9 +287,9 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.syncButton} 
             onPress={getEntitlements}
-            disabled={busy}
+            disabled={busy || !userId}
           >
-            <Text style={[styles.syncButtonText, busy && styles.disabledText]}>
+            <Text style={[styles.syncButtonText, (busy || !userId) && styles.disabledText]}>
               {busy ? 'Syncing...' : 'Sync Plan'}
             </Text>
           </TouchableOpacity>
