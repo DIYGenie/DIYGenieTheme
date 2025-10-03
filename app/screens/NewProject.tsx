@@ -68,6 +68,9 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [sugsBusy, setSugsBusy] = useState(false);
   const [sugsErr, setSugsErr] = useState('');
   
+  // Editable build prompt
+  const [promptText, setPromptText] = useState<string>('');
+  
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { height: H } = useWindowDimensions();
@@ -83,6 +86,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   
   const canUpload = true;
   const hasImage = Boolean(inputImageUrl);
+  const formReady = isFormValid && hasImage;
   const canPreview = isFormValid && remaining > 0 && previewAllowed && hasImage;
   const canBuild = isFormValid && remaining > 0 && hasImage;
 
@@ -156,9 +160,16 @@ export default function NewProject({ navigation }: { navigation: any }) {
         return null;
       }
       
-      setDraftId(projectData.id);
-      setProjectId(projectData.id);
-      return projectData.id;
+      const newDraftId = projectData.id;
+      setDraftId(newDraftId);
+      setProjectId(newDraftId);
+      
+      // Pre-fill prompt once
+      if (!promptText) {
+        setPromptText(`Build plan for: ${description.trim()}. Budget: ${budget}. Skill: ${skillLevel}. Focus on clean steps and accurate cut list.`);
+      }
+      
+      return newDraftId;
     } catch (e) {
       console.error('Draft project creation failed:', e);
       return null;
@@ -197,16 +208,56 @@ export default function NewProject({ navigation }: { navigation: any }) {
       });
       
       if (response.ok && response.bullets) {
-        setSugs(response);
+        setSugs({ bullets: response.bullets || [], tags: response.tags || [] });
         setSugsErr('');
       } else {
-        setSugsErr('Could not get suggestions. Try again.');
+        setSugsErr('Could not get suggestions. You can still edit the prompt below.');
       }
     } catch (e: any) {
       console.error('Suggestions fetch failed:', e);
-      setSugsErr('Could not get suggestions. Try again.');
+      setSugsErr('Could not get suggestions. You can still edit the prompt below.');
     } finally {
       setSugsBusy(false);
+    }
+  };
+  
+  // Helper: Generate Plan (no preview)
+  const generatePlan = async () => {
+    if (isBuildingPlan) return;
+    
+    try {
+      setIsBuildingPlan(true);
+      
+      const pid = await ensureDraftProject();
+      if (!pid) {
+        showToast('Could not create project', 'error');
+        triggerHaptic('error');
+        setIsBuildingPlan(false);
+        return;
+      }
+      
+      const body = { 
+        user_id: currentUserId, 
+        prompt: promptText?.trim() || description?.trim() || 'Build plan' 
+      };
+      
+      await api(`/api/projects/${pid}/build-without-preview`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      
+      showToast('Plan requested', 'success');
+      triggerHaptic('success');
+      
+      setTimeout(() => {
+        navigation.navigate('Projects');
+      }, 600);
+    } catch (e: any) {
+      console.error('Plan generation failed:', e);
+      Alert.alert('Could not generate plan', e?.message || 'Please try again.');
+      triggerHaptic('error');
+    } finally {
+      setIsBuildingPlan(false);
     }
   };
 
@@ -683,99 +734,43 @@ export default function NewProject({ navigation }: { navigation: any }) {
           </View>
         )}
 
-        {/* Preview Usage Hint */}
-        {hasImage && previewAllowed && (
-          <View style={styles.previewHint}>
-            <Text style={styles.previewHintText}>
-              💡 You get 1 visual preview per project. Use suggestions to refine before you render.
+        {/* Editable Prompt */}
+        {formReady && (
+          <View style={styles.promptCard}>
+            <Text style={styles.promptTitle}>Edit build prompt</Text>
+            <TextInput
+              value={promptText}
+              onChangeText={setPromptText}
+              multiline
+              numberOfLines={4}
+              placeholder="Describe your ideal result, constraints, materials on hand, etc."
+              placeholderTextColor="#9CA3AF"
+              style={styles.promptInput}
+              textAlignVertical="top"
+            />
+            <Text style={styles.promptHint}>
+              You get <Text style={{ fontWeight: '700' }}>1 visual preview per project</Text>. Refine with suggestions before generating your plan.
             </Text>
-          </View>
-        )}
-
-        {hasImage && (
-          <View style={[styles.ctaContainer, { marginTop: 20 }]}>
-            <View style={styles.ctaRow}>
-              <View style={styles.ctaCol}>
-                <Pressable
-                  onPress={debouncedGeneratePreview}
-                  disabled={!canPreview}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    !canPreview && styles.primaryButtonDisabled,
-                    { transform: [{ scale: pressed && canPreview ? 0.98 : 1 }] }
-                  ]}
-                >
-                  {isGeneratingPreview ? (
-                    <>
-                      <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                      <Text style={styles.primaryButtonText}>Generating…</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                      <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
-                    </>
-                  )}
-                </Pressable>
-                
-                {!previewAllowed && (
-                  <Text style={styles.upgradeHint}>
-                    <Text 
-                      style={styles.upgradeLink}
-                      onPress={() => navigation.navigate('Profile')}
-                    >
-                      Upgrade
-                    </Text>
-                    {' '}for AI preview
-                  </Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.ctaRow}>
-              <View style={styles.ctaCol}>
-                <Pressable
-                  onPress={debouncedBuildWithoutPreview}
-                  disabled={!canBuild}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    !canBuild && styles.secondaryButtonDisabled,
-                    { transform: [{ scale: pressed && canBuild ? 0.98 : 1 }] }
-                  ]}
-                >
-                  {isBuildingPlan ? (
-                    <>
-                      <ActivityIndicator size="small" color="#E39A33" style={{ marginRight: 8 }} />
-                      <Text style={styles.secondaryButtonText}>Building…</Text>
-                    </>
-                  ) : (
-                    <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
-                  )}
-                </Pressable>
-              </View>
-            </View>
-
-            {remaining <= 0 && (
-              <View style={styles.quotaWarning}>
-                <Ionicons name="information-circle-outline" size={16} color="#DC2626" />
-                <Text style={styles.quotaWarningText}>
-                  You've used all {entitlements.quota} projects.{' '}
-                  <Text 
-                    style={styles.upgradeLink}
-                    onPress={() => navigation.navigate('Profile')}
-                  >
-                    Upgrade
-                  </Text>
-                  {' '}for more.
-                </Text>
-              </View>
-            )}
+            <Pressable
+              testID="np-generate-plan"
+              onPress={generatePlan}
+              disabled={isBuildingPlan || !promptText?.trim()}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (isBuildingPlan || !promptText?.trim()) && styles.primaryButtonDisabled,
+                { marginTop: 12, transform: [{ scale: pressed && !isBuildingPlan && promptText?.trim() ? 0.98 : 1 }] }
+              ]}
+              accessibilityRole="button"
+            >
+              {isBuildingPlan ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.primaryButtonText}>Generating…</Text>
+                </>
+              ) : (
+                <Text style={styles.primaryButtonText}>Generate Plan</Text>
+              )}
+            </Pressable>
           </View>
         )}
       </ScrollView>
@@ -1099,5 +1094,37 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#DC2626',
     marginLeft: 8,
+  },
+  promptCard: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  promptTitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#111827',
+    marginBottom: 12,
+  },
+  promptInput: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textPrimary,
+    minHeight: 100,
+  },
+  promptHint: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: '#6B7280',
+    marginTop: 8,
+    lineHeight: 18,
   },
 });
