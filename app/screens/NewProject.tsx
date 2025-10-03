@@ -10,6 +10,7 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
+const USER_ID = 'auto';
 
 async function api(path: string, opts: any = {}) {
   const controller = new AbortController();
@@ -54,8 +55,9 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   
-  const [sugs, setSugs] = useState<any | null>(null);
+  const [sugs, setSugs] = useState<string[] | null>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
+  const [promptText, setPromptText] = useState('');
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -83,7 +85,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
 
   async function fetchEntitlements() {
     try {
-      const data = await api(`/me/entitlements?user_id=auto`);
+      const data = await api(`/me/entitlements?user_id=${USER_ID}`);
       setEnts({ 
         previewAllowed: !!data.previewAllowed, 
         remaining: data.remaining 
@@ -109,35 +111,65 @@ export default function NewProject({ navigation }: { navigation: any }) {
     if (draftId) return draftId;
 
     const body = {
-      user_id: 'auto',
+      user_id: USER_ID,
       name: description,
       budget,
       skill: skillLevel,
     };
 
-    const res = await api('/api/projects', { method: 'POST', body: JSON.stringify(body) });
-    const id = res.item.id;
-    setDraftId(id);
-    return id;
+    try {
+      const res = await api('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+      const id = res.item.id;
+      setDraftId(id);
+      return id;
+    } catch (err: any) {
+      Alert.alert('Could not create project', err?.message || 'Please try again');
+      throw err;
+    }
   }
 
   async function fetchSuggestions() {
-    if (!draftId) return;
+    // Preconditions
+    if (description.trim().length < 10 || !budget || !skillLevel || !photoUri) {
+      return;
+    }
+
     setSugsBusy(true);
     try {
-      const res = await api(`/api/projects/${draftId}/suggestions`, { 
+      const id = await ensureDraft();
+      
+      const payload = {
+        user_id: USER_ID,
+        name: description,
+        budget,
+        skill_level: skillLevel,
+      };
+
+      const res = await api(`/api/projects/${id}/suggestions`, { 
         method: 'POST', 
-        body: JSON.stringify({ user_id: 'auto' }) 
+        body: JSON.stringify(payload) 
       });
-      const data = res?.data || {};
-      setSugs({ bullets: data.bullets || [], tags: data.tags || [] });
+
+      if (res.ok && Array.isArray(res.suggestions)) {
+        // Store top 5
+        setSugs(res.suggestions.slice(0, 5));
+      } else {
+        setSugs([]);
+      }
     } catch (e: any) {
-      setSugs({ bullets: [] });
-      console.warn('[suggestions]', e?.message || e);
+      Alert.alert('Suggestions failed', e?.message || 'Could not fetch suggestions');
+      setSugs([]);
     } finally {
       setSugsBusy(false);
     }
   }
+
+  // Auto-trigger suggestions when photo is picked and form is valid
+  useEffect(() => {
+    if (photoUri && hasValidForm() && !sugs && !sugsBusy) {
+      fetchSuggestions();
+    }
+  }, [photoUri, description, budget, skillLevel]);
 
   function pickPhotoWeb(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -183,15 +215,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
     try {
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
-      
-      if (hasValidForm() && !draftId) {
-        try {
-          await ensureDraft();
-          await fetchSuggestions();
-        } catch (err) {
-          console.warn('[photo upload ensureDraft]', err);
-        }
-      }
+      // Auto-trigger handled by useEffect
     } catch (err: any) {
       Alert.alert('Photo picker', err?.message || 'Could not select photo');
     }
@@ -205,7 +229,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
       const id = await ensureDraft();
       await api(`/api/projects/${id}/preview`, { 
         method: 'POST', 
-        body: JSON.stringify({ user_id: 'auto' }) 
+        body: JSON.stringify({ user_id: USER_ID }) 
       });
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
@@ -226,7 +250,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
       const id = await ensureDraft();
       await api(`/api/projects/${id}/build-without-preview`, { 
         method: 'POST', 
-        body: JSON.stringify({ user_id: 'auto' }) 
+        body: JSON.stringify({ user_id: USER_ID }) 
       });
       triggerHaptic('success');
       Alert.alert('Success', 'Plan requested');
@@ -248,25 +272,6 @@ export default function NewProject({ navigation }: { navigation: any }) {
     setSkillLevel(option);
     setShowSkillDropdown(false);
   };
-
-  // Local suggestion generator as fallback
-  function getLocalSuggestions() {
-    const hints: string[] = [];
-    if (description.toLowerCase().includes('shelf')) {
-      hints.push('Measure wall space and stud locations before purchasing materials');
-      hints.push('Use a level to ensure shelves are perfectly horizontal');
-    }
-    if (budget === '$') {
-      hints.push('Consider using reclaimed or repurposed materials to save money');
-    }
-    if (skillLevel === 'Beginner') {
-      hints.push('Watch tutorial videos before starting your project');
-      hints.push('Take your time and double-check measurements');
-    }
-    hints.push('Safety first - wear protective gear when cutting or drilling');
-    hints.push('Organize your tools and materials before you begin');
-    return hints.slice(0, 5);
-  }
 
   const TILE_SIZE = 300;
   const ICON_SIZE = 32;
@@ -482,52 +487,41 @@ export default function NewProject({ navigation }: { navigation: any }) {
           )}
         </View>
 
-        {hasValidForm() && (
+        {sugs !== null && (
           <View 
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
           >
-            <Text style={styles.suggestionsTitle}>Smart Suggestions</Text>
+            <Text style={styles.suggestionsTitle}>Smart Suggestions (beta)</Text>
             
             {sugsBusy ? (
               <View style={styles.suggestionsLoading}>
                 <ActivityIndicator size="small" color="#F59E0B" />
                 <Text style={styles.suggestionsLoadingText}>Analyzing your photo…</Text>
               </View>
-            ) : sugs?.bullets && sugs.bullets.length > 0 ? (
+            ) : sugs.length > 0 ? (
               <View>
-                {sugs.bullets.map((bullet: string, idx: number) => (
+                {sugs.map((suggestion: string, idx: number) => (
                   <View key={idx} style={styles.suggestionBullet}>
                     <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
-                    <Text style={styles.suggestionText}>{bullet}</Text>
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
                   </View>
                 ))}
-                {sugs.tags && sugs.tags.length > 0 && (
-                  <Text style={styles.suggestionTags}>{sugs.tags.join(' · ')}</Text>
-                )}
+                <Text style={styles.suggestionMeta}>
+                  style: modern • difficulty: {skillLevel} • budget: {budget}
+                </Text>
               </View>
-            ) : (
-              <View>
-                {getLocalSuggestions().map((hint, idx) => (
-                  <View key={idx} style={styles.suggestionBullet}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
-                    <Text style={styles.suggestionText}>{hint}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+            ) : null}
             
-            {draftId && (
-              <Pressable
-                testID="np-suggestions-refresh"
-                onPress={fetchSuggestions}
-                disabled={sugsBusy}
-                style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
-              >
-                <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-                <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
-              </Pressable>
-            )}
+            <Pressable
+              testID="np-suggestions-refresh"
+              onPress={fetchSuggestions}
+              disabled={sugsBusy}
+              style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
+            >
+              <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+              <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
+            </Pressable>
           </View>
         )}
 
@@ -765,7 +759,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 20,
   },
-  suggestionTags: {
+  suggestionMeta: {
     fontSize: 12,
     fontFamily: typography.fontFamily.inter,
     color: '#9CA3AF',
