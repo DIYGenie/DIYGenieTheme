@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, AppState, Linking, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, AppState, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { supabase } from '../lib/storage';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 const ENDPOINTS = {
@@ -246,19 +247,34 @@ export default function ProfileScreen() {
   };
 
   const handleAccountSettings = () => {
-    // TODO: Navigate to account settings
+    Alert.alert('Coming soon', 'Account settings will land here.');
   };
 
   const handleBilling = () => {
-    // TODO: Navigate to billing
+    openPortal();
   };
 
-  const handleHelp = () => {
-    // TODO: Navigate to help
+  const handleHelp = async () => {
+    const url = 'mailto:support@diygenieapp.com?subject=DIY%20Genie%20Support';
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Help & Support', 'Please email us at support@diygenieapp.com');
+      }
+    } catch (e) {
+      Alert.alert('Help & Support', 'Please email us at support@diygenieapp.com');
+    }
   };
 
-  const handleLogOut = () => {
-    // TODO: Handle logout
+  const handleLogOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      Alert.alert('Logged out', 'You have been signed out successfully.');
+    } catch (e) {
+      Alert.alert('Log out', 'Unable to sign out. Please try again.');
+    }
   };
 
   const getPlanDescription = () => {
@@ -294,17 +310,24 @@ export default function ProfileScreen() {
 
           {/* Your Plan Section */}
           <Text style={styles.sectionTitle}>Your Plan</Text>
-          <View style={styles.planCard}>
+          <View style={[styles.planCard, { zIndex: 1, pointerEvents: 'auto' }]}>
             <View style={styles.planContent}>
               <View>
                 <Text style={styles.planTitle}>Current Plan: {formatTier(ents.tier)}</Text>
                 <Text style={styles.planSubtitle}>{getPlanDescription()}</Text>
               </View>
-              <TouchableOpacity onPress={handleManagePlan} disabled={busy}>
+              <Pressable
+                onPress={openPortal}
+                accessibilityRole="button"
+                hitSlop={12}
+                disabled={busy}
+                testID="btn-manage-portal"
+                style={{ paddingVertical: 8, paddingHorizontal: 6 }}
+              >
                 <Text style={[styles.manageButton, busy && styles.disabledButton]}>
                   Manage
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
 
@@ -377,50 +400,85 @@ export default function ProfileScreen() {
             </>
           )}
 
-          <TouchableOpacity 
-            style={styles.syncButton} 
+          <Pressable
             onPress={getEntitlements}
+            accessibilityRole="button"
+            hitSlop={10}
             disabled={busy}
+            testID="btn-sync-plan"
+            style={{ alignSelf: 'center', paddingVertical: 8 }}
           >
             <Text style={[styles.syncButtonText, busy && styles.disabledText]}>
               {busy ? 'Syncing...' : 'Sync Plan'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Settings Section */}
           <Text style={styles.sectionTitle}>Settings</Text>
           
-          <TouchableOpacity style={styles.settingsCard} onPress={handleAccountSettings}>
-            <View style={styles.settingsRow}>
-              <Ionicons name="person-outline" size={24} color="#64748B" style={styles.settingsIcon} />
-              <Text style={styles.settingsLabel}>Account Settings</Text>
-              <Ionicons name="chevron-forward" size={20} color="#64748B" />
+          <Pressable
+            onPress={handleAccountSettings}
+            accessibilityRole="button"
+            hitSlop={10}
+            disabled={busy}
+            testID="row-account"
+          >
+            <View style={styles.settingsCard}>
+              <View style={styles.settingsRow}>
+                <Ionicons name="person-outline" size={24} color="#64748B" style={styles.settingsIcon} />
+                <Text style={styles.settingsLabel}>Account Settings</Text>
+                <Ionicons name="chevron-forward" size={20} color="#64748B" />
+              </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.settingsCard} onPress={handleBilling}>
-            <View style={styles.settingsRow}>
-              <Ionicons name="card-outline" size={24} color="#64748B" style={styles.settingsIcon} />
-              <Text style={styles.settingsLabel}>Billing & Payments</Text>
-              <Ionicons name="chevron-forward" size={20} color="#64748B" />
+          <Pressable
+            onPress={handleBilling}
+            accessibilityRole="button"
+            hitSlop={10}
+            disabled={busy}
+            testID="row-billing"
+          >
+            <View style={styles.settingsCard}>
+              <View style={styles.settingsRow}>
+                <Ionicons name="card-outline" size={24} color="#64748B" style={styles.settingsIcon} />
+                <Text style={styles.settingsLabel}>Billing & Payments</Text>
+                <Ionicons name="chevron-forward" size={20} color="#64748B" />
+              </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.settingsCard} onPress={handleHelp}>
-            <View style={styles.settingsRow}>
-              <Ionicons name="help-circle-outline" size={24} color="#64748B" style={styles.settingsIcon} />
-              <Text style={styles.settingsLabel}>Help & Support</Text>
-              <Ionicons name="chevron-forward" size={20} color="#64748B" />
+          <Pressable
+            onPress={handleHelp}
+            accessibilityRole="button"
+            hitSlop={10}
+            disabled={busy}
+            testID="row-help"
+          >
+            <View style={styles.settingsCard}>
+              <View style={styles.settingsRow}>
+                <Ionicons name="help-circle-outline" size={24} color="#64748B" style={styles.settingsIcon} />
+                <Text style={styles.settingsLabel}>Help & Support</Text>
+                <Ionicons name="chevron-forward" size={20} color="#64748B" />
+              </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.settingsCard} onPress={handleLogOut}>
-            <View style={styles.settingsRow}>
-              <Ionicons name="log-out-outline" size={24} color="#DC2626" style={styles.settingsIcon} />
-              <Text style={[styles.settingsLabel, styles.logoutLabel]}>Log Out</Text>
-              <Ionicons name="chevron-forward" size={20} color="#DC2626" />
+          <Pressable
+            onPress={handleLogOut}
+            accessibilityRole="button"
+            hitSlop={10}
+            disabled={busy}
+            testID="row-logout"
+          >
+            <View style={styles.settingsCard}>
+              <View style={styles.settingsRow}>
+                <Ionicons name="log-out-outline" size={24} color="#DC2626" style={styles.settingsIcon} />
+                <Text style={[styles.settingsLabel, styles.logoutLabel]}>Log Out</Text>
+                <Ionicons name="chevron-forward" size={20} color="#DC2626" />
+              </View>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           {/* Billing Debug (temp) */}
           <Text style={styles.sectionTitle}>Billing Debug (temp)</Text>
