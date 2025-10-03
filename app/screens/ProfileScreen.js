@@ -99,7 +99,6 @@ export default function ProfileScreen() {
   const [busy, setBusy] = React.useState(false);
   const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
   const [showUpgradePicker, setShowUpgradePicker] = React.useState(false);
-  const [dbg, setDbg] = React.useState({ base: BASE, user: CURRENT_USER_ID, last: null, error: null });
 
   const getEntitlements = React.useCallback(async () => {
     try {
@@ -175,77 +174,6 @@ export default function ProfileScreen() {
     return () => sub.remove();
   }, [getEntitlements]);
 
-  const logDbg = (obj) => {
-    console.log('[BillingDebug]', obj);
-    setDbg((d) => ({ ...d, last: obj, error: null }));
-  };
-
-  const logErr = (e) => {
-    console.warn('[BillingDebug]', e);
-    setDbg((d) => ({ ...d, error: String(e?.message || e) }));
-  };
-
-  const pingEntitlements = async () => {
-    try {
-      const data = await api(`${ENDPOINTS.entitlementsShort}?user_id=${encodeURIComponent(CURRENT_USER_ID)}`);
-      logDbg({ op: 'entitlements', data });
-    } catch (e) {
-      if (String(e.message).startsWith('404')) {
-        try {
-          const data = await api(ENDPOINTS.entitlementsWithId(CURRENT_USER_ID));
-          logDbg({ op: 'entitlements_fallback', data });
-          return;
-        } catch (ee) {
-          logErr(ee);
-        }
-      } else {
-        logErr(e);
-      }
-    }
-  };
-
-  const testCheckout = async (tier) => {
-    try {
-      const { url } = await api(ENDPOINTS.checkout, {
-        method: 'POST',
-        body: JSON.stringify({ tier, user_id: CURRENT_USER_ID }),
-      });
-      logDbg({ op: 'checkout', tier, url });
-      await openExternal(url);
-    } catch (e) {
-      logErr(e);
-    }
-  };
-
-  const testPortal = async () => {
-    try {
-      const { url } = await api(ENDPOINTS.portal, {
-        method: 'POST',
-        body: JSON.stringify({ user_id: CURRENT_USER_ID }),
-      });
-      logDbg({ op: 'portal', url });
-      await openExternal(url);
-    } catch (e) {
-      logErr(e);
-    }
-  };
-
-  const devUpgrade = async (tier) => {
-    try {
-      const res = await api(ENDPOINTS.devUpgrade, {
-        method: 'POST',
-        body: JSON.stringify({ tier, user_id: CURRENT_USER_ID }),
-      });
-      logDbg({ op: 'devUpgrade', tier, res });
-    } catch (e) {
-      logErr(e);
-    }
-  };
-
-  const handleManagePlan = () => {
-    openPortal();
-  };
-
   const handleAccountSettings = () => {
     Alert.alert('Coming soon', 'Account settings will land here.');
   };
@@ -294,7 +222,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
-        style={styles.gradientHeader}
+        style={[styles.gradientHeader, { pointerEvents: 'none' }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
@@ -479,67 +407,6 @@ export default function ProfileScreen() {
               </View>
             </View>
           </Pressable>
-
-          {/* Billing Debug (temp) */}
-          <Text style={styles.sectionTitle}>Billing Debug (temp)</Text>
-          <View style={styles.debugCard}>
-            <Text style={styles.debugInfo}>BASE: {dbg.base}</Text>
-            <Text style={styles.debugInfo}>USER_ID: {dbg.user}</Text>
-            
-            <View style={styles.debugButtons}>
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={pingEntitlements}
-                testID="dbg-ping-entitlements"
-              >
-                <Text style={styles.debugButtonText}>Ping Entitlements</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={() => testCheckout('casual')}
-                testID="dbg-checkout-casual"
-              >
-                <Text style={styles.debugButtonText}>Checkout Casual</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={() => testCheckout('pro')}
-                testID="dbg-checkout-pro"
-              >
-                <Text style={styles.debugButtonText}>Checkout Pro</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={testPortal}
-                testID="dbg-portal"
-              >
-                <Text style={styles.debugButtonText}>Open Portal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.debugButton}
-                onPress={() => devUpgrade('casual')}
-                testID="dbg-upgrade-casual"
-              >
-                <Text style={styles.debugButtonText}>Dev Upgrade Casual</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text
-              selectable
-              style={{
-                fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-                fontSize: 12,
-                opacity: 0.8,
-                marginTop: 8,
-              }}
-            >
-              {dbg.error ? `Error: ${dbg.error}` : JSON.stringify(dbg.last, null, 2) || '—'}
-            </Text>
-          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -838,42 +705,5 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     color: '#DC2626',
-  },
-  debugCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
-  },
-  debugInfo: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  debugButtons: {
-    marginTop: 12,
-    gap: 8,
-  },
-  debugButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  debugButtonText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#FFFFFF',
   },
 });
