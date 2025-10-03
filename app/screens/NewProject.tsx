@@ -139,7 +139,11 @@ export default function NewProject({ navigation }: { navigation: any }) {
           if (!file.type?.startsWith?.('image/')) return reject(new Error('Please select an image'));
           const reader = new FileReader();
           reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.onload = () => resolve(String(reader.result));
+          reader.onload = () => {
+            const dataUrl = String(reader.result);
+            console.info('[photo] picked web', { type: file.type, size: file.size });
+            resolve(dataUrl);
+          };
           reader.readAsDataURL(file);
         };
         input.click();
@@ -159,6 +163,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
     if ((res as any).canceled) throw new Error('Selection canceled');
     const uri = (res as any).assets?.[0]?.uri;
     if (!uri) throw new Error('No image URI');
+    console.info('[photo] picked native', { uri });
     return uri;
   }
 

@@ -19,13 +19,25 @@ export default function NewProjectMedia({ navigation, route }) {
         
         input.onchange = (e) => {
           const file = e.target.files[0];
-          if (file) {
-            const uri = URL.createObjectURL(file);
+          if (!file) return;
+          if (!file.type?.startsWith?.('image/')) {
+            Alert.alert('Invalid file', 'Please select an image');
+            return;
+          }
+          
+          const reader = new FileReader();
+          reader.onerror = () => {
+            Alert.alert('Upload failed', 'Failed to read file. Please try again.');
+          };
+          reader.onload = () => {
+            const dataUrl = String(reader.result);
+            console.info('[photo] picked web (media screen)', { type: file.type, size: file.size });
             if (onPickImage) {
-              onPickImage(uri);
+              onPickImage(dataUrl);
               navigation.goBack();
             }
-          }
+          };
+          reader.readAsDataURL(file);
         };
         
         input.click();
@@ -41,13 +53,14 @@ export default function NewProjectMedia({ navigation, route }) {
         const asset = result.assets?.[0];
         if (!asset?.uri) return;
 
+        console.info('[photo] picked native (media screen)', { uri: asset.uri });
         if (onPickImage) {
           onPickImage(asset.uri);
           navigation.goBack();
         }
       }
     } catch (e) {
-      Alert.alert('Upload failed', 'Please try again or use a different photo.');
+      Alert.alert('Photo picker', e?.message || 'Could not select photo');
     }
   };
 
