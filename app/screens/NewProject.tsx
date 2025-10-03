@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,34 +9,53 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
-const USER_ID = 'auto'; // server maps 'auto' -> TEST_USER_ID
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 
-async function postJSON(path: string, body: any) {
-  const res = await fetch(`${BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  let data: any = null;
-  try { data = await res.json(); } catch {}
-  return { ok: res.ok, status: res.status, data };
+async function api(path: string, opts: any = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      ...opts,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...opts.headers },
+    });
+    clearTimeout(timeout);
+    
+    let data: any = null;
+    const text = await res.text();
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { error: text || 'Invalid response' };
+    }
+    
+    if (!res.ok) {
+      throw new Error(data?.error || data?.details || `HTTP ${res.status}`);
+    }
+    return data;
+  } catch (err: any) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') throw new Error('Request timeout');
+    throw err;
+  }
 }
 
 export default function NewProject({ navigation }: { navigation: any }) {
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
-  const [skill, setSkill] = useState('');
+  const [skillLevel, setSkillLevel] = useState('');
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  
   const [sugs, setSugs] = useState<any | null>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
-  const [promptText, setPromptText] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [creating, setCreating] = useState(false);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -44,7 +63,11 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
-  const formReady = description.trim().length >= 10 && budget && skill && photoUri;
+  const canPreview = ents?.previewAllowed ?? false;
+
+  function hasValidForm() {
+    return description.trim().length >= 10 && !!budget && !!skillLevel;
+  }
 
   const triggerHaptic = async (type = 'success') => {
     try {
@@ -58,60 +81,55 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   };
 
-  async function ensureDraft(): Promise<string> {
-    if (draftId) return draftId;
-
-    // basic client-side validation to avoid noisy calls
-    if (!description || description.trim().length < 10) {
-      Alert.alert('Tell us a bit more', 'Please enter at least 10 characters for the description.');
-      throw new Error('invalid_description');
-    }
-    if (!budget || !skill) {
-      Alert.alert('Missing info', 'Please choose a budget and skill level.');
-      throw new Error('invalid_form');
-    }
-
-    setCreating(true);
+  async function fetchEntitlements() {
     try {
-      const body = {
-        user_id: USER_ID,                // 'auto' (backend maps to TEST_USER_ID)
-        name: description.trim(),        // required ≥10 (backend validates)
-        budget,                          // required (backend validates)
-        skill_level: skill,              // normalized key
-      };
-
-      const res = await postJSON('/api/projects', body);
-
-      if (!res.ok || res.data?.ok === false) {
-        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
-        Alert.alert('Could not create project', String(msg));
-        throw new Error(`create_failed: ${msg}`);
-      }
-
-      const id = res.data?.item?.id || res.data?.id || res.data?.project?.id;
-      if (!id) {
-        Alert.alert('Create project', 'Create succeeded but no project ID was returned.');
-        throw new Error('no_project_id');
-      }
-
-      setDraftId(id);
-      return id;
-    } finally {
-      setCreating(false);
+      const data = await api(`/me/entitlements?user_id=auto`);
+      setEnts({ 
+        previewAllowed: !!data.previewAllowed, 
+        remaining: data.remaining 
+      });
+    } catch (err) {
+      console.warn('[entitlements]', err);
     }
   }
 
+  useEffect(() => {
+    fetchEntitlements();
+    
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        fetchEntitlements();
+      }
+    });
+    
+    return () => subscription.remove();
+  }, []);
+
+  async function ensureDraft(): Promise<string> {
+    if (draftId) return draftId;
+
+    const body = {
+      user_id: 'auto',
+      name: description,
+      budget,
+      skill: skillLevel,
+    };
+
+    const res = await api('/api/projects', { method: 'POST', body: JSON.stringify(body) });
+    const id = res.item.id;
+    setDraftId(id);
+    return id;
+  }
+
   async function fetchSuggestions() {
-    if (sugsBusy) return;
+    if (!draftId) return;
     setSugsBusy(true);
     try {
-      const id = await ensureDraft();
-      const res = await postJSON(`/api/projects/${id}/suggestions`, { user_id: USER_ID });
-      if (!res.ok || res.data?.ok === false) {
-        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-      const data = res.data?.data || {};
+      const res = await api(`/api/projects/${draftId}/suggestions`, { 
+        method: 'POST', 
+        body: JSON.stringify({ user_id: 'auto' }) 
+      });
+      const data = res?.data || {};
       setSugs({ bullets: data.bullets || [], tags: data.tags || [] });
     } catch (e: any) {
       setSugs({ bullets: [] });
@@ -120,12 +138,6 @@ export default function NewProject({ navigation }: { navigation: any }) {
       setSugsBusy(false);
     }
   }
-
-  useEffect(() => {
-    if (formReady && !sugs && !sugsBusy) {
-      fetchSuggestions();
-    }
-  }, [formReady]);
 
   function pickPhotoWeb(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -171,12 +183,13 @@ export default function NewProject({ navigation }: { navigation: any }) {
     try {
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
-      if (fetchSuggestions) {
-        setSugsBusy(true);
-        try { 
-          await fetchSuggestions(); 
-        } finally { 
-          setSugsBusy(false); 
+      
+      if (hasValidForm() && !draftId) {
+        try {
+          await ensureDraft();
+          await fetchSuggestions();
+        } catch (err) {
+          console.warn('[photo upload ensureDraft]', err);
         }
       }
     } catch (err: any) {
@@ -184,29 +197,45 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   };
 
-  async function generatePlan() {
+  async function generatePreview() {
+    if (!hasValidForm() || !photoUri || !canPreview || busy) return;
+    
+    setBusy(true);
     try {
       const id = await ensureDraft();
-      const prompt = (promptText || '').trim() || description.trim();
-      
-      setIsGenerating(true);
-      const res = await postJSON(`/api/projects/${id}/build-without-preview`, { user_id: USER_ID, prompt });
-      
-      if (!res.ok || res.data?.ok === false) {
-        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
-        Alert.alert('Could not generate plan', String(msg));
-        return;
-      }
-      
+      await api(`/api/projects/${id}/preview`, { 
+        method: 'POST', 
+        body: JSON.stringify({ user_id: 'auto' }) 
+      });
       triggerHaptic('success');
-      setTimeout(() => {
-        navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-      }, 400);
-    } catch (e: any) {
-      // ensureDraft already alerts on failure
-      console.warn('[generatePlan]', e?.message || e);
+      Alert.alert('Success', 'Preview requested');
+      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+    } catch (err: any) {
+      Alert.alert('Preview failed', err?.message || 'Could not generate preview');
+      triggerHaptic('error');
     } finally {
-      setIsGenerating(false);
+      setBusy(false);
+    }
+  }
+
+  async function buildPlanWithoutPreview() {
+    if (!hasValidForm() || busy) return;
+    
+    setBusy(true);
+    try {
+      const id = await ensureDraft();
+      await api(`/api/projects/${id}/build-without-preview`, { 
+        method: 'POST', 
+        body: JSON.stringify({ user_id: 'auto' }) 
+      });
+      triggerHaptic('success');
+      Alert.alert('Success', 'Plan requested');
+      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+    } catch (err: any) {
+      Alert.alert('Plan failed', err?.message || 'Could not generate plan');
+      triggerHaptic('error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -216,9 +245,28 @@ export default function NewProject({ navigation }: { navigation: any }) {
   };
 
   const handleSkillSelect = (option: string) => {
-    setSkill(option);
+    setSkillLevel(option);
     setShowSkillDropdown(false);
   };
+
+  // Local suggestion generator as fallback
+  function getLocalSuggestions() {
+    const hints: string[] = [];
+    if (description.toLowerCase().includes('shelf')) {
+      hints.push('Measure wall space and stud locations before purchasing materials');
+      hints.push('Use a level to ensure shelves are perfectly horizontal');
+    }
+    if (budget === '$') {
+      hints.push('Consider using reclaimed or repurposed materials to save money');
+    }
+    if (skillLevel === 'Beginner') {
+      hints.push('Watch tutorial videos before starting your project');
+      hints.push('Take your time and double-check measurements');
+    }
+    hints.push('Safety first - wear protective gear when cutting or drilling');
+    hints.push('Organize your tools and materials before you begin');
+    return hints.slice(0, 5);
+  }
 
   const TILE_SIZE = 300;
   const ICON_SIZE = 32;
@@ -314,8 +362,8 @@ export default function NewProject({ navigation }: { navigation: any }) {
                 setShowBudgetDropdown(false);
               }}
             >
-              <Text style={[styles.dropdownText, !skill && styles.placeholderText]}>
-                {skill || 'Select skill level'}
+              <Text style={[styles.dropdownText, !skillLevel && styles.placeholderText]}>
+                {skillLevel || 'Select skill level'}
               </Text>
               <Ionicons 
                 name={showSkillDropdown ? 'chevron-up' : 'chevron-down'} 
@@ -428,25 +476,25 @@ export default function NewProject({ navigation }: { navigation: any }) {
                 marginTop: 8,
                 paddingHorizontal: 20,
               }}>
-                We'll upload your photo later when you request a visual preview.
+                We'll upload your photo when you generate a preview.
               </Text>
             </View>
           )}
         </View>
 
-        {formReady && (
+        {hasValidForm() && (
           <View 
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
           >
-            <Text style={styles.suggestionsTitle}>Smart Suggestions (beta)</Text>
+            <Text style={styles.suggestionsTitle}>Smart Suggestions</Text>
             
             {sugsBusy ? (
               <View style={styles.suggestionsLoading}>
                 <ActivityIndicator size="small" color="#F59E0B" />
                 <Text style={styles.suggestionsLoadingText}>Analyzing your photo…</Text>
               </View>
-            ) : sugs?.bullets ? (
+            ) : sugs?.bullets && sugs.bullets.length > 0 ? (
               <View>
                 {sugs.bullets.map((bullet: string, idx: number) => (
                   <View key={idx} style={styles.suggestionBullet}>
@@ -458,54 +506,82 @@ export default function NewProject({ navigation }: { navigation: any }) {
                   <Text style={styles.suggestionTags}>{sugs.tags.join(' · ')}</Text>
                 )}
               </View>
-            ) : null}
+            ) : (
+              <View>
+                {getLocalSuggestions().map((hint, idx) => (
+                  <View key={idx} style={styles.suggestionBullet}>
+                    <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
+                    <Text style={styles.suggestionText}>{hint}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
             
-            <Pressable
-              testID="np-suggestions-refresh"
-              onPress={fetchSuggestions}
-              disabled={sugsBusy}
-              style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
-            >
-              <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
-            </Pressable>
+            {draftId && (
+              <Pressable
+                testID="np-suggestions-refresh"
+                onPress={fetchSuggestions}
+                disabled={sugsBusy}
+                style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
+              >
+                <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+                <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
+              </Pressable>
+            )}
           </View>
         )}
 
-        {formReady && (
-          <View style={styles.promptCard}>
-            <Text style={styles.promptTitle}>Edit build prompt</Text>
-            <TextInput
-              value={promptText}
-              onChangeText={setPromptText}
-              multiline
-              numberOfLines={4}
-              placeholder="Describe your ideal result, constraints, materials on hand, etc."
-              placeholderTextColor="#9CA3AF"
-              style={styles.promptInput}
-              textAlignVertical="top"
-            />
-            <Text style={styles.promptHint}>
-              You get <Text style={{ fontWeight: '700' }}>1 visual preview per project</Text>. Refine with suggestions before generating your plan.
-            </Text>
+        {hasValidForm() && (
+          <View style={{ marginTop: 20 }}>
             <Pressable
-              testID="np-generate-plan"
-              onPress={generatePlan}
-              disabled={isGenerating || creating || !promptText?.trim()}
+              testID="np-generate-preview"
+              onPress={generatePreview}
+              disabled={!photoUri || !canPreview || busy}
               style={({ pressed }) => [
                 styles.primaryButton,
-                (isGenerating || creating || !promptText?.trim()) && styles.primaryButtonDisabled,
-                { marginTop: 12, transform: [{ scale: pressed && !isGenerating && !creating && promptText?.trim() ? 0.98 : 1 }] }
+                (!photoUri || !canPreview || busy) && styles.primaryButtonDisabled,
+                { transform: [{ scale: pressed && photoUri && canPreview && !busy ? 0.98 : 1 }] }
               ]}
-              accessibilityRole="button"
             >
-              {isGenerating || creating ? (
+              {busy ? (
                 <>
                   <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.primaryButtonText}>{isGenerating ? 'Generating…' : 'Creating…'}</Text>
+                  <Text style={styles.primaryButtonText}>Requesting…</Text>
                 </>
               ) : (
-                <Text style={styles.primaryButtonText}>Generate Plan</Text>
+                <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
+              )}
+            </Pressable>
+
+            {!canPreview && (
+              <Text style={styles.upgradeHint}>
+                <Text style={{ color: '#6B7280' }}>Need visual previews? </Text>
+                <Text 
+                  style={{ color: '#F59E0B', fontWeight: '600' }}
+                  onPress={() => navigation.navigate('Profile')}
+                >
+                  Upgrade
+                </Text>
+              </Text>
+            )}
+
+            <Pressable
+              testID="np-build-plan"
+              onPress={buildPlanWithoutPreview}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                busy && styles.secondaryButtonDisabled,
+                { marginTop: 12, transform: [{ scale: pressed && !busy ? 0.98 : 1 }] }
+              ]}
+            >
+              {busy ? (
+                <>
+                  <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />
+                  <Text style={styles.secondaryButtonText}>Requesting…</Text>
+                </>
+              ) : (
+                <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
               )}
             </Pressable>
           </View>
@@ -698,68 +774,61 @@ const styles = StyleSheet.create({
   suggestionsRefresh: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
     marginTop: 8,
+    paddingVertical: 4,
   },
   suggestionsRefreshText: {
     fontSize: 13,
     fontFamily: typography.fontFamily.inter,
     color: '#6B7280',
   },
-  promptCard: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-  },
-  promptTitle: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#111827',
-    marginBottom: 12,
-  },
-  promptInput: {
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 15,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textPrimary,
-    minHeight: 100,
-  },
-  promptHint: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: '#6B7280',
-    marginTop: 8,
-    lineHeight: 18,
-  },
   primaryButton: {
-    backgroundColor: '#E39A33',
+    backgroundColor: '#F59E0B',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
-    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   primaryButtonDisabled: {
     backgroundColor: '#D1D5DB',
     shadowOpacity: 0,
+    elevation: 0,
   },
   primaryButtonText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#FFF',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonDisabled: {
+    borderColor: '#D1D5DB',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#F59E0B',
+  },
+  upgradeHint: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.inter,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
