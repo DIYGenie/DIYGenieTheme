@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -135,10 +136,42 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   }, [formReady]);
 
-  const handleUploadPhoto = () => {
-    navigation.navigate('NewProjectMedia', {
-      onPickImage: (uri: string) => setPhotoUri(uri),
-    });
+  const pickPhotoWeb = () => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        setPhotoUri(url);
+      };
+      input.click();
+    } catch (e) {
+      Alert.alert('Upload failed', 'Please try a different photo or browser.');
+    }
+  };
+
+  const pickPhotoNative = async () => {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.85,
+        selectionLimit: 1,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        setPhotoUri(res.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Upload failed', 'Please try again.');
+    }
+  };
+
+  const onUploadPhoto = () => {
+    if (Platform.OS === 'web') return pickPhotoWeb();
+    return pickPhotoNative();
   };
 
   const generatePlan = async () => {
@@ -333,6 +366,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
           {!photoUri ? (
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
               <Pressable
+                testID="btn-upload-photo"
                 style={({ pressed }) => ({
                   width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
                   justifyContent: 'center', alignItems: 'center',
@@ -345,7 +379,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
                   elevation: 4,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}
-                onPress={handleUploadPhoto}
+                onPress={onUploadPhoto}
               >
                 <Ionicons 
                   name="images-outline" 
@@ -371,7 +405,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
               />
               
               <TouchableOpacity 
-                onPress={handleUploadPhoto}
+                onPress={onUploadPhoto}
                 style={{ 
                   flexDirection: 'row', 
                   alignItems: 'center',

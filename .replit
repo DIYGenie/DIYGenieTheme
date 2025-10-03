@@ -4,6 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
+packages = ["chromium"]
 
 [workflows]
 runButton = "Project"
@@ -75,10 +76,6 @@ externalPort = 5173
 [[ports]]
 localPort = 41327
 externalPort = 3000
-
-[[ports]]
-localPort = 44725
-externalPort = 6800
 
 [[ports]]
 localPort = 45081

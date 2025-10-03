@@ -7,7 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +20,7 @@
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/manrope": "^0.4.2",
     "@expo/vector-icons": "^15.0.2",
+    "@playwright/test": "^1.55.1",
     "@react-navigation/bottom-tabs": "^7.4.7",
     "@react-navigation/material-top-tabs": "^7.3.7",
     "@react-navigation/native": "^7.1.17",
@@ -37,6 +41,7 @@
     "expo-status-bar": "^3.0.8",
     "express": "^5.1.0",
     "multer": "^2.0.2",
+    "playwright": "^1.55.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-native": "^0.80.2",
