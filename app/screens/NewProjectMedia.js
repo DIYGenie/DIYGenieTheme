@@ -10,54 +10,49 @@ import { typography } from '../../theme/typography';
 export default function NewProjectMedia({ navigation, route }) {
   const onPickImage = route?.params?.onPickImage;
 
-  const onUploadPhoto = async () => {
+  const pickFromLibrary = async () => {
     try {
-      // Directly open library; do NOT request permission up-front.
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.85,
-        selectionLimit: 1,
-      });
-      if (result.canceled) return;
-      const asset = result.assets?.[0];
-      if (!asset?.uri) return;
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        
+        input.onchange = (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const uri = URL.createObjectURL(file);
+            if (onPickImage) {
+              onPickImage(uri);
+              navigation.goBack();
+            }
+          }
+        };
+        
+        input.click();
+      } else {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 0.85,
+          selectionLimit: 1,
+        });
+        
+        if (result.canceled) return;
+        const asset = result.assets?.[0];
+        if (!asset?.uri) return;
 
-      // Call callback to update parent state
-      if (onPickImage) {
-        onPickImage(asset.uri);
-        navigation.goBack();
+        if (onPickImage) {
+          onPickImage(asset.uri);
+          navigation.goBack();
+        }
       }
     } catch (e) {
       Alert.alert('Upload failed', 'Please try again or use a different photo.');
     }
   };
 
-  const onScanRoom = async () => {
-    // keep stub — avoid camera on web/preview
-    if (Platform.OS === 'web') {
-      Alert.alert('Scan coming soon', 'Use "Upload Photo" for now.');
-      return;
-    }
-    try {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Camera permission', 'Please allow camera access or use "Upload Photo".');
-        return;
-      }
-      const res = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.85,
-      });
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        if (onPickImage) {
-          onPickImage(res.assets[0].uri);
-          navigation.goBack();
-        }
-      }
-    } catch (e) {
-      Alert.alert('Scan unavailable', 'Please use "Upload Photo" for now.');
-    }
+  const handleScanRoom = () => {
+    Alert.alert('AR Scan (stub)', 'Use Upload Photo for now');
   };
 
   const handleBack = () => {
@@ -80,12 +75,20 @@ export default function NewProjectMedia({ navigation, route }) {
 
         {/* Media Options */}
         <View style={styles.mediaOptions}>
-          <TouchableOpacity style={styles.scanRoomTile} onPress={onScanRoom}>
+          <TouchableOpacity 
+            style={styles.scanRoomTile} 
+            onPress={handleScanRoom}
+            testID="btn-scan-room"
+          >
             <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
             <Text style={styles.scanRoomText}>Scan Room</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.uploadPhotoTile} onPress={onUploadPhoto}>
+          <TouchableOpacity 
+            style={styles.uploadPhotoTile} 
+            onPress={pickFromLibrary}
+            testID="btn-upload-photo"
+          >
             <Ionicons name="image" size={28} color="#64748B" style={styles.tileIcon} />
             <Text style={styles.uploadPhotoText}>Upload Photo</Text>
           </TouchableOpacity>
@@ -154,7 +157,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 3,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   uploadPhotoTile: {
@@ -176,7 +178,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 3,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   tileIcon: {
