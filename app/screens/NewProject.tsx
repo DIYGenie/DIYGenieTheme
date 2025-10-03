@@ -10,10 +10,10 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
-const USER_ID = (globalThis as any).__DEV_USER_ID__ || 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
+const USER_ID = 'auto'; // server maps 'auto' -> TEST_USER_ID
 
-async function postJSON(url: string, body: any) {
-  const res = await fetch(url, {
+async function postJSON(path: string, body: any) {
+  const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -21,29 +21,6 @@ async function postJSON(url: string, body: any) {
   let data: any = null;
   try { data = await res.json(); } catch {}
   return { ok: res.ok, status: res.status, data };
-}
-
-async function api(path: string, init?: RequestInit) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  
-  try {
-    const res = await fetch(`${BASE}${path}`, {
-      ...init,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
-    });
-    clearTimeout(timeout);
-    
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (e: any) {
-    clearTimeout(timeout);
-    throw e;
-  }
 }
 
 export default function NewProject({ navigation }: { navigation: any }) {
@@ -81,94 +58,68 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   };
 
-  async function createProject() {
-    if (creating) return;
+  async function ensureDraft(): Promise<string> {
+    if (draftId) return draftId;
+
+    // basic client-side validation to avoid noisy calls
     if (!description || description.trim().length < 10) {
-      Alert.alert('Tell us a bit more', 'Please enter at least 10 characters for the project description.');
-      return;
+      Alert.alert('Tell us a bit more', 'Please enter at least 10 characters for the description.');
+      throw new Error('invalid_description');
     }
     if (!budget || !skill) {
       Alert.alert('Missing info', 'Please choose a budget and skill level.');
-      return;
+      throw new Error('invalid_form');
     }
 
     setCreating(true);
     try {
-      let res = await postJSON(`${BASE}/api/projects`, {
-        user_id: USER_ID,
-        name: description.trim(),
-        budget,
-        skill_level: skill,
-      });
+      const body = {
+        user_id: USER_ID,                // 'auto' (backend maps to TEST_USER_ID)
+        name: description.trim(),        // required ≥10 (backend validates)
+        budget,                          // required (backend validates)
+        skill_level: skill,              // normalized key
+      };
 
-      if (!res.ok) {
-        const firstErr = res?.data?.error || res?.data?.message || `HTTP ${res.status}`;
-        const fallback = await postJSON(`${BASE}/api/projects`, {
-          user_id: 'auto',
-          name: description.trim(),
-          budget,
-          skill_level: skill,
-        });
-        if (!fallback.ok) {
-          const secondErr = fallback?.data?.error || fallback?.data?.message || `HTTP ${fallback.status}`;
-          throw new Error(`Create failed.\nFirst: ${firstErr}\nThen (auto): ${secondErr}`);
-        }
-        res = fallback;
+      const res = await postJSON('/api/projects', body);
+
+      if (!res.ok || res.data?.ok === false) {
+        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
+        Alert.alert('Could not create project', String(msg));
+        throw new Error(`create_failed: ${msg}`);
       }
 
-      const projectId =
-        res?.data?.item?.id || res?.data?.id || res?.data?.project?.id || res?.data?.item_id;
-      if (!projectId) {
-        throw new Error('Create succeeded but no project ID was returned.');
+      const id = res.data?.item?.id || res.data?.id || res.data?.project?.id;
+      if (!id) {
+        Alert.alert('Create project', 'Create succeeded but no project ID was returned.');
+        throw new Error('no_project_id');
       }
 
-      setDraftId(projectId);
-      
-      if (!promptText) {
-        setPromptText(`Build plan for: ${description.trim()}. Budget: ${budget}. Skill: ${skill}.`);
-      }
-      
-      return projectId;
-    } catch (e: any) {
-      const msg = String(e?.message || e);
-      Alert.alert('Couldn\'t create project', msg);
-      return null;
+      setDraftId(id);
+      return id;
     } finally {
       setCreating(false);
     }
   }
 
-  const ensureDraft = async () => {
-    if (draftId) return draftId;
-    return await createProject();
-  };
-
-  const fetchSuggestions = async () => {
+  async function fetchSuggestions() {
     if (sugsBusy) return;
-    
     setSugsBusy(true);
-    
     try {
-      const pid = await ensureDraft();
-      if (!pid) {
-        setSugsBusy(false);
-        return;
+      const id = await ensureDraft();
+      const res = await postJSON(`/api/projects/${id}/suggestions`, { user_id: USER_ID });
+      if (!res.ok || res.data?.ok === false) {
+        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
+        throw new Error(msg);
       }
-      
-      const response = await api(`/api/projects/${pid}/suggestions`, {
-        method: 'POST',
-        body: JSON.stringify({ user_id: USER_ID }),
-      });
-      
-      if (response.ok && response.bullets) {
-        setSugs({ bullets: response.bullets.slice(0, 5) || [], tags: response.tags || [] });
-      }
+      const data = res.data?.data || {};
+      setSugs({ bullets: data.bullets || [], tags: data.tags || [] });
     } catch (e: any) {
-      console.error('Suggestions fetch failed:', e);
+      setSugs({ bullets: [] });
+      console.warn('[suggestions]', e?.message || e);
     } finally {
       setSugsBusy(false);
     }
-  };
+  }
 
   useEffect(() => {
     if (formReady && !sugs && !sugsBusy) {
@@ -228,40 +179,31 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   };
 
-  const generatePlan = async () => {
-    if (isGenerating) return;
-    
+  async function generatePlan() {
     try {
-      setIsGenerating(true);
+      const id = await ensureDraft();
+      const prompt = (promptText || '').trim() || description.trim();
       
-      const pid = await ensureDraft();
-      if (!pid) {
-        Alert.alert('Error', 'Could not create project');
-        setIsGenerating(false);
+      setIsGenerating(true);
+      const res = await postJSON(`/api/projects/${id}/build-without-preview`, { user_id: USER_ID, prompt });
+      
+      if (!res.ok || res.data?.ok === false) {
+        const msg = res.data?.details || res.data?.error || `HTTP ${res.status}`;
+        Alert.alert('Could not generate plan', String(msg));
         return;
       }
       
-      await api(`/api/projects/${pid}/build-without-preview`, {
-        method: 'POST',
-        body: JSON.stringify({ 
-          user_id: USER_ID, 
-          prompt: promptText || description 
-        }),
-      });
-      
       triggerHaptic('success');
-      
       setTimeout(() => {
-        navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: pid } });
+        navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
       }, 400);
     } catch (e: any) {
-      console.error('Plan generation failed:', e);
-      Alert.alert('Error', 'Could not generate plan. Please try again.');
-      triggerHaptic('error');
+      // ensureDraft already alerts on failure
+      console.warn('[generatePlan]', e?.message || e);
     } finally {
       setIsGenerating(false);
     }
-  };
+  }
 
   const handleBudgetSelect = (option: string) => {
     setBudget(option);
