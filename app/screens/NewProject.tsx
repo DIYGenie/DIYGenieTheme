@@ -42,7 +42,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [showBudgetDropdown, setShowBudgetDropdown] = useState(false);
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
   
-  const [photoUri, setPhotoUri] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [sugs, setSugs] = useState<any | null>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
@@ -136,42 +136,56 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   }, [formReady]);
 
-  const pickPhotoWeb = () => {
-    try {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = () => {
-        const file = input.files && input.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        setPhotoUri(url);
-      };
-      input.click();
-    } catch (e) {
-      Alert.alert('Upload failed', 'Please try a different photo or browser.');
-    }
-  };
-
-  const pickPhotoNative = async () => {
-    try {
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.85,
-        selectionLimit: 1,
-      });
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        setPhotoUri(res.assets[0].uri);
+  function pickPhotoWeb(): Promise<string> {
+    return new Promise((resolve, reject) => {
+      try {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = () => {
+          const file = input.files?.[0];
+          if (!file) return reject(new Error('No file selected'));
+          if (!file.type?.startsWith?.('image/')) return reject(new Error('Please select an image'));
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.onload = () => resolve(String(reader.result));
+          reader.readAsDataURL(file);
+        };
+        input.click();
+      } catch (e) {
+        reject(e);
       }
-    } catch (e) {
-      Alert.alert('Upload failed', 'Please try again.');
-    }
-  };
+    });
+  }
 
-  const onUploadPhoto = () => {
-    if (Platform.OS === 'web') return pickPhotoWeb();
-    return pickPhotoNative();
+  async function pickPhotoNative(): Promise<string> {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+      allowsEditing: false,
+      base64: false,
+    });
+    if ((res as any).canceled) throw new Error('Selection canceled');
+    const uri = (res as any).assets?.[0]?.uri;
+    if (!uri) throw new Error('No image URI');
+    return uri;
+  }
+
+  const onUploadPhoto = async () => {
+    try {
+      const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
+      setPhotoUri(uri);
+      if (fetchSuggestions) {
+        setSugsBusy(true);
+        try { 
+          await fetchSuggestions(); 
+        } finally { 
+          setSugsBusy(false); 
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Photo picker', err?.message || 'Could not select photo');
+    }
   };
 
   const generatePlan = async () => {
@@ -394,6 +408,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
           ) : (
             <View style={{ alignItems: 'center', marginTop: 8 }}>
               <Image 
+                testID="np-photo-preview"
                 source={{ uri: photoUri }} 
                 style={{ 
                   width: TILE_SIZE, 
