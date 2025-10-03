@@ -14,6 +14,8 @@ import { useDebouncePress } from '../lib/hooks';
 import { useUser } from '../lib/useUser';
 import API from '../lib/apiClient';
 
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
+
 export default function NewProjectForm({ navigation }) {
   const { userId, loading: loadingUser } = useUser();
   const [description, setDescription] = useState('');
@@ -131,37 +133,41 @@ export default function NewProjectForm({ navigation }) {
       setIsUploading(true);
 
       // Create project with error handling
-      let projectData;
+      let currentProjectId;
       try {
-        projectData = await createProject({
+        const payload = {
+          user_id: 'auto',
           name: description.substring(0, 100),
           budget: budget,
-          skill: skillLevel,
-          user_id: userId || 'dev-user',
-          status: 'pending',
-        });
+          skill_level: skillLevel,
+        };
+        
+        const projectData = await createProject(payload);
 
-        // Check for permission errors or failed responses
-        if (projectData.ok === false || !projectData.id) {
-          showToast("Couldn't create your project (permission). Try again or contact support.", 'error');
+        // Handle response
+        const data = (projectData && projectData.data) || projectData || {};
+        const ok = data.ok !== false;
+        const projectId = data?.item?.id || data?.id || data?.project?.id;
+
+        if (!ok || !projectId) {
+          const msg = data?.details || data?.error || `HTTP ${projectData?.status || 400}`;
+          showToast(`Create failed: ${String(msg)}`, 'error');
           triggerHaptic('error');
           setIsUploading(false);
           return;
         }
-      } catch (createError) {
-        // Handle 403 or other errors
-        if (createError.response && createError.response.status === 403) {
-          showToast("Couldn't create your project (permission). Try again or contact support.", 'error');
-        } else {
-          showToast(createError.message || 'Failed to create project', 'error');
-        }
+
+        currentProjectId = projectId;
+        setProjectId(currentProjectId);
+      } catch (err) {
+        const status = err?.response?.status;
+        const body = err?.response?.data || {};
+        const msg = body?.details || body?.error || err?.message || `HTTP ${status || 500}`;
+        showToast(`Create failed: ${String(msg)}`, 'error');
         triggerHaptic('error');
         setIsUploading(false);
         return;
       }
-
-      const currentProjectId = projectData.id;
-      setProjectId(currentProjectId);
 
       // Upload via backend
       await uploadRoomPhoto(currentProjectId, asset);
