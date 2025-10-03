@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
 
 function ProjectCard({ project, navigation }) {
   const handlePress = () => {
-    navigation.navigate('ProjectDetails', { id: project.id });
+    navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: project.id } });
   };
 
   return (

@@ -1,18 +1,63 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-export default function NewProjectMedia({ navigation }) {
-  const handleScanRoom = () => {
-    // TODO: Navigate to room scanning
+export default function NewProjectMedia({ navigation, route }) {
+  const onPickImage = route?.params?.onPickImage;
+
+  const onUploadPhoto = async () => {
+    try {
+      // Directly open library; do NOT request permission up-front.
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.85,
+        selectionLimit: 1,
+      });
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) return;
+
+      // Call callback to update parent state
+      if (onPickImage) {
+        onPickImage(asset.uri);
+        navigation.goBack();
+      }
+    } catch (e) {
+      Alert.alert('Upload failed', 'Please try again or use a different photo.');
+    }
   };
 
-  const handleUploadPhoto = () => {
-    // TODO: Navigate to photo upload
+  const onScanRoom = async () => {
+    // keep stub — avoid camera on web/preview
+    if (Platform.OS === 'web') {
+      Alert.alert('Scan coming soon', 'Use "Upload Photo" for now.');
+      return;
+    }
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Camera permission', 'Please allow camera access or use "Upload Photo".');
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+      });
+      if (!res.canceled && res.assets?.[0]?.uri) {
+        if (onPickImage) {
+          onPickImage(res.assets[0].uri);
+          navigation.goBack();
+        }
+      }
+    } catch (e) {
+      Alert.alert('Scan unavailable', 'Please use "Upload Photo" for now.');
+    }
   };
 
   const handleBack = () => {
@@ -35,12 +80,12 @@ export default function NewProjectMedia({ navigation }) {
 
         {/* Media Options */}
         <View style={styles.mediaOptions}>
-          <TouchableOpacity style={styles.scanRoomTile} onPress={handleScanRoom}>
+          <TouchableOpacity style={styles.scanRoomTile} onPress={onScanRoom}>
             <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
             <Text style={styles.scanRoomText}>Scan Room</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.uploadPhotoTile} onPress={handleUploadPhoto}>
+          <TouchableOpacity style={styles.uploadPhotoTile} onPress={onUploadPhoto}>
             <Ionicons name="image" size={28} color="#64748B" style={styles.tileIcon} />
             <Text style={styles.uploadPhotoText}>Upload Photo</Text>
           </TouchableOpacity>

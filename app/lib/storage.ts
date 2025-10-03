@@ -23,12 +23,12 @@ function guessMime(uri: string): string {
 /**
  * Pick an image from the device gallery
  * Version-safe implementation that works across Expo versions
+ * Directly opens library picker without requesting permissions (iOS/Android handle this automatically)
  * 
  * @returns URI string or null if cancelled
  */
 export async function pickImageAsync(): Promise<string | null> {
-  await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+  // Directly open library; do NOT request permission up-front to avoid "cannot grant permission" errors
   const mediaTypes =
     (ImagePicker as any).MediaType
       ? [(ImagePicker as any).MediaType.Images]
@@ -36,7 +36,7 @@ export async function pickImageAsync(): Promise<string | null> {
 
   const res = await ImagePicker.launchImageLibraryAsync({
     mediaTypes,
-    quality: 0.9,
+    quality: 0.85,
     allowsEditing: false,
   });
 
@@ -48,12 +48,12 @@ export async function pickImageAsync(): Promise<string | null> {
 /**
  * Pick room photo and return full asset object
  * Version-safe implementation for FormData uploads
+ * Directly opens library picker without requesting permissions (iOS/Android handle this automatically)
  * 
  * @returns Asset object with uri, fileName, mimeType or null if cancelled
  */
 export async function pickRoomPhoto(): Promise<any | null> {
-  await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+  // Directly open library; do NOT request permission up-front to avoid "cannot grant permission" errors
   const mediaTypes =
     (ImagePicker as any).MediaType
       ? [(ImagePicker as any).MediaType.Images]
@@ -61,7 +61,7 @@ export async function pickRoomPhoto(): Promise<any | null> {
 
   const res = await ImagePicker.launchImageLibraryAsync({
     mediaTypes,
-    quality: 0.9,
+    quality: 0.85,
     allowsEditing: false,
   });
 

@@ -269,8 +269,10 @@ export default function NewProject({ navigation }: { navigation: any }) {
     setSugsBusy(true);
     
     // Auto-fetch even if draftId doesn't exist yet - fetchSuggestions will create it
+    // IMPORTANT: do not call /image upload here
     fetchSuggestions();
-  }, [isFormValid, hasImage, sugs, sugsBusy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputImageUrl, formReady]);
 
   const handleScanRoom = () => {
     if (canUpload) {
