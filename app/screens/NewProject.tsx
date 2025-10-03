@@ -16,6 +16,9 @@ import API from '../lib/apiClient';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 
+// Skip image upload during suggestions phase to avoid 500s and keep flow cheap
+const STUB_SKIP_IMAGE_UPLOAD = true;
+
 async function api(path: string, init?: RequestInit) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
@@ -261,11 +264,15 @@ export default function NewProject({ navigation }: { navigation: any }) {
         setProjectId(currentProjectId);
       }
 
-      // Upload image
-      await uploadRoomPhoto(currentProjectId, asset);
+      // Skip image upload during suggestions phase - we'll upload later for preview
+      if (!STUB_SKIP_IMAGE_UPLOAD) {
+        await uploadRoomPhoto(currentProjectId, asset);
+      }
+      
+      // Keep local photo for UI preview
       setInputImageUrl(asset.uri);
 
-      showToast('Photo uploaded ✨', 'success');
+      showToast('Photo selected ✨', 'success');
       triggerHaptic('success');
 
       // Suggestions will auto-fetch via useEffect when hasImage becomes true
@@ -621,6 +628,16 @@ export default function NewProject({ navigation }: { navigation: any }) {
                   Change photo
                 </Text>
               </TouchableOpacity>
+              
+              <Text style={{ 
+                fontSize: 12, 
+                color: '#6B7280', 
+                textAlign: 'center',
+                marginTop: 8,
+                paddingHorizontal: 20,
+              }}>
+                We'll upload your photo later when you request a visual preview.
+              </Text>
             </View>
           )}
         </View>
