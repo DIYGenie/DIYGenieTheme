@@ -47,6 +47,53 @@ const openExternal = async (url) => {
   }
 };
 
+function PlanCard({ title, priceText, subtitle, features, ctaText, onPress, popular, testID, disabled }) {
+  return (
+    <View
+      style={[
+        styles.planCardContainer,
+        popular && styles.planCardPopular,
+      ]}
+    >
+      <View style={styles.planCardHeader}>
+        <Text style={styles.planCardTitle}>{title}</Text>
+        {popular && (
+          <View style={styles.popularBadge}>
+            <Text style={styles.popularBadgeText}>Most popular</Text>
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.planCardPriceRow}>
+        <Text style={styles.planCardPrice}>{priceText.split('/')[0]}</Text>
+        <Text style={styles.planCardPricePeriod}>/{priceText.split('/')[1]}</Text>
+      </View>
+      
+      <Text style={styles.planCardSubtitle}>{subtitle}</Text>
+      
+      <View style={styles.planCardFeatures}>
+        {features.map((feature, idx) => (
+          <View key={idx} style={styles.planCardFeature}>
+            <Text style={styles.planCardFeatureCheck}>✓</Text>
+            <Text style={styles.planCardFeatureText}>{feature}</Text>
+          </View>
+        ))}
+      </View>
+      
+      <TouchableOpacity
+        style={[styles.planCardCTA, disabled && styles.planCardCTADisabled]}
+        onPress={onPress}
+        disabled={disabled}
+        accessible
+        accessibilityRole="button"
+        testID={testID}
+      >
+        <Text style={styles.planCardCTAText}>{ctaText}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const [busy, setBusy] = React.useState(false);
   const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
@@ -274,30 +321,57 @@ export default function ProfileScreen() {
               </TouchableOpacity>
 
               {showUpgradePicker && (
-                <View style={styles.pickerCard}>
-                  <Text style={styles.pickerTitle}>Choose a plan</Text>
-                  
-                  <TouchableOpacity
-                    style={[styles.planOptionButton, busy && styles.disabledPlanButton]}
-                    onPress={() => {
-                      setShowUpgradePicker(false);
-                      openCheckout('casual');
-                    }}
-                    disabled={busy}
-                  >
-                    <Text style={styles.planOptionText}>Casual — 5 projects/mo + previews</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.planOptionButton, busy && styles.disabledPlanButton]}
+                <View style={styles.upgradeCardsContainer} testID="upgrade-cards">
+                  <PlanCard
+                    title="Pro"
+                    priceText="$14.99/mo"
+                    subtitle="Best for frequent builders"
+                    features={[
+                      '25 projects/month',
+                      'Unlimited previews (Decor8)',
+                      'AR Scan access (stub)',
+                      'Save & export plans',
+                      'Priority improvements access',
+                    ]}
+                    ctaText="Start Pro — $14.99/mo"
+                    popular
                     onPress={() => {
                       setShowUpgradePicker(false);
                       openCheckout('pro');
                     }}
+                    testID="plan-pro-cta"
                     disabled={busy}
-                  >
-                    <Text style={styles.planOptionText}>Pro — 25 projects/mo + previews</Text>
-                  </TouchableOpacity>
+                  />
+                  
+                  <PlanCard
+                    title="Casual"
+                    priceText="$5.99/mo"
+                    subtitle="Great for occasional projects"
+                    features={[
+                      '5 projects/month',
+                      'Unlimited previews (Decor8)',
+                      'AR Scan access (stub)',
+                      'Save & export plans',
+                    ]}
+                    ctaText="Start Casual — $5.99/mo"
+                    onPress={() => {
+                      setShowUpgradePicker(false);
+                      openCheckout('casual');
+                    }}
+                    testID="plan-casual-cta"
+                    disabled={busy}
+                  />
+                  
+                  <Text style={styles.upgradeFootnote}>
+                    Cancel anytime via{' '}
+                    <Text
+                      style={styles.upgradeFootnoteLink}
+                      onPress={openPortal}
+                    >
+                      Manage
+                    </Text>
+                    {' '}(Stripe Portal).
+                  </Text>
                 </View>
               )}
             </>
@@ -534,7 +608,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.manropeBold,
     color: '#FFFFFF',
   },
-  pickerCard: {
+  upgradeCardsContainer: {
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
@@ -548,27 +622,120 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 3,
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
+    gap: 16,
   },
-  pickerTitle: {
-    fontSize: 16,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#111827',
+  planCardContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#E8E9EE',
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  planCardPopular: {
+    borderColor: '#6F4BFF',
+    backgroundColor: 'rgba(111, 75, 255, 0.06)',
+  },
+  planCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  planOptionButton: {
+  planCardTitle: {
+    fontSize: 20,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#111827',
+  },
+  popularBadge: {
+    backgroundColor: '#6F4BFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  popularBadgeText: {
+    fontSize: 11,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  planCardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 6,
+  },
+  planCardPrice: {
+    fontSize: 32,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#111827',
+  },
+  planCardPricePeriod: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.inter,
+    color: '#64748B',
+  },
+  planCardSubtitle: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: '#64748B',
+    marginBottom: 16,
+  },
+  planCardFeatures: {
+    marginBottom: 20,
+    gap: 10,
+  },
+  planCardFeature: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  planCardFeatureCheck: {
+    fontSize: 16,
+    color: '#6F4BFF',
+    fontWeight: '700',
+  },
+  planCardFeatureText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: '#374151',
+    lineHeight: 20,
+  },
+  planCardCTA: {
     backgroundColor: '#F59E0B',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginBottom: 8,
+    minHeight: 52,
+    justifyContent: 'center',
   },
-  disabledPlanButton: {
+  planCardCTADisabled: {
     backgroundColor: '#9CA3AF',
+    opacity: 0.6,
   },
-  planOptionText: {
-    fontSize: 15,
+  planCardCTAText: {
+    fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#FFFFFF',
+  },
+  upgradeFootnote: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  upgradeFootnoteLink: {
+    color: '#F59E0B',
+    fontFamily: typography.fontFamily.manropeBold,
   },
   syncButton: {
     alignItems: 'center',
