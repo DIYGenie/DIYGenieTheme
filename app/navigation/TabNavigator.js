@@ -10,7 +10,7 @@ import ProjectsScreen from '../screens/ProjectsScreen';
 import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
 import BuildPlanScreen from '../screens/BuildPlanScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import NewProjectForm from '../screens/NewProjectForm';
+import NewProject from '../screens/NewProject';
 
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -89,7 +89,7 @@ export default function TabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen 
         name="NewProject" 
-        component={NewProjectForm} 
+        component={NewProject} 
         options={{ tabBarLabel: 'New Project' }}
       />
       <Tab.Screen name="Projects" component={ProjectsStack} />
