@@ -286,6 +286,22 @@ app.post('/api/projects/:id/preview', async (req, res) => {
     
     console.log(`[PREVIEW START] Project ${id}`);
     
+    // Check if preview already exists
+    const { data: project } = await supabase
+      .from('projects')
+      .select('preview_url, status')
+      .eq('id', id)
+      .single();
+    
+    if (project?.preview_url || project?.status === 'preview_ready') {
+      console.log(`[PREVIEW DUPLICATE] Project ${id} already has preview`);
+      return res.status(409).json({ 
+        ok: false, 
+        error: 'preview_already_used',
+        message: 'This project already has a preview' 
+      });
+    }
+    
     // set requested
     await supabase.from('projects')
       .update({ status: 'preview_requested' })
@@ -367,6 +383,87 @@ app.post('/api/projects/:id/build-without-preview', async (req, res) => {
     return res.json({ ok: true });
   } catch (e) {
     console.error(`[BUILD-WITHOUT-PREVIEW ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/projects/:id/suggestions', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data: project } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (!project) {
+      return res.status(404).json({ ok: false, error: 'project_not_found' });
+    }
+    
+    const hash = (str) => {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = ((h << 5) - h) + str.charCodeAt(i);
+        h = h & h;
+      }
+      return Math.abs(h);
+    };
+    
+    const projectHash = hash(id);
+    const suggestionSets = [
+      {
+        bullets: [
+          'Measure twice, cut once - accuracy saves materials',
+          'Pre-drill pilot holes to prevent wood splitting',
+          'Use a level at every step for professional results',
+          'Sand in the direction of the grain for smoothest finish',
+          'Apply finish in thin coats for better durability'
+        ],
+        tags: ['woodworking', 'beginner-friendly', 'tools']
+      },
+      {
+        bullets: [
+          'Test paint colors on sample boards first',
+          'Use painter\'s tape for clean, sharp edges',
+          'Apply primer for better paint adhesion',
+          'Work in well-ventilated areas when painting',
+          'Clean brushes immediately after use'
+        ],
+        tags: ['painting', 'finishing', 'safety']
+      },
+      {
+        bullets: [
+          'Check for studs before mounting heavy items',
+          'Use appropriate anchors for wall material',
+          'Keep all power tools unplugged when not in use',
+          'Wear safety glasses when cutting or drilling',
+          'Organize hardware in labeled containers'
+        ],
+        tags: ['safety', 'organization', 'mounting']
+      },
+      {
+        bullets: [
+          'Allow glue to fully cure before stressing joints',
+          'Use corner clamps for perfect 90-degree angles',
+          'Sand between coats for ultra-smooth finish',
+          'Match wood grain direction for seamless look',
+          'Seal end grain separately for even staining'
+        ],
+        tags: ['finishing', 'joinery', 'pro-tips']
+      }
+    ];
+    
+    const selectedSet = suggestionSets[projectHash % suggestionSets.length];
+    
+    console.log(`[SUGGESTIONS] Project ${id} - returning ${selectedSet.bullets.length} tips`);
+    
+    return res.json({ 
+      ok: true, 
+      data: selectedSet
+    });
+  } catch (e) {
+    console.error(`[SUGGESTIONS ERROR] Project ${req.params.id}:`, e.message);
     return res.status(500).json({ ok: false, error: e.message });
   }
 });

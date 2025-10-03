@@ -263,6 +263,15 @@ export default function NewProjectForm({ navigation }) {
       }, 600);
     } catch (e) {
       console.error('Preview generation failed:', e);
+      
+      // Handle 409 error - preview already used
+      if (e?.response?.status === 409) {
+        showToast("You've already used the preview for this project.", 'error');
+        triggerHaptic('error');
+        setIsGeneratingPreview(false);
+        return;
+      }
+      
       const errorMsg = e?.response?.data?.error || e?.message || 'Preview failed';
       showToast(errorMsg, 'error');
       triggerHaptic('error');

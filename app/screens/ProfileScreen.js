@@ -312,7 +312,7 @@ export default function ProfileScreen() {
                     subtitle="Best for frequent builders"
                     features={[
                       '25 projects/month',
-                      'Unlimited previews (Decor8)',
+                      '1 visual preview per project',
                       'AR Scan access (stub)',
                       'Save & export plans',
                       'Priority improvements access',
@@ -333,7 +333,7 @@ export default function ProfileScreen() {
                     subtitle="Great for occasional projects"
                     features={[
                       '5 projects/month',
-                      'Unlimited previews (Decor8)',
+                      '1 visual preview per project',
                       'AR Scan access (stub)',
                       'Save & export plans',
                     ]}

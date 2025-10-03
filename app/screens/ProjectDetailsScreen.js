@@ -1,13 +1,48 @@
 // app/screens/ProjectDetailsScreen.js
 import React, { useMemo } from 'react';
-import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ExpandableCard from '../components/ExpandableCard';
 import { buildPlanFromProject } from '../lib/plan';
 
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
+const CURRENT_USER_ID = 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
+
 export default function ProjectDetailsScreen({ route, navigation }) {
   const project = route?.params?.project || {};
   const plan = useMemo(() => buildPlanFromProject(project), [project]);
+
+  const [sugs, setSugs] = React.useState(null);
+  const [sugsBusy, setSugsBusy] = React.useState(false);
+  const [sugsErr, setSugsErr] = React.useState('');
+
+  const previewUsed = !!project?.preview_url || project?.status === 'preview_ready';
+
+  const fetchSuggestions = async () => {
+    if (sugsBusy) return;
+    setSugsBusy(true);
+    setSugsErr('');
+    try {
+      const res = await fetch(`${BASE}/api/projects/${project.id}/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: CURRENT_USER_ID }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || 'suggestions_failed');
+      setSugs(json.data);
+    } catch (e) {
+      setSugsErr('Could not get suggestions. Try again.');
+    } finally {
+      setSugsBusy(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (project?.id) {
+      fetchSuggestions();
+    }
+  }, [project?.id]);
 
   const photoUri =
     project?.input_image_url ||
@@ -34,7 +69,49 @@ export default function ProjectDetailsScreen({ route, navigation }) {
         </View>
 
         <Text style={styles.sectionLabel}>Room Photo</Text>
-        <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
+        <View style={{ position: 'relative' }}>
+          <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
+          {previewUsed && (
+            <View style={styles.previewPill}>
+              <Text style={styles.previewPillText}>Preview used for this project</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.suggestionsCard}>
+          <View style={styles.suggestionsHeader}>
+            <Text style={styles.suggestionsTitle}>Smart Suggestions (beta)</Text>
+            <TouchableOpacity
+              onPress={fetchSuggestions}
+              disabled={sugsBusy}
+              style={styles.refreshButton}
+            >
+              {sugsBusy ? (
+                <ActivityIndicator size="small" color="#E39A33" />
+              ) : (
+                <Ionicons name="refresh" size={18} color="#E39A33" />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {sugsErr ? (
+            <Text style={styles.suggestionsError}>{sugsErr}</Text>
+          ) : sugs?.bullets ? (
+            <>
+              {sugs.bullets.map((bullet, idx) => (
+                <View key={idx} style={styles.suggestionRow}>
+                  <Text style={styles.checkmark}>✓</Text>
+                  <Text style={styles.suggestionText}>{bullet}</Text>
+                </View>
+              ))}
+              {sugs.tags && sugs.tags.length > 0 && (
+                <Text style={styles.suggestionsTags}>{sugs.tags.join(' · ')}</Text>
+              )}
+            </>
+          ) : (
+            <ActivityIndicator size="small" color="#E39A33" style={{ marginTop: 8 }} />
+          )}
+        </View>
 
         <TouchableOpacity style={styles.ctaButton} onPress={handleGetDetailedPlan}>
           <Text style={styles.ctaText}>Get detailed build plan</Text>
@@ -132,6 +209,77 @@ const styles = StyleSheet.create({
 
   sectionLabel: { marginTop: 8, marginBottom: 8, fontSize: 16, fontWeight: '700', color: '#111827' },
   photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: '#E5E7EB', marginBottom: 16 },
+
+  previewPill: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  previewPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+
+  suggestionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  suggestionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  suggestionsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  refreshButton: {
+    padding: 4,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  checkmark: {
+    fontSize: 16,
+    color: '#10B981',
+    marginRight: 8,
+    marginTop: 2,
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#374151',
+    lineHeight: 22,
+  },
+  suggestionsTags: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  suggestionsError: {
+    fontSize: 14,
+    color: '#EF4444',
+    marginTop: 4,
+  },
 
   ctaButton: {
     backgroundColor: '#E39A33',
