@@ -19,6 +19,12 @@ const ENDPOINTS = {
 
 const CURRENT_USER_ID = 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
 
+const TIER_INFO = {
+  free:   { label: 'Free',   projects: 2,  previews: false, badgeColor: '#A0AEC0' },
+  casual: { label: 'Casual', projects: 5,  previews: true,  badgeColor: '#6E8BFF' },
+  pro:    { label: 'Pro',    projects: 25, previews: true,  badgeColor: '#6F4BFF' },
+};
+
 const api = async (url, opts = {}) => {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), 12000);
@@ -99,6 +105,8 @@ export default function ProfileScreen() {
   const [busy, setBusy] = React.useState(false);
   const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
   const [showUpgradePicker, setShowUpgradePicker] = React.useState(false);
+  const [lastSyncAt, setLastSyncAt] = React.useState(null);
+  const [syncNote, setSyncNote] = React.useState('');
 
   const getEntitlements = React.useCallback(async () => {
     try {
@@ -174,6 +182,26 @@ export default function ProfileScreen() {
     return () => sub.remove();
   }, [getEntitlements]);
 
+  const handleSyncPlan = async () => {
+    if (busy) return;
+    setSyncNote('Syncing…');
+    setBusy(true);
+    try {
+      await getEntitlements();
+      const ts = new Date();
+      setLastSyncAt(ts);
+      setSyncNote('Synced just now');
+      setTimeout(() => setSyncNote(''), 2500);
+      console.log('[SyncPlan] refreshed at', ts.toISOString());
+    } catch (e) {
+      console.warn('[SyncPlan] failed', e);
+      Alert.alert('Sync failed', 'Could not refresh your plan. Please try again.');
+      setSyncNote('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleAccountSettings = () => {
     Alert.alert('Coming soon', 'Account settings will land here.');
   };
@@ -205,19 +233,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const getPlanDescription = () => {
-    if (ents.tier === 'pro') return '25 projects/month + previews';
-    if (ents.tier === 'casual') return '5 projects/month + previews';
-    return '2 projects/month, no previews';
-  };
-
-  const formatTier = (t) => {
-    if (t === 'free') return 'Free';
-    if (t === 'casual') return 'Casual';
-    if (t === 'pro') return 'Pro';
-    return t.charAt(0).toUpperCase() + t.slice(1);
-  };
-
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -239,11 +254,31 @@ export default function ProfileScreen() {
           {/* Your Plan Section */}
           <Text style={styles.sectionTitle}>Your Plan</Text>
           <View style={[styles.planCard, { zIndex: 1, pointerEvents: 'auto' }]}>
-            <View style={styles.planContent}>
-              <View>
-                <Text style={styles.planTitle}>Current Plan: {formatTier(ents.tier)}</Text>
-                <Text style={styles.planSubtitle}>{getPlanDescription()}</Text>
+            <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+              <View style={{ flexShrink: 1, paddingRight: 12 }}>
+                <View style={{ flexDirection:'row', alignItems:'center', marginBottom: 4 }}>
+                  <Text style={{ fontSize:16, fontWeight:'700', marginRight:8 }}>Current Plan:</Text>
+                  <View
+                    testID="current-plan-badge"
+                    style={{
+                      paddingHorizontal:10, paddingVertical:4, borderRadius:999,
+                      backgroundColor: (TIER_INFO[ents?.tier] || TIER_INFO.free).badgeColor + '20',
+                      borderWidth:1, borderColor: (TIER_INFO[ents?.tier] || TIER_INFO.free).badgeColor
+                    }}
+                  >
+                    <Text style={{ fontWeight:'700', color:'#1A1D21' }}>
+                      {(TIER_INFO[ents?.tier] || TIER_INFO.free).label}
+                    </Text>
+                  </View>
+                </View>
+                <Text testID="current-plan-line" style={{ color:'#3B4450' }}>
+                  {(() => {
+                    const info = TIER_INFO[ents?.tier] || TIER_INFO.free;
+                    return `${info.projects} projects/month` + (info.previews ? ' + previews' : ' (no previews)');
+                  })()}
+                </Text>
               </View>
+
               <Pressable
                 onPress={openPortal}
                 accessibilityRole="button"
@@ -252,9 +287,7 @@ export default function ProfileScreen() {
                 testID="btn-manage-portal"
                 style={{ paddingVertical: 8, paddingHorizontal: 6 }}
               >
-                <Text style={[styles.manageButton, busy && styles.disabledButton]}>
-                  Manage
-                </Text>
+                <Text style={{ color: '#F4A307', fontWeight: '600' }}>Manage</Text>
               </Pressable>
             </View>
           </View>
@@ -329,17 +362,22 @@ export default function ProfileScreen() {
           )}
 
           <Pressable
-            onPress={getEntitlements}
+            onPress={handleSyncPlan}
             accessibilityRole="button"
             hitSlop={10}
             disabled={busy}
             testID="btn-sync-plan"
             style={{ alignSelf: 'center', paddingVertical: 8 }}
           >
-            <Text style={[styles.syncButtonText, busy && styles.disabledText]}>
-              {busy ? 'Syncing...' : 'Sync Plan'}
+            <Text style={{ color: '#F4A307', fontWeight: '600' }}>
+              {busy ? 'Syncing…' : 'Sync Plan'}
             </Text>
           </Pressable>
+          {syncNote ? (
+            <Text testID="sync-note" style={{ textAlign:'center', fontSize:12, opacity:0.8, marginTop:4 }}>
+              {syncNote}
+            </Text>
+          ) : null}
 
           {/* Settings Section */}
           <Text style={styles.sectionTitle}>Settings</Text>
