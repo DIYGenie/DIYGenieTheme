@@ -9,8 +9,19 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
-const USER_ID = globalThis.__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
+const USER_ID = (globalThis as any).__DEV_USER_ID__ || 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
+
+async function postJSON(url: string, body: any) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  return { ok: res.ok, status: res.status, data };
+}
 
 async function api(path: string, init?: RequestInit) {
   const controller = new AbortController();
@@ -48,6 +59,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [sugsBusy, setSugsBusy] = useState(false);
   const [promptText, setPromptText] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [creating, setCreating] = useState(false);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -69,38 +81,66 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   };
 
-  const ensureDraft = async () => {
-    if (draftId) return draftId;
-    if (description.trim().length < 10 || !budget || !skill) return null;
-    
+  async function createProject() {
+    if (creating) return;
+    if (!description || description.trim().length < 10) {
+      Alert.alert('Tell us a bit more', 'Please enter at least 10 characters for the project description.');
+      return;
+    }
+    if (!budget || !skill) {
+      Alert.alert('Missing info', 'Please choose a budget and skill level.');
+      return;
+    }
+
+    setCreating(true);
     try {
-      const response = await api('/api/projects', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_id: USER_ID,
-          name: description.substring(0, 100),
-          budget: budget,
-          skill_level: skill,
-          status: 'pending',
-        }),
+      let res = await postJSON(`${BASE}/api/projects`, {
+        user_id: USER_ID,
+        name: description.trim(),
+        budget,
+        skill_level: skill,
       });
 
-      if (response.ok === false || !response.id) {
-        return null;
+      if (!res.ok) {
+        const firstErr = res?.data?.error || res?.data?.message || `HTTP ${res.status}`;
+        const fallback = await postJSON(`${BASE}/api/projects`, {
+          user_id: 'auto',
+          name: description.trim(),
+          budget,
+          skill_level: skill,
+        });
+        if (!fallback.ok) {
+          const secondErr = fallback?.data?.error || fallback?.data?.message || `HTTP ${fallback.status}`;
+          throw new Error(`Create failed.\nFirst: ${firstErr}\nThen (auto): ${secondErr}`);
+        }
+        res = fallback;
       }
-      
-      const newDraftId = response.id;
-      setDraftId(newDraftId);
+
+      const projectId =
+        res?.data?.item?.id || res?.data?.id || res?.data?.project?.id || res?.data?.item_id;
+      if (!projectId) {
+        throw new Error('Create succeeded but no project ID was returned.');
+      }
+
+      setDraftId(projectId);
       
       if (!promptText) {
         setPromptText(`Build plan for: ${description.trim()}. Budget: ${budget}. Skill: ${skill}.`);
       }
       
-      return newDraftId;
-    } catch (e) {
-      console.error('Draft creation failed:', e);
+      return projectId;
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      Alert.alert('Couldn\'t create project', msg);
       return null;
+    } finally {
+      setCreating(false);
     }
+  }
+
+  const ensureDraft = async () => {
+    if (draftId) return draftId;
+    return await createProject();
   };
 
   const fetchSuggestions = async () => {
@@ -504,18 +544,18 @@ export default function NewProject({ navigation }: { navigation: any }) {
             <Pressable
               testID="np-generate-plan"
               onPress={generatePlan}
-              disabled={isGenerating || !promptText?.trim()}
+              disabled={isGenerating || creating || !promptText?.trim()}
               style={({ pressed }) => [
                 styles.primaryButton,
-                (isGenerating || !promptText?.trim()) && styles.primaryButtonDisabled,
-                { marginTop: 12, transform: [{ scale: pressed && !isGenerating && promptText?.trim() ? 0.98 : 1 }] }
+                (isGenerating || creating || !promptText?.trim()) && styles.primaryButtonDisabled,
+                { marginTop: 12, transform: [{ scale: pressed && !isGenerating && !creating && promptText?.trim() ? 0.98 : 1 }] }
               ]}
               accessibilityRole="button"
             >
-              {isGenerating ? (
+              {isGenerating || creating ? (
                 <>
                   <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.primaryButtonText}>Generating…</Text>
+                  <Text style={styles.primaryButtonText}>{isGenerating ? 'Generating…' : 'Creating…'}</Text>
                 </>
               ) : (
                 <Text style={styles.primaryButtonText}>Generate Plan</Text>
