@@ -9,8 +9,8 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
-const USER_ID = 'auto';
+const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
+const USER_ID = (globalThis as any).__DEV_USER_ID__ || process.env.EXPO_PUBLIC_TEST_USER_ID || 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
 
 async function api(path: string, opts: any = {}) {
   const controller = new AbortController();
@@ -125,57 +125,42 @@ export default function NewProject({ navigation }: { navigation: any }) {
 
   async function ensureDraft(): Promise<string> {
     if (draftId) return draftId;
-
-    const body = {
-      user_id: USER_ID,
-      name: description,
-      budget,
-      skill: skillLevel,
-    };
-
-    try {
-      const res = await api('/api/projects', { method: 'POST', body: JSON.stringify(body) });
-      const id = res.item.id;
-      setDraftId(id);
-      return id;
-    } catch (err: any) {
-      Alert.alert('Could not create project', err?.message || 'Please try again');
-      throw err;
-    }
+    
+    const body = { user_id: USER_ID, name: description.trim(), budget, skill: skillLevel };
+    const r = await fetch(`${BASE}/api/projects`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(body) 
+    });
+    const j = await r.json();
+    if (!r.ok || !j?.item?.id) throw new Error(j?.error || 'create_failed');
+    setDraftId(j.item.id);
+    return j.item.id;
   }
 
-  async function fetchSuggestions() {
-    // Preconditions
-    if (description.trim().length < 10 || !budget || !skillLevel || !photoUri) {
-      return;
-    }
-
-    setSugsBusy(true);
+  async function fetchDesignSuggestions() {
     try {
+      setSugsBusy(true);
       const id = await ensureDraft();
-      
-      const payload = {
+      const body = {
         user_id: USER_ID,
-        name: description,
+        name: description.trim(),
         budget,
         skill_level: skillLevel,
+        photo_uri: photoUri || null
       };
-
-      const res = await api(`/api/projects/${id}/suggestions`, { 
-        method: 'POST', 
-        body: JSON.stringify(payload) 
+      const r = await fetch(`${BASE}/api/projects/${id}/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
-
-      if (res.ok) {
-        setSugs({
-          bullets: Array.isArray(res.suggestions) ? res.suggestions.slice(0, 5) : [],
-          tags: res.tags || []
-        });
-      } else {
-        setSugs({ bullets: [], tags: [] });
-      }
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || 'suggestions_failed');
+      setSugs({
+        bullets: j?.items || [],
+        tags: j?.tags || []
+      });
     } catch (e: any) {
-      Alert.alert('Suggestions failed', e?.message || 'Could not fetch suggestions');
       setSugs({ bullets: [], tags: [] });
     } finally {
       setSugsBusy(false);
@@ -185,7 +170,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   // Auto-trigger suggestions when photo is picked and form is valid
   useEffect(() => {
     if (photoUri && hasValidForm() && !sugs && !sugsBusy) {
-      fetchSuggestions();
+      fetchDesignSuggestions();
     }
   }, [photoUri, description, budget, skillLevel]);
 
@@ -260,43 +245,31 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   }
 
-  async function handleBuildWithoutPreview() {
-    // Validation
-    if (description.trim().length < 10 || !budget || !skillLevel) {
-      showToast('Please fill out all required fields', 'error');
-      triggerHaptic('error');
-      return;
-    }
-
-    if (busy) return;
-    
-    setBusy(true);
+  async function onBuildNoPreview() {
     try {
-      const draft = await ensureDraft();
-      const id = draft;
-      if (!id) throw new Error('Failed to create project');
-
-      await api(`/api/projects/${id}/build-without-preview`, { 
-        method: 'POST', 
-        body: JSON.stringify({ user_id: USER_ID }) 
+      const id = await ensureDraft();
+      const body = { 
+        user_id: USER_ID, 
+        prompt: `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.` 
+      };
+      const r = await fetch(`${BASE}/api/projects/${id}/build-without-preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || 'build_denied');
       
-      triggerHaptic('success');
-      showToast('Plan requested', 'success');
-      resetForm();
-
-      // Navigate to project detail, fallback to projects list
-      try {
-        navigation.navigate('ProjectDetailScreen', { id });
-      } catch {
-        navigation.navigate('ProjectsScreen');
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Could not generate plan';
-      showToast(errorMessage, 'error');
-      triggerHaptic('error');
-    } finally {
-      setBusy(false);
+      // Navigate to the project details and clear local state
+      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      setDraftId(null);
+      setSugs(null);
+      setDescription('');
+      setBudget('');
+      setSkillLevel('');
+      setPhotoUri(null);
+    } catch (e: any) {
+      Alert.alert('Build failed', String(e.message || e));
     }
   }
 
@@ -568,9 +541,11 @@ export default function NewProject({ navigation }: { navigation: any }) {
                   </View>
                 ))}
                 {sugs.tags && sugs.tags.length > 0 && (
-                  <Text style={styles.suggestionMeta}>
-                    {sugs.tags.join(' · ')}
-                  </Text>
+                  <View style={styles.tagsRow}>
+                    <Text style={styles.suggestionMeta}>
+                      {sugs.tags.join(' · ')}
+                    </Text>
+                  </View>
                 )}
 
                 <View style={styles.applyRow}>
@@ -588,7 +563,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
             
             <Pressable
               testID="np-suggestions-refresh"
-              onPress={fetchSuggestions}
+              onPress={fetchDesignSuggestions}
               disabled={sugsBusy}
               style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
             >
@@ -634,7 +609,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
 
             <Pressable
               testID="np-build-no-preview"
-              onPress={handleBuildWithoutPreview}
+              onPress={onBuildNoPreview}
               disabled={busy}
               style={({ pressed }) => [
                 styles.secondaryButton,
@@ -846,6 +821,9 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#9CA3AF',
     marginTop: 8,
+  },
+  tagsRow: {
+    marginTop: 4,
   },
   applyRow: {
     flexDirection: 'row',
