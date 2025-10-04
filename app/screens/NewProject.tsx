@@ -57,7 +57,8 @@ export default function NewProject({ navigation }: { navigation: any }) {
   
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -69,6 +70,21 @@ export default function NewProject({ navigation }: { navigation: any }) {
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
+  }
+
+  function resetForm() {
+    setDescription('');
+    setBudget('');
+    setSkillLevel('');
+    setPhotoUri(null);
+    setSugs(null);
+    setDraftId(null);
+  }
+
+  function showToast(message: string, type: 'success' | 'error' = 'success') {
+    setToastMessage(message);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 2000);
   }
 
   const triggerHaptic = async (type = 'success') => {
@@ -244,21 +260,40 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   }
 
-  async function buildPlanWithoutPreview() {
-    if (!hasValidForm() || busy) return;
+  async function handleBuildWithoutPreview() {
+    // Validation
+    if (description.trim().length < 10 || !budget || !skillLevel) {
+      showToast('Please fill out all required fields', 'error');
+      triggerHaptic('error');
+      return;
+    }
+
+    if (busy) return;
     
     setBusy(true);
     try {
-      const id = await ensureDraft();
+      const draft = await ensureDraft();
+      const id = draft;
+      if (!id) throw new Error('Failed to create project');
+
       await api(`/api/projects/${id}/build-without-preview`, { 
         method: 'POST', 
         body: JSON.stringify({ user_id: USER_ID }) 
       });
+      
       triggerHaptic('success');
-      Alert.alert('Success', 'Plan requested');
-      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      showToast('Plan requested', 'success');
+      resetForm();
+
+      // Navigate to project detail, fallback to projects list
+      try {
+        navigation.navigate('ProjectDetailScreen', { id });
+      } catch {
+        navigation.navigate('ProjectsScreen');
+      }
     } catch (err: any) {
-      Alert.alert('Plan failed', err?.message || 'Could not generate plan');
+      const errorMessage = err?.message || 'Could not generate plan';
+      showToast(errorMessage, 'error');
       triggerHaptic('error');
     } finally {
       setBusy(false);
@@ -279,8 +314,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
       prev.endsWith('.') ? `${prev} ${append}` : `${prev}. ${append}`
     );
     
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
+    showToast('Applied to description.', 'success');
     triggerHaptic('success');
   }
 
@@ -599,8 +633,8 @@ export default function NewProject({ navigation }: { navigation: any }) {
             )}
 
             <Pressable
-              testID="np-build-plan"
-              onPress={buildPlanWithoutPreview}
+              testID="np-build-no-preview"
+              onPress={handleBuildWithoutPreview}
               disabled={busy}
               style={({ pressed }) => [
                 styles.secondaryButton,
@@ -621,9 +655,12 @@ export default function NewProject({ navigation }: { navigation: any }) {
         )}
       </ScrollView>
 
-      {showToast && (
-        <View style={styles.toast}>
-          <Text style={styles.toastText}>Applied to description.</Text>
+      {toastMessage && (
+        <View style={[
+          styles.toast,
+          toastType === 'error' && styles.toastError
+        ]}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       )}
     </SafeAreaView>
@@ -914,6 +951,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  toastError: {
+    backgroundColor: '#DC2626',
   },
   toastText: {
     fontSize: 14,
