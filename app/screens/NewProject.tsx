@@ -58,6 +58,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [sugs, setSugs] = useState<string[] | null>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
   const [promptText, setPromptText] = useState('');
+  const [selectedTips, setSelectedTips] = useState<Set<number>>(new Set());
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -70,6 +71,16 @@ export default function NewProject({ navigation }: { navigation: any }) {
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
   }
+
+  function getBasePrompt() {
+    return `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.`;
+  }
+
+  useEffect(() => {
+    if (hasValidForm()) {
+      setPromptText(getBasePrompt());
+    }
+  }, [description, budget, skillLevel]);
 
   const triggerHaptic = async (type = 'success') => {
     try {
@@ -250,7 +261,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
       const id = await ensureDraft();
       await api(`/api/projects/${id}/build-without-preview`, { 
         method: 'POST', 
-        body: JSON.stringify({ user_id: USER_ID }) 
+        body: JSON.stringify({ user_id: USER_ID, prompt: promptText }) 
       });
       triggerHaptic('success');
       Alert.alert('Success', 'Plan requested');
@@ -261,6 +272,35 @@ export default function NewProject({ navigation }: { navigation: any }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function toggleTip(index: number) {
+    setSelectedTips(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  }
+
+  function insertSelectedTips() {
+    if (!sugs || selectedTips.size === 0) return;
+    
+    const selectedText = Array.from(selectedTips)
+      .sort((a, b) => a - b)
+      .map(idx => sugs[idx])
+      .join(' ');
+    
+    setPromptText(prev => `${prev} ${selectedText}`.trim());
+    setSelectedTips(new Set());
+  }
+
+  function resetPrompt() {
+    setPromptText(getBasePrompt());
+    setSelectedTips(new Set());
   }
 
   const handleBudgetSelect = (option: string) => {
@@ -487,12 +527,24 @@ export default function NewProject({ navigation }: { navigation: any }) {
           )}
         </View>
 
-        {sugs !== null && (
+        {!photoUri && hasValidForm() && (
           <View 
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
           >
-            <Text style={styles.suggestionsTitle}>Smart Suggestions (beta)</Text>
+            <Text style={styles.suggestionsTitle}>Design Suggestions (beta)</Text>
+            <Text style={styles.suggestionsEmptyText}>
+              Add a room photo to get design suggestions.
+            </Text>
+          </View>
+        )}
+
+        {sugs !== null && photoUri && (
+          <View 
+            testID="np-suggestions-card"
+            style={styles.suggestionsCard}
+          >
+            <Text style={styles.suggestionsTitle}>Design Suggestions (beta)</Text>
             
             {sugsBusy ? (
               <View style={styles.suggestionsLoading}>
@@ -502,14 +554,58 @@ export default function NewProject({ navigation }: { navigation: any }) {
             ) : sugs.length > 0 ? (
               <View>
                 {sugs.map((suggestion: string, idx: number) => (
-                  <View key={idx} style={styles.suggestionBullet}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
-                    <Text style={styles.suggestionText}>{suggestion}</Text>
-                  </View>
+                  <Pressable 
+                    key={idx} 
+                    style={[
+                      styles.suggestionChip,
+                      selectedTips.has(idx) && styles.suggestionChipSelected
+                    ]}
+                    onPress={() => toggleTip(idx)}
+                  >
+                    <Ionicons 
+                      name={selectedTips.has(idx) ? "checkbox" : "square-outline"} 
+                      size={18} 
+                      color={selectedTips.has(idx) ? "#F59E0B" : "#9CA3AF"} 
+                      style={{ marginRight: 8 }} 
+                    />
+                    <Text style={[
+                      styles.suggestionText,
+                      selectedTips.has(idx) && styles.suggestionTextSelected
+                    ]}>
+                      {suggestion}
+                    </Text>
+                  </Pressable>
                 ))}
                 <Text style={styles.suggestionMeta}>
                   style: modern • difficulty: {skillLevel} • budget: {budget}
                 </Text>
+
+                <View style={styles.refineButtonsRow}>
+                  <Pressable
+                    testID="np-refine-apply"
+                    onPress={insertSelectedTips}
+                    disabled={selectedTips.size === 0}
+                    style={[
+                      styles.refineButton,
+                      selectedTips.size === 0 && styles.refineButtonDisabled
+                    ]}
+                  >
+                    <Text style={[
+                      styles.refineButtonText,
+                      selectedTips.size === 0 && styles.refineButtonTextDisabled
+                    ]}>
+                      Insert selected into prompt
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    testID="np-refine-reset"
+                    onPress={resetPrompt}
+                    style={styles.refineButtonSecondary}
+                  >
+                    <Text style={styles.refineButtonSecondaryText}>Reset prompt</Text>
+                  </Pressable>
+                </View>
               </View>
             ) : null}
             
@@ -522,6 +618,24 @@ export default function NewProject({ navigation }: { navigation: any }) {
               <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
               <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
             </Pressable>
+          </View>
+        )}
+
+        {hasValidForm() && (
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Build Prompt</Text>
+            <TextInput
+              testID="np-refine-input"
+              style={[styles.textArea, { minHeight: 120 }]}
+              value={promptText}
+              onChangeText={setPromptText}
+              placeholder="Your build instructions..."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={5}
+              scrollEnabled={true}
+              textAlignVertical="top"
+            />
           </View>
         )}
 
@@ -747,10 +861,25 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#6B7280',
   },
-  suggestionBullet: {
+  suggestionsEmptyText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  suggestionChip: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 8,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+  },
+  suggestionChipSelected: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#F59E0B',
   },
   suggestionText: {
     flex: 1,
@@ -759,11 +888,54 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 20,
   },
+  suggestionTextSelected: {
+    color: '#92400E',
+    fontWeight: '500' as any,
+  },
   suggestionMeta: {
     fontSize: 12,
     fontFamily: typography.fontFamily.inter,
     color: '#9CA3AF',
     marginTop: 8,
+  },
+  refineButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  refineButton: {
+    flex: 1,
+    backgroundColor: '#F59E0B',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  refineButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  refineButtonText: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#FFF',
+  },
+  refineButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  refineButtonSecondary: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  refineButtonSecondaryText: {
+    fontSize: 13,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#6B7280',
   },
   suggestionsRefresh: {
     flexDirection: 'row',
