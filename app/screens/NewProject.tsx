@@ -55,10 +55,9 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   
-  const [sugs, setSugs] = useState<string[] | null>(null);
+  const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
-  const [promptText, setPromptText] = useState('');
-  const [selectedTips, setSelectedTips] = useState<Set<number>>(new Set());
+  const [showToast, setShowToast] = useState(false);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -71,16 +70,6 @@ export default function NewProject({ navigation }: { navigation: any }) {
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
   }
-
-  function getBasePrompt() {
-    return `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.`;
-  }
-
-  useEffect(() => {
-    if (hasValidForm()) {
-      setPromptText(getBasePrompt());
-    }
-  }, [description, budget, skillLevel]);
 
   const triggerHaptic = async (type = 'success') => {
     try {
@@ -161,15 +150,17 @@ export default function NewProject({ navigation }: { navigation: any }) {
         body: JSON.stringify(payload) 
       });
 
-      if (res.ok && Array.isArray(res.suggestions)) {
-        // Store top 5
-        setSugs(res.suggestions.slice(0, 5));
+      if (res.ok) {
+        setSugs({
+          bullets: Array.isArray(res.suggestions) ? res.suggestions.slice(0, 5) : [],
+          tags: res.tags || []
+        });
       } else {
-        setSugs([]);
+        setSugs({ bullets: [], tags: [] });
       }
     } catch (e: any) {
       Alert.alert('Suggestions failed', e?.message || 'Could not fetch suggestions');
-      setSugs([]);
+      setSugs({ bullets: [], tags: [] });
     } finally {
       setSugsBusy(false);
     }
@@ -261,7 +252,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
       const id = await ensureDraft();
       await api(`/api/projects/${id}/build-without-preview`, { 
         method: 'POST', 
-        body: JSON.stringify({ user_id: USER_ID, prompt: promptText }) 
+        body: JSON.stringify({ user_id: USER_ID }) 
       });
       triggerHaptic('success');
       Alert.alert('Success', 'Plan requested');
@@ -274,33 +265,23 @@ export default function NewProject({ navigation }: { navigation: any }) {
     }
   }
 
-  function toggleTip(index: number) {
-    setSelectedTips(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
-      return newSet;
-    });
-  }
-
-  function insertSelectedTips() {
-    if (!sugs || selectedTips.size === 0) return;
+  function applySuggestionsToDescription() {
+    if (!sugs) return;
     
-    const selectedText = Array.from(selectedTips)
-      .sort((a, b) => a - b)
-      .map(idx => sugs[idx])
-      .join(' ');
+    const tagLine = sugs?.tags?.slice(0, 3).join(', ');
+    const tips = (sugs?.bullets || []).slice(0, 2).join('; ');
+    const append = [
+      tagLine && `Style: ${tagLine}.`,
+      tips && `Notes: ${tips}.`
+    ].filter(Boolean).join(' ');
     
-    setPromptText(prev => `${prev} ${selectedText}`.trim());
-    setSelectedTips(new Set());
-  }
-
-  function resetPrompt() {
-    setPromptText(getBasePrompt());
-    setSelectedTips(new Set());
+    setDescription(prev => 
+      prev.endsWith('.') ? `${prev} ${append}` : `${prev}. ${append}`
+    );
+    
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+    triggerHaptic('success');
   }
 
   const handleBudgetSelect = (option: string) => {
@@ -527,19 +508,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
           )}
         </View>
 
-        {!photoUri && hasValidForm() && (
-          <View 
-            testID="np-suggestions-card"
-            style={styles.suggestionsCard}
-          >
-            <Text style={styles.suggestionsTitle}>Design Suggestions (beta)</Text>
-            <Text style={styles.suggestionsEmptyText}>
-              Add a room photo to get design suggestions.
-            </Text>
-          </View>
-        )}
-
-        {sugs !== null && photoUri && (
+        {sugs !== null && description.trim().length >= 10 && (
           <View 
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
@@ -551,59 +520,33 @@ export default function NewProject({ navigation }: { navigation: any }) {
                 <ActivityIndicator size="small" color="#F59E0B" />
                 <Text style={styles.suggestionsLoadingText}>Analyzing your photo…</Text>
               </View>
-            ) : sugs.length > 0 ? (
+            ) : sugs?.bullets && sugs.bullets.length > 0 ? (
               <View>
-                {sugs.map((suggestion: string, idx: number) => (
-                  <Pressable 
-                    key={idx} 
-                    style={[
-                      styles.suggestionChip,
-                      selectedTips.has(idx) && styles.suggestionChipSelected
-                    ]}
-                    onPress={() => toggleTip(idx)}
-                  >
+                {sugs.bullets.map((suggestion: string, idx: number) => (
+                  <View key={idx} style={styles.suggestionBullet}>
                     <Ionicons 
-                      name={selectedTips.has(idx) ? "checkbox" : "square-outline"} 
-                      size={18} 
-                      color={selectedTips.has(idx) ? "#F59E0B" : "#9CA3AF"} 
+                      name="checkmark-circle" 
+                      size={16} 
+                      color="#10B981" 
                       style={{ marginRight: 8 }} 
                     />
-                    <Text style={[
-                      styles.suggestionText,
-                      selectedTips.has(idx) && styles.suggestionTextSelected
-                    ]}>
-                      {suggestion}
-                    </Text>
-                  </Pressable>
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
+                  </View>
                 ))}
-                <Text style={styles.suggestionMeta}>
-                  style: modern • difficulty: {skillLevel} • budget: {budget}
-                </Text>
+                {sugs.tags && sugs.tags.length > 0 && (
+                  <Text style={styles.suggestionMeta}>
+                    {sugs.tags.join(' · ')}
+                  </Text>
+                )}
 
-                <View style={styles.refineButtonsRow}>
+                <View style={styles.applyRow}>
+                  <Text style={styles.applyRowCaption}>Proposed edits</Text>
                   <Pressable
-                    testID="np-refine-apply"
-                    onPress={insertSelectedTips}
-                    disabled={selectedTips.size === 0}
-                    style={[
-                      styles.refineButton,
-                      selectedTips.size === 0 && styles.refineButtonDisabled
-                    ]}
+                    testID="np-apply-suggestions"
+                    onPress={applySuggestionsToDescription}
+                    style={styles.applyButton}
                   >
-                    <Text style={[
-                      styles.refineButtonText,
-                      selectedTips.size === 0 && styles.refineButtonTextDisabled
-                    ]}>
-                      Insert selected into prompt
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    testID="np-refine-reset"
-                    onPress={resetPrompt}
-                    style={styles.refineButtonSecondary}
-                  >
-                    <Text style={styles.refineButtonSecondaryText}>Reset prompt</Text>
+                    <Text style={styles.applyButtonText}>Apply to description</Text>
                   </Pressable>
                 </View>
               </View>
@@ -618,24 +561,6 @@ export default function NewProject({ navigation }: { navigation: any }) {
               <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
               <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
             </Pressable>
-          </View>
-        )}
-
-        {hasValidForm() && (
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Build Prompt</Text>
-            <TextInput
-              testID="np-refine-input"
-              style={[styles.textArea, { minHeight: 120 }]}
-              value={promptText}
-              onChangeText={setPromptText}
-              placeholder="Your build instructions..."
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={5}
-              scrollEnabled={true}
-              textAlignVertical="top"
-            />
           </View>
         )}
 
@@ -695,6 +620,12 @@ export default function NewProject({ navigation }: { navigation: any }) {
           </View>
         )}
       </ScrollView>
+
+      {showToast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>Applied to description.</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -861,25 +792,10 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#6B7280',
   },
-  suggestionsEmptyText: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
-  suggestionChip: {
+  suggestionBullet: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 8,
-    padding: 10,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-  },
-  suggestionChipSelected: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
   },
   suggestionText: {
     flex: 1,
@@ -888,54 +804,40 @@ const styles = StyleSheet.create({
     color: '#374151',
     lineHeight: 20,
   },
-  suggestionTextSelected: {
-    color: '#92400E',
-    fontWeight: '500' as any,
-  },
   suggestionMeta: {
     fontSize: 12,
     fontFamily: typography.fontFamily.inter,
     color: '#9CA3AF',
     marginTop: 8,
   },
-  refineButtonsRow: {
+  applyRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  refineButton: {
-    flex: 1,
-    backgroundColor: '#F59E0B',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
-  refineButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+  applyRowCaption: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: '#6B7280',
+    fontStyle: 'italic',
   },
-  refineButtonText: {
-    fontSize: 13,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#FFF',
-  },
-  refineButtonTextDisabled: {
-    color: '#9CA3AF',
-  },
-  refineButtonSecondary: {
-    flex: 1,
-    backgroundColor: '#FFF',
+  applyButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+    borderRadius: 6,
   },
-  refineButtonSecondaryText: {
+  applyButtonText: {
     fontSize: 13,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#6B7280',
+    fontFamily: typography.fontFamily.inter,
+    color: '#374151',
+    fontWeight: '500' as any,
   },
   suggestionsRefresh: {
     flexDirection: 'row',
@@ -996,5 +898,27 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     textAlign: 'center',
     marginTop: 8,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: '#111827',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastText: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: '#FFF',
+    fontWeight: '500' as any,
   },
 });
