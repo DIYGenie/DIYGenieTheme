@@ -61,6 +61,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
+  const [sugsError, setSugsError] = useState<string | undefined>(undefined);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
@@ -163,29 +164,36 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function fetchDesignSuggestions() {
+    let id = draftId;
+    if (!id) id = await ensureDraft();
+    setSugsBusy(true);
     try {
-      setSugsBusy(true);
-      const id = await ensureDraft();
       const body = {
         user_id: USER_ID,
-        name: description.trim(),
+        desc: description.trim(),
         budget,
-        skill_level: skillLevel,
-        photo_uri: photoUri || null
+        skill_level: skillLevel
       };
       const r = await fetch(`${BASE}/api/projects/${id}/suggestions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || 'suggestions_failed');
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || j.ok === false) {
+        console.warn('[suggestions]', r.status, j);
+        setSugsError(j?.error || `HTTP ${r.status}`);
+        setSugs({ bullets: [], tags: [] });
+        return;
+      }
+      setSugsError(undefined);
       setSugs({
-        bullets: j?.items || [],
-        tags: j?.tags || []
+        bullets: j.suggestions || [],
+        tags: j.tags || []
       });
     } catch (e: any) {
-      setSugs({ bullets: [], tags: [] });
+      console.warn('[suggestions] error', e);
+      setSugsError(String(e?.message || e));
     } finally {
       setSugsBusy(false);
     }
@@ -284,11 +292,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         body: JSON.stringify(body),
       });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || 'build_failed');
-      // Navigate using the known id; don't depend on response shape
+      if (!r.ok || j.ok === false) {
+        const msg = j?.error || `HTTP ${r.status}`;
+        Alert.alert('Cannot build', msg);
+        console.warn('[build-no-preview]', r.status, j);
+        return;
+      }
       goToProject(id);
-      // Clear ephemeral UI state
-      setSugs(null);
     } catch (e: any) {
       Alert.alert('Build failed', String(e?.message || e));
     } finally {
@@ -593,6 +603,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
               <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
             </Pressable>
+            {sugsError && (
+              <Text style={styles.suggestionsError}>{sugsError}</Text>
+            )}
           </View>
         )}
 
@@ -887,6 +900,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: typography.fontFamily.inter,
     color: '#6B7280',
+  },
+  suggestionsError: {
+    fontSize: 12,
+    fontFamily: typography.fontFamily.inter,
+    color: '#DC2626',
+    marginTop: 6,
   },
   primaryButton: {
     backgroundColor: '#F59E0B',
