@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -43,7 +45,8 @@ async function api(path: string, opts: any = {}) {
   }
 }
 
-export default function NewProject({ navigation }: { navigation: any }) {
+export default function NewProject({ navigation: navProp }: { navigation?: any }) {
+  const navigation = useNavigation<any>();
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [skillLevel, setSkillLevel] = useState('');
@@ -54,6 +57,7 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [buildBusy, setBuildBusy] = useState(false);
   
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
@@ -67,6 +71,26 @@ export default function NewProject({ navigation }: { navigation: any }) {
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
 
   const canPreview = ents?.previewAllowed ?? false;
+
+  // Helper: robust navigation to a project detail, across nested navigators + web
+  function goToProject(id: string) {
+    // Try: Projects tab -> ProjectDetail
+    try { navigation.navigate('Projects', { screen: 'ProjectDetail', params: { id } }); return; } catch {}
+    // Try common standalone detail routes
+    for (const name of ['ProjectDetail', 'OpenPlan', 'Plan', 'ProjectDetails', 'ProjectDetailScreen']) {
+      try { navigation.navigate(name as never, { id } as never); return; } catch {}
+    }
+    // Fallback: go to Projects list
+    try { navigation.navigate('Projects' as never); } catch {}
+
+    // Web hard fallback: update URL if navigation didn't work (SPA routing)
+    if (Platform.OS === 'web') {
+      try {
+        const url = Linking.createURL(`/projects/${id}`);
+        (window as any).history.pushState({}, '', url);
+      } catch {}
+    }
+  }
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
@@ -246,30 +270,29 @@ export default function NewProject({ navigation }: { navigation: any }) {
   }
 
   async function onBuildNoPreview() {
+    if (buildBusy) return;
+    setBuildBusy(true);
     try {
       const id = await ensureDraft();
-      const body = { 
-        user_id: USER_ID, 
-        prompt: `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.` 
+      const body = {
+        user_id: USER_ID,
+        prompt: `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.`
       };
       const r = await fetch(`${BASE}/api/projects/${id}/build-without-preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || 'build_denied');
-      
-      // Navigate to the project details and clear local state
-      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-      setDraftId(null);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || 'build_failed');
+      // Navigate using the known id; don't depend on response shape
+      goToProject(id);
+      // Clear ephemeral UI state
       setSugs(null);
-      setDescription('');
-      setBudget('');
-      setSkillLevel('');
-      setPhotoUri(null);
     } catch (e: any) {
-      Alert.alert('Build failed', String(e.message || e));
+      Alert.alert('Build failed', String(e?.message || e));
+    } finally {
+      setBuildBusy(false);
     }
   }
 
@@ -610,17 +633,17 @@ export default function NewProject({ navigation }: { navigation: any }) {
             <Pressable
               testID="np-build-no-preview"
               onPress={onBuildNoPreview}
-              disabled={busy}
+              disabled={buildBusy}
               style={({ pressed }) => [
                 styles.secondaryButton,
-                busy && styles.secondaryButtonDisabled,
-                { marginTop: 12, transform: [{ scale: pressed && !busy ? 0.98 : 1 }] }
+                buildBusy && styles.secondaryButtonDisabled,
+                { marginTop: 12, transform: [{ scale: pressed && !buildBusy ? 0.98 : 1 }] }
               ]}
             >
-              {busy ? (
+              {buildBusy ? (
                 <>
                   <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />
-                  <Text style={styles.secondaryButtonText}>Requesting…</Text>
+                  <Text style={styles.secondaryButtonText}>Creating…</Text>
                 </>
               ) : (
                 <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
