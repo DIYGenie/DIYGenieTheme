@@ -147,26 +147,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function fetchDesignSuggestions() {
-    let id = draftId;
-    if (!id) id = await ensureDraft();
-    if (!id) return;
-    
+    if (!draftId) return;
     setSugsBusy(true);
     try {
-      const body = {
-        user_id: USER_ID,
-        desc: description.trim(),
-        budget,
-        skill_level: skillLevel
-      };
-      const r = await api(`/api/projects/${id}/suggestions`, {
+      const r = await api(`/api/projects/${draftId}/suggestions`, {
         method: 'POST',
-        body: JSON.stringify(body)
+        body: JSON.stringify({ user_id: USER_ID }),
       });
-      if (!r.ok || r.data?.ok === false) {
-        console.warn('[suggestions]', r.status, r.data);
-        setSugsError(r.data?.error || `HTTP ${r.status}`);
-        setSugs({ bullets: [], tags: [] });
+      if (!r.ok) {
+        console.warn('Suggestions error', r.status, r.data);
         return;
       }
       setSugsError(undefined);
@@ -174,9 +163,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         bullets: r.data?.suggestions || [],
         tags: r.data?.tags || []
       });
-    } catch (e: any) {
-      console.warn('[suggestions] error', e);
-      setSugsError(String(e?.message || e));
     } finally {
       setSugsBusy(false);
     }
@@ -597,13 +583,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             ) : null}
             
             <Pressable
-              testID="np-suggestions-refresh"
+              testID="np-refresh-suggestions"
               onPress={fetchDesignSuggestions}
               disabled={sugsBusy}
               style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
             >
               <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <Text style={styles.suggestionsRefreshText}>Refresh suggestions</Text>
+              <Text style={styles.suggestionsRefreshText}>{sugsBusy ? 'Refreshing…' : 'Refresh suggestions'}</Text>
             </Pressable>
             {sugsError && (
               <Text style={styles.suggestionsError}>{sugsError}</Text>
