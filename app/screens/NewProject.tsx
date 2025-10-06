@@ -313,17 +313,28 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         }
       }
 
-      const payload = {
-        project_id: id,
-        user_id: USER_ID,
-        goal: (description || '').trim(),
-        budget: (budget || '').trim(),
-        skill: (skillLevel || '').trim(),
-      };
-      const r = await api(`/api/projects/${id}/build-without-preview`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      // 1) Try POST with no body and no Content-Type (server may require empty body)
+      let r;
+      try {
+        r = await api(`/api/projects/${id}/build-without-preview`, { method: 'POST', headers: {} });
+      } catch (e:any) {
+        // If api() throws due to non-2xx, stash the last error payload if present
+        console.log('[build attempt 1 failed]', e?.message || e);
+      }
+
+      // 2) If still failing with 422 invalid_payload, retry with minimal body { project_id }
+      if (!r || r.ok === false) {
+        try {
+          const r2 = await api(`/api/projects/${id}/build-without-preview`, {
+            method: 'POST',
+            body: JSON.stringify({ project_id: id }),
+          });
+          r = r2;
+        } catch (e:any) {
+          console.log('[build attempt 2 failed]', e?.message || e);
+          throw e;
+        }
+      }
 
       if (!r.ok) {
         if (r.status === 403) {
