@@ -10,40 +10,9 @@ import * as Linking from 'expo-linking';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { api } from '../lib/api';
 
-const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.diygenieapp.com';
-const USER_ID = (globalThis as any).__DEV_USER_ID__ || process.env.EXPO_PUBLIC_TEST_USER_ID || 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24';
-
-async function api(path: string, opts: any = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  
-  try {
-    const res = await fetch(`${BASE}${path}`, {
-      ...opts,
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...opts.headers },
-    });
-    clearTimeout(timeout);
-    
-    let data: any = null;
-    const text = await res.text();
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = { error: text || 'Invalid response' };
-    }
-    
-    if (!res.ok) {
-      throw new Error(data?.error || data?.details || `HTTP ${res.status}`);
-    }
-    return data;
-  } catch (err: any) {
-    clearTimeout(timeout);
-    if (err.name === 'AbortError') throw new Error('Request timeout');
-    throw err;
-  }
-}
+const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
 export default function NewProject({ navigation: navProp }: { navigation?: any }) {
   const navigation = useNavigation<any>();
@@ -57,7 +26,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [draftId, setDraftId] = useState<string | null>(null);
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [buildBusy, setBuildBusy] = useState(false);
+  const [busyBuild, setBusyBuild] = useState(false);
   
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
@@ -126,10 +95,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function fetchEntitlements() {
     try {
-      const data = await api(`/me/entitlements?user_id=${USER_ID}`);
+      const r = await api(`/me/entitlements?user_id=${USER_ID}`);
       setEnts({ 
-        previewAllowed: !!data.previewAllowed, 
-        remaining: data.remaining 
+        previewAllowed: !!r.data?.previewAllowed, 
+        remaining: r.data?.remaining 
       });
     } catch (err) {
       console.warn('[entitlements]', err);
@@ -148,24 +117,40 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return () => subscription.remove();
   }, []);
 
-  async function ensureDraft(): Promise<string> {
+  async function ensureDraft() {
     if (draftId) return draftId;
-    
-    const body = { user_id: USER_ID, name: description.trim(), budget, skill: skillLevel };
-    const r = await fetch(`${BASE}/api/projects`, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(body) 
+
+    const name = description.trim();
+    if (name.length < 10 || !budget || !skillLevel) {
+      showToast('Please complete all fields (10+ char description, budget, skill)', 'error');
+      return null;
+    }
+
+    const r = await api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: USER_ID, name, budget, skill: skillLevel }),
     });
-    const j = await r.json();
-    if (!r.ok || !j?.item?.id) throw new Error(j?.error || 'create_failed');
-    setDraftId(j.item.id);
-    return j.item.id;
+
+    if (!r.ok) {
+      const msg = r?.data?.error || r?.data?.message || 'Failed to create project';
+      showToast(msg, 'error');
+      return null;
+    }
+
+    const id = r.data?.item?.id || r.data?.id;
+    if (!id) { 
+      showToast('Project not created', 'error'); 
+      return null; 
+    }
+    setDraftId(id);
+    return id;
   }
 
   async function fetchDesignSuggestions() {
     let id = draftId;
     if (!id) id = await ensureDraft();
+    if (!id) return;
+    
     setSugsBusy(true);
     try {
       const body = {
@@ -174,22 +159,20 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         budget,
         skill_level: skillLevel
       };
-      const r = await fetch(`${BASE}/api/projects/${id}/suggestions`, {
+      const r = await api(`/api/projects/${id}/suggestions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.ok === false) {
-        console.warn('[suggestions]', r.status, j);
-        setSugsError(j?.error || `HTTP ${r.status}`);
+      if (!r.ok || r.data?.ok === false) {
+        console.warn('[suggestions]', r.status, r.data);
+        setSugsError(r.data?.error || `HTTP ${r.status}`);
         setSugs({ bullets: [], tags: [] });
         return;
       }
       setSugsError(undefined);
       setSugs({
-        bullets: j.suggestions || [],
-        tags: j.tags || []
+        bullets: r.data?.suggestions || [],
+        tags: r.data?.tags || []
       });
     } catch (e: any) {
       console.warn('[suggestions] error', e);
@@ -262,10 +245,17 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     setBusy(true);
     try {
       const id = await ensureDraft();
-      await api(`/api/projects/${id}/preview`, { 
+      if (!id) return;
+      
+      const r = await api(`/api/projects/${id}/preview`, { 
         method: 'POST', 
         body: JSON.stringify({ user_id: USER_ID }) 
       });
+      if (!r.ok) {
+        Alert.alert('Preview failed', r.data?.error || 'Could not generate preview');
+        triggerHaptic('error');
+        return;
+      }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
       navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
@@ -277,32 +267,44 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
-  async function onBuildNoPreview() {
-    if (buildBusy) return;
-    setBuildBusy(true);
+  function navigateToProject(id: string) {
+    const tryRoutes = ['ProjectDetail', 'ProjectDetailScreen', 'ProjectDetails', 'ProjectDetailsScreen'];
+    for (const r of tryRoutes) {
+      try { navigation.navigate(r as any, { id }); return; } catch {}
+    }
+    navigation.navigate('Projects' as any);
+  }
+
+  async function onBuildWithoutPreview() {
+    if (busyBuild) return;
+    setBusyBuild(true);
     try {
       const id = await ensureDraft();
-      const body = {
-        user_id: USER_ID,
-        prompt: `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.`
-      };
-      const r = await fetch(`${BASE}/api/projects/${id}/build-without-preview`, {
+      if (!id) return;
+
+      const r = await api(`/api/projects/${id}/build-without-preview`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ user_id: USER_ID }),
       });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.ok === false) {
-        const msg = j?.error || `HTTP ${r.status}`;
-        Alert.alert('Cannot build', msg);
-        console.warn('[build-no-preview]', r.status, j);
+
+      if (!r.ok) {
+        if (r.status === 403) {
+          showToast('You are out of quota. Upgrade from Profile.', 'error');
+        } else if (r.status === 422) {
+          showToast(r.data?.error || 'Invalid request', 'error');
+        } else {
+          showToast('Could not request build. Try again.', 'error');
+        }
         return;
       }
-      goToProject(id);
-    } catch (e: any) {
-      Alert.alert('Build failed', String(e?.message || e));
+
+      showToast('Plan requested', 'success');
+      navigateToProject(id);
+      // light reset
+      setDraftId(null);
+      setPhotoUri(null);
     } finally {
-      setBuildBusy(false);
+      setBusyBuild(false);
     }
   }
 
@@ -644,16 +646,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             )}
 
             <Pressable
-              testID="np-build-no-preview"
-              onPress={onBuildNoPreview}
-              disabled={buildBusy}
+              testID="np-build-without-preview"
+              onPress={onBuildWithoutPreview}
+              disabled={busyBuild}
               style={({ pressed }) => [
                 styles.secondaryButton,
-                buildBusy && styles.secondaryButtonDisabled,
-                { marginTop: 12, transform: [{ scale: pressed && !buildBusy ? 0.98 : 1 }] }
+                busyBuild && styles.secondaryButtonDisabled,
+                { marginTop: 12, transform: [{ scale: pressed && !busyBuild ? 0.98 : 1 }] }
               ]}
             >
-              {buildBusy ? (
+              {busyBuild ? (
                 <>
                   <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />
                   <Text style={styles.secondaryButtonText}>Creating…</Text>
