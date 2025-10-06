@@ -107,7 +107,7 @@ app.post('/api/projects', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   
   try {
-    const { user_id, name, status } = req.body || {};
+    const { user_id, name, status, budget, skill } = req.body || {};
     
     if (!user_id || !name) {
       return res.status(400).json({ ok: false, error: 'missing_fields' });
@@ -387,84 +387,129 @@ app.post('/api/projects/:id/build-without-preview', async (req, res) => {
   }
 });
 
+app.post('/api/projects/:id/suggestions-smart', async (req, res) => {
+  try {
+    const id = req.params.id?.trim();
+    if (!id) return res.status(400).json({ ok:false, error:'missing_project_id' });
+
+    const { data: proj, error } = await supabase
+      .from('projects')
+      .select('id, name, input_image_url')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ ok:false, error: error.message });
+    if (!proj) return res.status(404).json({ ok:false, error:'project_not_found' });
+
+    const text = (proj.name || '').toLowerCase();
+    const hasPhoto = !!proj.input_image_url;
+
+    const tips = new Set();
+
+    // Generic prompt-sharpeners
+    if (text.length < 30) tips.add('Add 1–2 details about dimensions or materials to improve results');
+    tips.add('State room type and main color so designs match your space');
+
+    // Heuristics by feature words
+    if (/\bshelf|shelv/.test(text)) {
+      tips.add('Specify shelf width × depth and desired spacing between shelves');
+      tips.add('Mention bracket style (hidden vs visible) for cleaner look');
+      tips.add('Prefer pre-finished lumber to reduce sanding/staining time');
+    }
+    if (/\bbench\b/.test(text)) {
+      tips.add('Include max length and seat height so it fits your wall');
+      tips.add('Call out storage type (open cubbies vs drawers) if needed');
+    }
+    if (/\baccent wall|paint\b/.test(text)) {
+      tips.add('Include sheen level (eggshell vs satin) and prep condition (glossy, textured)');
+    }
+    if (/\btable\b/.test(text)) {
+      tips.add('Specify table dimensions and desired height for your use case');
+      tips.add('Mention finish type (stain, paint, natural) for material recommendations');
+    }
+    if (/\bcabinet|drawer/.test(text)) {
+      tips.add('Include door/drawer quantity and preferred hardware style');
+      tips.add('Specify if you need soft-close mechanisms or standard hardware');
+    }
+
+    // Photo present?
+    if (hasPhoto) {
+      tips.add('Describe constraints seen in photo (obstructions, outlets, trim)');
+      tips.add('Include target width relative to visible wall span (e.g., 70% of wall)');
+      tips.add('Match wood tone to lightest existing wood in photo for cohesion');
+    } else {
+      tips.add('Upload a clear room photo for layout-aware suggestions');
+    }
+
+    console.log(`[SUGGESTIONS-SMART] Project ${id} - ${tips.size} tips (text=${text.substring(0, 30)}..., photo=${hasPhoto})`);
+    
+    return res.json({ ok:true, suggestions: Array.from(tips) });
+  } catch (e) {
+    console.error(`[SUGGESTIONS-SMART ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok:false, error: e.message || 'server_error' });
+  }
+});
+
 app.post('/api/projects/:id/suggestions', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    const { data: project } = await supabase
+    const id = req.params.id?.trim();
+    if (!id) return res.status(400).json({ ok:false, error:'missing_project_id' });
+
+    const { data: proj, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, name, input_image_url')
       .eq('id', id)
-      .single();
-    
-    if (!project) {
-      return res.status(404).json({ ok: false, error: 'project_not_found' });
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ ok:false, error: error.message });
+    if (!proj) return res.status(404).json({ ok:false, error:'project_not_found' });
+
+    const text = (proj.name || '').toLowerCase();
+    const hasPhoto = !!proj.input_image_url;
+
+    const tips = new Set();
+
+    // Generic prompt-sharpeners
+    if (text.length < 30) tips.add('Add 1–2 details about dimensions or materials to improve results');
+    tips.add('State room type and main color so designs match your space');
+
+    // Heuristics by feature words
+    if (/\bshelf|shelv/.test(text)) {
+      tips.add('Specify shelf width × depth and desired spacing between shelves');
+      tips.add('Mention bracket style (hidden vs visible) for cleaner look');
+      tips.add('Prefer pre-finished lumber to reduce sanding/staining time');
     }
+    if (/\bbench\b/.test(text)) {
+      tips.add('Include max length and seat height so it fits your wall');
+      tips.add('Call out storage type (open cubbies vs drawers) if needed');
+    }
+    if (/\baccent wall|paint\b/.test(text)) {
+      tips.add('Include sheen level (eggshell vs satin) and prep condition (glossy, textured)');
+    }
+    if (/\btable\b/.test(text)) {
+      tips.add('Specify table dimensions and desired height for your use case');
+      tips.add('Mention finish type (stain, paint, natural) for material recommendations');
+    }
+    if (/\bcabinet|drawer/.test(text)) {
+      tips.add('Include door/drawer quantity and preferred hardware style');
+      tips.add('Specify if you need soft-close mechanisms or standard hardware');
+    }
+
+    // Photo present?
+    if (hasPhoto) {
+      tips.add('Describe constraints seen in photo (obstructions, outlets, trim)');
+      tips.add('Include target width relative to visible wall span (e.g., 70% of wall)');
+      tips.add('Match wood tone to lightest existing wood in photo for cohesion');
+    } else {
+      tips.add('Upload a clear room photo for layout-aware suggestions');
+    }
+
+    console.log(`[SUGGESTIONS] Project ${id} - ${tips.size} tips (text=${text.substring(0, 30)}..., photo=${hasPhoto})`);
     
-    const hash = (str) => {
-      let h = 0;
-      for (let i = 0; i < str.length; i++) {
-        h = ((h << 5) - h) + str.charCodeAt(i);
-        h = h & h;
-      }
-      return Math.abs(h);
-    };
-    
-    const projectHash = hash(id);
-    const suggestionSets = [
-      {
-        bullets: [
-          'Measure twice, cut once - accuracy saves materials',
-          'Pre-drill pilot holes to prevent wood splitting',
-          'Use a level at every step for professional results',
-          'Sand in the direction of the grain for smoothest finish',
-          'Apply finish in thin coats for better durability'
-        ],
-        tags: ['woodworking', 'beginner-friendly', 'tools']
-      },
-      {
-        bullets: [
-          'Test paint colors on sample boards first',
-          'Use painter\'s tape for clean, sharp edges',
-          'Apply primer for better paint adhesion',
-          'Work in well-ventilated areas when painting',
-          'Clean brushes immediately after use'
-        ],
-        tags: ['painting', 'finishing', 'safety']
-      },
-      {
-        bullets: [
-          'Check for studs before mounting heavy items',
-          'Use appropriate anchors for wall material',
-          'Keep all power tools unplugged when not in use',
-          'Wear safety glasses when cutting or drilling',
-          'Organize hardware in labeled containers'
-        ],
-        tags: ['safety', 'organization', 'mounting']
-      },
-      {
-        bullets: [
-          'Allow glue to fully cure before stressing joints',
-          'Use corner clamps for perfect 90-degree angles',
-          'Sand between coats for ultra-smooth finish',
-          'Match wood grain direction for seamless look',
-          'Seal end grain separately for even staining'
-        ],
-        tags: ['finishing', 'joinery', 'pro-tips']
-      }
-    ];
-    
-    const selectedSet = suggestionSets[projectHash % suggestionSets.length];
-    
-    console.log(`[SUGGESTIONS] Project ${id} - returning ${selectedSet.bullets.length} tips`);
-    
-    return res.json({ 
-      ok: true, 
-      data: selectedSet
-    });
+    return res.json({ ok:true, suggestions: Array.from(tips) });
   } catch (e) {
     console.error(`[SUGGESTIONS ERROR] Project ${req.params.id}:`, e.message);
-    return res.status(500).json({ ok: false, error: e.message });
+    return res.status(500).json({ ok:false, error: e.message || 'server_error' });
   }
 });
 

@@ -192,7 +192,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         method: 'POST', 
         body: JSON.stringify({ user_id: USER_ID }) 
       });
-      if (r?.data?.suggestions?.length) {
+      if (r?.ok && r?.data?.suggestions?.length) {
         setSugsList(r.data.suggestions);
       }
     } finally {
