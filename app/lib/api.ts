@@ -6,8 +6,12 @@ export async function api(path: string, init: RequestInit = {}) {
   const method = (init.method || 'GET').toUpperCase();
   const bodySent = init.body;
   
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+  const defaultHeaders = isFormData ? {} : { 'Content-Type': 'application/json' };
+  const headers = { ...defaultHeaders, ...(init.headers || {}) };
+  
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(init.headers || {}) },
+    headers,
     ...init,
   });
   
