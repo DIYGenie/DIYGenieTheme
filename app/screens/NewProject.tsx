@@ -12,6 +12,7 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import SuggestionsBox from '../components/SuggestionsBox';
+import PromptCoach from '../components/PromptCoach';
 
 function debounce<T extends (...args:any[])=>void>(fn:T, ms=400){
   let t:any; return (...args:any[])=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
@@ -43,6 +44,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     "Match shelf stain to the lightest wood tone in the room",
   ]);
   const [sugsListLoading, setSugsListLoading] = useState(false);
+  const [coachTips, setCoachTips] = React.useState<{text: string; tag?: string}[]>([]);
+  const [coachLoading, setCoachLoading] = React.useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
@@ -190,14 +193,17 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const refreshSuggestions = React.useCallback(async () => {
     try {
       setSugsListLoading(true);
+      setCoachLoading(true);
       const id = await ensureDraft();
       if (!id) return;
       const r = await api(`/api/projects/${id}/suggestions-smart`, { method: 'POST' });
       if (r?.ok && r?.data?.suggestions && Array.isArray(r.data.suggestions)) {
         setSugsList(r.data.suggestions);
+        setCoachTips(r.data.suggestions.map((text: string) => ({ text })));
       }
     } finally {
       setSugsListLoading(false);
+      setCoachLoading(false);
     }
   }, []);
 
@@ -626,6 +632,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </Text>
             </View>
           )}
+
+          <PromptCoach
+            tips={coachTips}
+            loading={coachLoading}
+            onRefresh={refreshSuggestions}
+            onApply={(t) => {
+              const base = (description || '').trim();
+              setDescription(base ? `${base}. ${t}` : t);
+            }}
+          />
         </View>
 
         {sugs !== null && description.trim().length >= 10 && (
