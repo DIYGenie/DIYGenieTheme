@@ -13,6 +13,7 @@ import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import SuggestionsBox from '../components/SuggestionsBox';
 import PromptCoach from '../components/PromptCoach';
+import PromptApplyModal from '../components/PromptApplyModal';
 
 function debounce<T extends (...args:any[])=>void>(fn:T, ms=400){
   let t:any; return (...args:any[])=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
@@ -46,6 +47,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [sugsListLoading, setSugsListLoading] = useState(false);
   const [coachTips, setCoachTips] = React.useState<{text: string; tag?: string}[]>([]);
   const [coachLoading, setCoachLoading] = React.useState(false);
+  const [applyOpen, setApplyOpen] = React.useState(false);
+  const [pendingTip, setPendingTip] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
@@ -79,6 +82,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
+  }
+
+  function normalizeAppend(base: string, add: string) {
+    const b = base.trim();
+    const a = add.trim().replace(/\s+/g, ' ');
+    if (!b) return a;
+    const endPunct = /[.!?]$/.test(b) ? '' : '.';
+    return `${b}${endPunct} ${a}`;
   }
 
   function resetForm() {
@@ -637,10 +648,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             tips={coachTips}
             loading={coachLoading}
             onRefresh={refreshSuggestions}
-            onApply={(t) => {
-              const base = (description || '').trim();
-              setDescription(base ? `${base}. ${t}` : t);
-            }}
+            onApply={(t) => { setPendingTip(t); setApplyOpen(true); }}
           />
         </View>
 
@@ -770,6 +778,20 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       )}
+
+      <PromptApplyModal
+        visible={applyOpen}
+        tip={pendingTip}
+        onReplace={() => {
+          if (pendingTip) setDescription(pendingTip);
+          setApplyOpen(false);
+        }}
+        onAppend={() => {
+          if (pendingTip) setDescription(prev => normalizeAppend(prev || '', pendingTip));
+          setApplyOpen(false);
+        }}
+        onClose={() => setApplyOpen(false)}
+      />
     </SafeAreaView>
   );
 }
