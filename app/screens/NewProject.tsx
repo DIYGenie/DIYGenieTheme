@@ -93,16 +93,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   };
 
-  async function fetchEntitlements() {
+  async function fetchEntitlementsSafe(userId: string) {
     try {
-      const r = await api(`/me/entitlements/${USER_ID}`);
-      setEnts({ 
-        previewAllowed: !!r.data?.previewAllowed, 
-        remaining: r.data?.remaining 
-      });
-    } catch (err) {
-      console.warn('[entitlements]', err);
+      const r = await api(`/me/entitlements/${userId}`);
+      return r; // expected: { tier, remaining, previewAllowed }
+    } catch {
+      console.warn('[entitlements] falling back to Free defaults');
+      return { tier: 'Free', remaining: 2, previewAllowed: false, ok: true };
     }
+  }
+
+  async function fetchEntitlements() {
+    const r = await fetchEntitlementsSafe(USER_ID);
+    const data = (r as any).data || r;
+    setEnts({ 
+      previewAllowed: !!(data?.previewAllowed) || false, 
+      remaining: data?.remaining ?? 2
+    });
   }
 
   useEffect(() => {

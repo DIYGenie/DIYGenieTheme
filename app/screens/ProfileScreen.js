@@ -108,14 +108,21 @@ export default function ProfileScreen() {
   const [lastSyncAt, setLastSyncAt] = React.useState(null);
   const [syncNote, setSyncNote] = React.useState('');
 
-  const getEntitlements = React.useCallback(async () => {
+  const fetchEntitlementsSafe = React.useCallback(async (userId) => {
     try {
-      const data = await api(`/me/entitlements/${CURRENT_USER_ID}`);
-      setEnts({ tier: data.tier, remaining: data.remaining, previewAllowed: !!data.previewAllowed });
-    } catch (err) {
-      Alert.alert('Billing', 'Could not load your plan. Use Sync Plan to retry.');
+      const r = await api(`/me/entitlements/${userId}`);
+      return r; // expected: { tier, remaining, previewAllowed }
+    } catch {
+      console.warn('[entitlements] falling back to Free defaults');
+      return { tier: 'Free', remaining: 2, previewAllowed: false, ok: true };
     }
   }, []);
+
+  const getEntitlements = React.useCallback(async () => {
+    const r = await fetchEntitlementsSafe(CURRENT_USER_ID);
+    const data = r.data || r;
+    setEnts({ tier: data.tier || 'Free', remaining: data.remaining ?? 2, previewAllowed: !!data.previewAllowed });
+  }, [fetchEntitlementsSafe]);
 
   const openPortal = async () => {
     setBusy(true);
