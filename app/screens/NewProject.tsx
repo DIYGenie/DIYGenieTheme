@@ -11,13 +11,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
-import SuggestionsBox from '../components/SuggestionsBox';
-import PromptCoach from '../components/PromptCoach';
 import PromptApplyModal from '../components/PromptApplyModal';
-
-function debounce<T extends (...args:any[])=>void>(fn:T, ms=400){
-  let t:any; return (...args:any[])=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
-}
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -38,15 +32,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
   const [sugsError, setSugsError] = useState<string | undefined>(undefined);
-  const [sugsList, setSugsList] = useState<string[]>([
-    "Try 4 shelves instead of 3 for better vertical balance",
-    "Consider 10–12\" depth if you'll store books or baskets",
-    "Use hidden brackets for a cleaner floating look",
-    "Match shelf stain to the lightest wood tone in the room",
-  ]);
-  const [sugsListLoading, setSugsListLoading] = useState(false);
-  const [coachTips, setCoachTips] = React.useState<{text: string; tag?: string}[]>([]);
-  const [coachLoading, setCoachLoading] = React.useState(false);
   const [applyOpen, setApplyOpen] = React.useState(false);
   const [pendingTip, setPendingTip] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
@@ -179,7 +164,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return id;
   }
 
-  async function fetchDesignSuggestions() {
+  async function fetchSuggestions() {
     if (!draftId) return;
     setSugsBusy(true);
     try {
@@ -201,43 +186,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
-  const refreshSuggestions = React.useCallback(async () => {
-    try {
-      setSugsListLoading(true);
-      setCoachLoading(true);
-      const id = await ensureDraft();
-      if (!id) return;
-      const r = await api(`/api/projects/${id}/suggestions-smart`, { method: 'POST' });
-      if (r?.ok && r?.data?.suggestions && Array.isArray(r.data.suggestions)) {
-        setSugsList(r.data.suggestions);
-        setCoachTips(r.data.suggestions.map((text: string) => ({ text })));
-      }
-    } finally {
-      setSugsListLoading(false);
-      setCoachLoading(false);
-    }
-  }, []);
-
-  const refreshSuggestionsDebounced = React.useMemo(() => debounce(refreshSuggestions, 500), [refreshSuggestions]);
-
-  // Auto-trigger suggestions when description changes
-  React.useEffect(() => {
-    if ((description || '').trim().length >= 10) {
-      refreshSuggestionsDebounced();
-    }
-  }, [description]);
-
-  // Auto-trigger suggestions when photo changes
-  React.useEffect(() => {
-    if (photoUri) {
-      refreshSuggestionsDebounced();
-    }
-  }, [photoUri]);
-
-  // Auto-trigger suggestions when photo is picked and form is valid (legacy)
+  // Auto-trigger suggestions when photo is picked and form is valid
   useEffect(() => {
     if (photoUri && hasValidForm() && !sugs && !sugsBusy) {
-      fetchDesignSuggestions();
+      fetchSuggestions();
     }
   }, [photoUri, description, budget, skillLevel]);
 
@@ -393,23 +345,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
-  function applySuggestionsToDescription() {
-    if (!sugs) return;
-    
-    const tagLine = sugs?.tags?.slice(0, 3).join(', ');
-    const tips = (sugs?.bullets || []).slice(0, 2).join('; ');
-    const append = [
-      tagLine && `Style: ${tagLine}.`,
-      tips && `Notes: ${tips}.`
-    ].filter(Boolean).join(' ');
-    
-    setDescription(prev => 
-      prev.endsWith('.') ? `${prev} ${append}` : `${prev}. ${append}`
-    );
-    
-    showToast('Applied to description.', 'success');
-    triggerHaptic('success');
-  }
 
   const handleBudgetSelect = (option: string) => {
     setBudget(option);
@@ -458,16 +393,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             {description.length}/10 characters minimum
           </Text>
         </View>
-
-        <SuggestionsBox
-          items={sugsList}
-          loading={sugsListLoading}
-          onRefresh={refreshSuggestions}
-          onSelect={(text) => {
-            const next = (description || '').trim();
-            setDescription(next ? `${next}. ${text}` : text);
-          }}
-        />
 
         <View style={styles.budgetFieldWrapper}>
           <View style={styles.fieldContainer}>
@@ -643,70 +568,54 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </Text>
             </View>
           )}
-
-          <PromptCoach
-            tips={coachTips}
-            loading={coachLoading}
-            onRefresh={refreshSuggestions}
-            onApply={(t) => { setPendingTip(t); setApplyOpen(true); }}
-          />
         </View>
 
-        {sugs !== null && description.trim().length >= 10 && (
+        {(!!photoUri || (description?.trim().length ?? 0) >= 10) && (
           <View 
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
           >
-            <Text style={styles.suggestionsTitle}>Design Suggestions (beta)</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.suggestionsTitle}>Suggestions</Text>
+              <Pressable
+                testID="np-suggestions-refresh"
+                onPress={fetchSuggestions}
+                disabled={sugsBusy}
+                style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
+              >
+                <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
+                <Text style={styles.suggestionsRefreshText}>{sugsBusy ? 'Refreshing…' : 'Refresh'}</Text>
+              </Pressable>
+            </View>
             
             {sugsBusy ? (
               <View style={styles.suggestionsLoading}>
                 <ActivityIndicator size="small" color="#F59E0B" />
-                <Text style={styles.suggestionsLoadingText}>Analyzing your photo…</Text>
+                <Text style={styles.suggestionsLoadingText}>Loading suggestions…</Text>
               </View>
             ) : sugs?.bullets && sugs.bullets.length > 0 ? (
-              <View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
                 {sugs.bullets.map((suggestion: string, idx: number) => (
-                  <View key={idx} style={styles.suggestionBullet}>
-                    <Ionicons 
-                      name="checkmark-circle" 
-                      size={16} 
-                      color="#10B981" 
-                      style={{ marginRight: 8 }} 
-                    />
-                    <Text style={styles.suggestionText}>{suggestion}</Text>
-                  </View>
-                ))}
-                {sugs.tags && sugs.tags.length > 0 && (
-                  <View style={styles.tagsRow}>
-                    <Text style={styles.suggestionMeta}>
-                      {sugs.tags.join(' · ')}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.applyRow}>
-                  <Text style={styles.applyRowCaption}>Proposed edits</Text>
-                  <Pressable
-                    testID="np-apply-suggestions"
-                    onPress={applySuggestionsToDescription}
-                    style={styles.applyButton}
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => { setPendingTip(suggestion); setApplyOpen(true); }}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 9999,
+                      borderWidth: 1,
+                      borderColor: '#DDD',
+                      marginRight: 8,
+                    }}
                   >
-                    <Text style={styles.applyButtonText}>Apply to description</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : null}
+                    <Text>{suggestion}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={{ opacity: 0.6, fontSize: 14 }}>Tips will appear after you add a photo or describe your project.</Text>
+            )}
             
-            <Pressable
-              testID="np-refresh-suggestions"
-              onPress={fetchDesignSuggestions}
-              disabled={sugsBusy}
-              style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
-            >
-              <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-              <Text style={styles.suggestionsRefreshText}>{sugsBusy ? 'Refreshing…' : 'Refresh suggestions'}</Text>
-            </Pressable>
             {sugsError && (
               <Text style={styles.suggestionsError}>{sugsError}</Text>
             )}
