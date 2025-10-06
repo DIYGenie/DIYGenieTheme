@@ -268,9 +268,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       const id = await ensureDraft();
       if (!id) return;
 
+      const payload = {
+        project_id: id,
+        user_id: USER_ID,
+        goal: (description || '').trim(),
+        budget: (budget || '').trim(),
+        skill: (skillLevel || '').trim(),
+      };
       const r = await api(`/api/projects/${id}/build-without-preview`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: USER_ID }),
+        body: JSON.stringify(payload),
       });
 
       if (!r.ok) {
