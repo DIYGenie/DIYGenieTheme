@@ -321,71 +321,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         }
       }
 
-      async function tryBuildProbes(id: string) {
-        const attempts: Array<() => Promise<any>> = [
-          // A) raw POST with user_id in query, no headers/body
-          () => apiRaw(`/api/projects/${id}/build-without-preview?user_id=${encodeURIComponent(USER_ID)}`, { method: 'POST' }),
-
-          // B) raw POST with x-user-id header
-          () => apiRaw(`/api/projects/${id}/build-without-preview`, {
-            method: 'POST',
-            headers: { 'x-user-id': USER_ID },
-          }),
-
-          // C) JSON { projectId } camelCase
-          () => api(`/api/projects/${id}/build-without-preview`, {
-            method: 'POST',
-            body: JSON.stringify({ projectId: id }),
-          }),
-
-          // D) JSON { user_id, project_id } snake_case only
-          () => api(`/api/projects/${id}/build-without-preview`, {
-            method: 'POST',
-            body: JSON.stringify({ user_id: USER_ID, project_id: id }),
-          }),
-
-          // E) application/x-www-form-urlencoded (no JSON)
-          () => apiRaw(`/api/projects/${id}/build-without-preview`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ user_id: USER_ID, project_id: id }).toString(),
-          }),
-        ];
-
-        for (let i = 0; i < attempts.length; i++) {
-          try {
-            const res = await attempts[i]();
-            console.log(`[build probe ${i+1}] success`, res);
-            return { ok: true, index: i+1, res };
-          } catch (e: any) {
-            console.log(`[build probe ${i+1}] failed`, e?.message || e);
-          }
-        }
-        return { ok: false };
-      }
-
-      const buildRes = await tryBuildProbes(id);
-      if (!buildRes.ok) {
-        // If we got here, all build attempts failed with 422. Use compat patch so UX continues.
-        try {
-          const compat = await api(`/api/projects/${id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'ready', preview_url: null }),
-          });
-          console.log('[compat patch]', compat);
-          showToast('Plan requested (compat mode)', 'success');
-          navigateToProject(id);
-          setDraftId(null);
-          setPhotoUri(null);
-          return;
-        } catch (e) {
-          console.error('[compat patch failed]', e);
-          showToast('Build request rejected (422). Backend needs a small fix.', 'error');
-          setBusyBuild(false);
-          return;
-        }
-      }
-      console.log('[build] accepted via probe', buildRes.index);
+      const res = await apiRaw(`/api/projects/${id}/build-without-preview?user_id=${encodeURIComponent(USER_ID)}`, {
+        method: 'POST',
+      });
+      console.log('[build] accepted', res);
       showToast('Plan requested', 'success');
       navigateToProject(id);
       setDraftId(null);
