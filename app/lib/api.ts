@@ -72,3 +72,12 @@ export async function apiRaw(path: string, init: RequestInit = {}) {
   // try JSON, fallback to text
   try { return await res.json(); } catch { return await res.text(); }
 }
+
+export async function listProjects(userId: string) {
+  const list = await api(`/api/projects?user_id=${encodeURIComponent(userId)}`);
+  if (!list || !list.data) {
+    console.warn('[projects] empty');
+    return { items: [] };
+  }
+  return list.data;
+}
