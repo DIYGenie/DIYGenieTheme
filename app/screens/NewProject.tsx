@@ -268,6 +268,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       const id = await ensureDraft();
       if (!id) return;
 
+      try {
+        const p = await api(`/api/projects/${id}`);
+        console.log('[project]', p);
+      } catch (e) {
+        console.log('[project] fetch failed', e);
+      }
+
       const payload = {
         project_id: id,
         user_id: USER_ID,
