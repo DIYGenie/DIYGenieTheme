@@ -261,6 +261,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     navigation.navigate('Projects' as any);
   }
 
+  async function uploadProjectImage(id: string, photoUri?: string | null) {
+    if (!photoUri) throw new Error('NO_PHOTO');
+
+    // If already a public URL, use the server's direct_url shortcut
+    if (photoUri.startsWith('http')) {
+      return await api(`/api/projects/${id}/image`, {
+        method: 'POST',
+        body: JSON.stringify({ direct_url: photoUri }),
+      });
+    }
+
+    // Build FormData across platforms
+    const form = new FormData();
+
+    if (Platform.OS === 'web') {
+      // Expo ImagePicker on web returns a data URL; convert to Blob
+      const res = await fetch(photoUri);
+      const blob = await res.blob();
+      form.append('file', blob, 'upload.jpg');
+    } else {
+      // Native RN needs { uri, name, type }
+      form.append('file', {
+        // @ts-ignore – RN FormData type
+        uri: photoUri,
+        name: 'upload.jpg',
+        type: 'image/jpeg',
+      });
+    }
+
+    return await api(`/api/projects/${id}/image`, { method: 'POST', body: form });
+  }
+
   async function onBuildWithoutPreview() {
     if (busyBuild) return;
     setBusyBuild(true);
@@ -268,22 +300,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       const id = await ensureDraft();
       if (!id) return;
 
-      // Upload photo if local URI
-      if (photoUri && !photoUri.startsWith('http')) {
-        const form = new FormData();
-        form.append('file', {
-          uri: photoUri,
-          name: 'upload.jpg',
-          type: 'image/jpeg',
-        } as any);
-
-        const uploadRes = await api(`/api/projects/${id}/image`, {
-          method: 'POST',
-          body: form,
-        });
-
-        if (uploadRes.ok && uploadRes.data?.url) {
-          console.log('[upload]', uploadRes.data.url);
+      // Upload image if needed before build
+      if (photoUri) {
+        try {
+          const u = await uploadProjectImage(id, photoUri);
+          console.log('[upload]', u);
+        } catch (e) {
+          console.error('image upload failed', e);
+          showToast('Could not upload photo. Please re-select and try again.', 'error');
+          setBusyBuild(false);
+          return;
         }
       }
 
