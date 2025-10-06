@@ -95,7 +95,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function fetchEntitlements() {
     try {
-      const r = await api(`/me/entitlements?user_id=${USER_ID}`);
+      const r = await api(`/me/entitlements/${USER_ID}`);
       setEnts({ 
         previewAllowed: !!r.data?.previewAllowed, 
         remaining: r.data?.remaining 

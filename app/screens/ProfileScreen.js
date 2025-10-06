@@ -110,16 +110,9 @@ export default function ProfileScreen() {
 
   const getEntitlements = React.useCallback(async () => {
     try {
-      const data = await api(`${ENDPOINTS.entitlementsShort}?user_id=${encodeURIComponent(CURRENT_USER_ID)}`);
+      const data = await api(`/me/entitlements/${CURRENT_USER_ID}`);
       setEnts({ tier: data.tier, remaining: data.remaining, previewAllowed: !!data.previewAllowed });
     } catch (err) {
-      if (String(err.message).startsWith('404')) {
-        try {
-          const data = await api(ENDPOINTS.entitlementsWithId(CURRENT_USER_ID));
-          setEnts({ tier: data.tier, remaining: data.remaining, previewAllowed: !!data.previewAllowed });
-          return;
-        } catch (_) {}
-      }
       Alert.alert('Billing', 'Could not load your plan. Use Sync Plan to retry.');
     }
   }, []);
