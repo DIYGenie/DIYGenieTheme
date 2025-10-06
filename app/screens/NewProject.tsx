@@ -10,7 +10,7 @@ import * as Linking from 'expo-linking';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { api } from '../lib/api';
+import { api, apiRaw } from '../lib/api';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -313,30 +313,44 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         }
       }
 
-      // 1) Try POST with no body and no Content-Type (server may require empty body)
-      let r;
+      let r: any = null;
+
+      // Attempt 1: raw POST with NO headers/body (truly empty)
       try {
-        r = await api(`/api/projects/${id}/build-without-preview`, { method: 'POST', headers: {} });
-      } catch (e:any) {
-        // If api() throws due to non-2xx, stash the last error payload if present
-        console.log('[build attempt 1 failed]', e?.message || e);
+        // @ts-ignore
+        r = await apiRaw(`/api/projects/${id}/build-without-preview`, { method: 'POST' });
+      } catch (e) {
+        console.log('[build attempt 1 failed]', (e as any)?.message || e);
       }
 
-      // 2) If still failing with 422 invalid_payload, retry with minimal body { project_id }
+      // Attempt 2: minimal JSON { id }
       if (!r || r.ok === false) {
         try {
-          const r2 = await api(`/api/projects/${id}/build-without-preview`, {
+          r = await api(`/api/projects/${id}/build-without-preview`, {
             method: 'POST',
-            body: JSON.stringify({ project_id: id }),
+            body: JSON.stringify({ id }),
           });
-          r = r2;
-        } catch (e:any) {
-          console.log('[build attempt 2 failed]', e?.message || e);
-          throw e;
+        } catch (e) {
+          console.log('[build attempt 2 failed]', (e as any)?.message || e);
         }
       }
 
-      if (!r.ok) {
+      // Attempt 3: previous enriched payload (project_id, user_id, goal, budget, skill)
+      if (!r || r.ok === false) {
+        const payload = {
+          project_id: id,
+          user_id: USER_ID,
+          goal: (description || '').trim(),
+          budget: (budget || '').trim(),
+          skill: (skillLevel || '').trim(),
+        };
+        r = await api(`/api/projects/${id}/build-without-preview`, {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!r || !r.ok) {
         if (r.status === 403) {
           showToast('You are out of quota. Upgrade from Profile.', 'error');
         } else if (r.status === 422) {

@@ -50,3 +50,25 @@ export async function api(path: string, init: RequestInit = {}) {
   
   return { ok: res.ok, status: res.status, data };
 }
+
+export async function apiRaw(path: string, init: RequestInit = {}) {
+  const base = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:3001';
+  const url = path.startsWith('http') ? path : `${base}${path}`;
+
+  const res = await fetch(url, init); // no default headers here
+
+  if (!res.ok) {
+    let payloadText = '<no body>';
+    try { payloadText = await res.clone().text(); } catch {}
+    console.error('API_RAW_ERROR', {
+      url,
+      method: (init.method || 'GET').toUpperCase(),
+      status: res.status,
+      statusText: res.statusText,
+      payloadText,
+    });
+    throw new Error(`API_RAW ${init.method || 'GET'} ${url} failed: ${res.status}`);
+  }
+  // try JSON, fallback to text
+  try { return await res.json(); } catch { return await res.text(); }
+}
