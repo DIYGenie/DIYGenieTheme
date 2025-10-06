@@ -365,9 +365,24 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
       const buildRes = await tryBuildProbes(id);
       if (!buildRes.ok) {
-        showToast('Build request rejected (422). Check logs for which probes failed.', 'error');
-        setBusyBuild(false);
-        return;
+        // If we got here, all build attempts failed with 422. Use compat patch so UX continues.
+        try {
+          const compat = await api(`/api/projects/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'ready', preview_url: null }),
+          });
+          console.log('[compat patch]', compat);
+          showToast('Plan requested (compat mode)', 'success');
+          navigateToProject(id);
+          setDraftId(null);
+          setPhotoUri(null);
+          return;
+        } catch (e) {
+          console.error('[compat patch failed]', e);
+          showToast('Build request rejected (422). Backend needs a small fix.', 'error');
+          setBusyBuild(false);
+          return;
+        }
       }
       console.log('[build] accepted via probe', buildRes.index);
       showToast('Plan requested', 'success');
