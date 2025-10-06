@@ -313,57 +313,58 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         }
       }
 
-      let r: any = null;
+      async function tryBuildProbes(id: string) {
+        const attempts: Array<() => Promise<any>> = [
+          // A) raw POST with user_id in query, no headers/body
+          () => apiRaw(`/api/projects/${id}/build-without-preview?user_id=${encodeURIComponent(USER_ID)}`, { method: 'POST' }),
 
-      // Attempt 1: raw POST with NO headers/body (truly empty)
-      try {
-        // @ts-ignore
-        r = await apiRaw(`/api/projects/${id}/build-without-preview`, { method: 'POST' });
-      } catch (e) {
-        console.log('[build attempt 1 failed]', (e as any)?.message || e);
-      }
-
-      // Attempt 2: minimal JSON { id }
-      if (!r || r.ok === false) {
-        try {
-          r = await api(`/api/projects/${id}/build-without-preview`, {
+          // B) raw POST with x-user-id header
+          () => apiRaw(`/api/projects/${id}/build-without-preview`, {
             method: 'POST',
-            body: JSON.stringify({ id }),
-          });
-        } catch (e) {
-          console.log('[build attempt 2 failed]', (e as any)?.message || e);
+            headers: { 'x-user-id': USER_ID },
+          }),
+
+          // C) JSON { projectId } camelCase
+          () => api(`/api/projects/${id}/build-without-preview`, {
+            method: 'POST',
+            body: JSON.stringify({ projectId: id }),
+          }),
+
+          // D) JSON { user_id, project_id } snake_case only
+          () => api(`/api/projects/${id}/build-without-preview`, {
+            method: 'POST',
+            body: JSON.stringify({ user_id: USER_ID, project_id: id }),
+          }),
+
+          // E) application/x-www-form-urlencoded (no JSON)
+          () => apiRaw(`/api/projects/${id}/build-without-preview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ user_id: USER_ID, project_id: id }).toString(),
+          }),
+        ];
+
+        for (let i = 0; i < attempts.length; i++) {
+          try {
+            const res = await attempts[i]();
+            console.log(`[build probe ${i+1}] success`, res);
+            return { ok: true, index: i+1, res };
+          } catch (e: any) {
+            console.log(`[build probe ${i+1}] failed`, e?.message || e);
+          }
         }
+        return { ok: false };
       }
 
-      // Attempt 3: previous enriched payload (project_id, user_id, goal, budget, skill)
-      if (!r || r.ok === false) {
-        const payload = {
-          project_id: id,
-          user_id: USER_ID,
-          goal: (description || '').trim(),
-          budget: (budget || '').trim(),
-          skill: (skillLevel || '').trim(),
-        };
-        r = await api(`/api/projects/${id}/build-without-preview`, {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!r || !r.ok) {
-        if (r.status === 403) {
-          showToast('You are out of quota. Upgrade from Profile.', 'error');
-        } else if (r.status === 422) {
-          showToast(r.data?.error || 'Invalid request', 'error');
-        } else {
-          showToast('Could not request build. Try again.', 'error');
-        }
+      const buildRes = await tryBuildProbes(id);
+      if (!buildRes.ok) {
+        showToast('Build request rejected (422). Check logs for which probes failed.', 'error');
+        setBusyBuild(false);
         return;
       }
-
+      console.log('[build] accepted via probe', buildRes.index);
       showToast('Plan requested', 'success');
       navigateToProject(id);
-      // light reset
       setDraftId(null);
       setPhotoUri(null);
     } finally {
