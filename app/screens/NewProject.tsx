@@ -268,11 +268,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       const id = await ensureDraft();
       if (!id) return;
 
-      try {
-        const p = await api(`/api/projects/${id}`);
-        console.log('[project]', p);
-      } catch (e) {
-        console.log('[project] fetch failed', e);
+      // Upload photo if local URI
+      if (photoUri && !photoUri.startsWith('http')) {
+        const form = new FormData();
+        form.append('file', {
+          uri: photoUri,
+          name: 'upload.jpg',
+          type: 'image/jpeg',
+        } as any);
+
+        const uploadRes = await api(`/api/projects/${id}/image`, {
+          method: 'POST',
+          body: form,
+        });
+
+        if (uploadRes.ok && uploadRes.data?.url) {
+          console.log('[upload]', uploadRes.data.url);
+        }
       }
 
       const payload = {
