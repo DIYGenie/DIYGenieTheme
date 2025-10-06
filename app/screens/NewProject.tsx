@@ -44,10 +44,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   // Helper: robust navigation to a project detail, across nested navigators + web
   function goToProject(id: string) {
-    // Try: Projects tab -> ProjectDetail
-    try { navigation.navigate('Projects', { screen: 'ProjectDetail', params: { id } }); return; } catch {}
+    // Try: Projects tab -> ProjectDetails
+    try { navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } }); return; } catch {}
     // Try common standalone detail routes
-    for (const name of ['ProjectDetail', 'OpenPlan', 'Plan', 'ProjectDetails', 'ProjectDetailScreen']) {
+    for (const name of ['ProjectDetails', 'OpenPlan', 'Plan', 'ProjectDetailScreen']) {
       try { navigation.navigate(name as never, { id } as never); return; } catch {}
     }
     // Fallback: go to Projects list
@@ -261,7 +261,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    const tryRoutes = ['ProjectDetail', 'ProjectDetailScreen', 'ProjectDetails', 'ProjectDetailsScreen'];
+    const tryRoutes = ['ProjectDetails', 'ProjectDetailsScreen', 'ProjectDetailScreen'];
     for (const r of tryRoutes) {
       try { navigation.navigate(r as any, { id }); return; } catch {}
     }

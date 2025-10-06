@@ -58,12 +58,12 @@ localPort = 5001
 externalPort = 3003
 
 [[ports]]
-localPort = 33585
-externalPort = 6000
+localPort = 32853
+externalPort = 8081
 
 [[ports]]
-localPort = 34181
-externalPort = 8081
+localPort = 33585
+externalPort = 6000
 
 [[ports]]
 localPort = 35571
