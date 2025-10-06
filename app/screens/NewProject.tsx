@@ -556,16 +556,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   Change photo
                 </Text>
               </TouchableOpacity>
-              
-              <Text style={{ 
-                fontSize: 12, 
-                color: '#6B7280', 
-                textAlign: 'center',
-                marginTop: 8,
-                paddingHorizontal: 20,
-              }}>
-                We'll upload your photo when you generate a preview.
-              </Text>
             </View>
           )}
         </View>
