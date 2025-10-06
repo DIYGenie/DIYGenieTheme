@@ -11,6 +11,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
+import SuggestionsBox from '../components/SuggestionsBox';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -31,6 +32,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
   const [sugsError, setSugsError] = useState<string | undefined>(undefined);
+  const [sugsList, setSugsList] = useState<string[]>([
+    "Try 4 shelves instead of 3 for better vertical balance",
+    "Consider 10–12\" depth if you'll store books or baskets",
+    "Use hidden brackets for a cleaner floating look",
+    "Match shelf stain to the lightest wood tone in the room",
+  ]);
+  const [sugsListLoading, setSugsListLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
@@ -172,6 +180,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       });
     } finally {
       setSugsBusy(false);
+    }
+  }
+
+  async function refreshSuggestions() {
+    try {
+      setSugsListLoading(true);
+      const id = await ensureDraft();
+      if (!id) return;
+      const r = await api(`/api/projects/${id}/suggestions`, { 
+        method: 'POST', 
+        body: JSON.stringify({ user_id: USER_ID }) 
+      });
+      if (r?.data?.suggestions?.length) {
+        setSugsList(r.data.suggestions);
+      }
+    } finally {
+      setSugsListLoading(false);
     }
   }
 
@@ -399,6 +424,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             {description.length}/10 characters minimum
           </Text>
         </View>
+
+        <SuggestionsBox
+          items={sugsList}
+          loading={sugsListLoading}
+          onRefresh={refreshSuggestions}
+          onSelect={(text) => {
+            const next = (description || '').trim();
+            setDescription(next ? `${next}. ${text}` : text);
+          }}
+        />
 
         <View style={styles.budgetFieldWrapper}>
           <View style={styles.fieldContainer}>

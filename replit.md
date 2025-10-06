@@ -26,6 +26,7 @@ The application utilizes a component-based React Native architecture.
 - **Screen Organization**: Screens are self-contained modules handling their own styling and basic state.
 - **Reusable Styling**: Employs consistent base styling patterns across screens using LinearGradient backgrounds and text hierarchies.
 - **AccordionCard Component**: Reusable collapsible card component (`app/components/AccordionCard.js`) that displays a title, item count badge, and expandable content list. Shows first 3 items by default with "+N more" indicator. Supports custom rendering via renderItem prop for specialized layouts (e.g., shopping items with prices). Used in ProjectDetailsScreen for plan sections.
+- **SuggestionsBox Component**: Simple reusable suggestions component (`app/components/SuggestionsBox.tsx`) for displaying AI-generated tips. Renders below description field on New Project screen with 4 starter suggestions. Features refresh button for regenerating tips and click-to-append functionality. Handles loading states and empty states gracefully.
 
 ### Technical Implementations
 - **Backend API Integration**: Includes an Express.js backend server (`server.js`) running on port 3001 with CORS support for managing projects and user entitlements.
