@@ -261,11 +261,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    const tryRoutes = ['ProjectDetails', 'ProjectDetailsScreen', 'ProjectDetailScreen'];
-    for (const r of tryRoutes) {
-      try { navigation.navigate(r as any, { id }); return; } catch {}
+    try {
+      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+    } catch (err) {
+      console.error('Navigation failed:', err);
+      navigation.navigate('Projects' as any);
     }
-    navigation.navigate('Projects' as any);
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {

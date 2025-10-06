@@ -1,13 +1,34 @@
 // app/screens/ProjectDetailsScreen.js
-import React, { useMemo } from 'react';
-import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { SafeAreaView, View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ExpandableCard from '../components/ExpandableCard';
 import { buildPlanFromProject } from '../lib/plan';
+import { api } from '../lib/api';
 
 export default function ProjectDetailsScreen({ route, navigation }) {
-  const project = route?.params?.project || {};
+  const [project, setProject] = useState(route?.params?.project || {});
+  const [loading, setLoading] = useState(false);
   const plan = useMemo(() => buildPlanFromProject(project), [project]);
+
+  useEffect(() => {
+    const projectId = route?.params?.id;
+    if (projectId && !route?.params?.project) {
+      setLoading(true);
+      api(`/api/projects/${projectId}`)
+        .then(({ data }) => {
+          if (data) {
+            setProject(data);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to fetch project:', err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [route?.params?.id, route?.params?.project]);
 
   const previewUsed = !!project?.preview_url || project?.status === 'preview_ready';
 
@@ -21,6 +42,17 @@ export default function ProjectDetailsScreen({ route, navigation }) {
   const handleGetDetailedPlan = () => {
     navigation.navigate('BuildPlan', { projectId: project.id, project });
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#E39A33" />
+          <Text style={styles.loadingText}>Loading project...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -133,6 +165,19 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F6F7FB' },
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 96, flexGrow: 1, minHeight: '100%' },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
 
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   title: { fontSize: 24, fontWeight: '800', color: '#0F172A', flexShrink: 1, paddingRight: 8 },
