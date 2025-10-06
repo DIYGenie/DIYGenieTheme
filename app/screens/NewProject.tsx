@@ -13,6 +13,10 @@ import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import SuggestionsBox from '../components/SuggestionsBox';
 
+function debounce<T extends (...args:any[])=>void>(fn:T, ms=400){
+  let t:any; return (...args:any[])=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+}
+
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
 export default function NewProject({ navigation: navProp }: { navigation?: any }) {
@@ -183,24 +187,37 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
-  async function refreshSuggestions() {
+  const refreshSuggestions = React.useCallback(async () => {
     try {
       setSugsListLoading(true);
       const id = await ensureDraft();
       if (!id) return;
-      const r = await api(`/api/projects/${id}/suggestions`, { 
-        method: 'POST', 
-        body: JSON.stringify({ user_id: USER_ID }) 
-      });
-      if (r?.ok && r?.data?.suggestions?.length) {
+      const r = await api(`/api/projects/${id}/suggestions-smart`, { method: 'POST' });
+      if (r?.ok && r?.data?.suggestions && Array.isArray(r.data.suggestions)) {
         setSugsList(r.data.suggestions);
       }
     } finally {
       setSugsListLoading(false);
     }
-  }
+  }, []);
 
-  // Auto-trigger suggestions when photo is picked and form is valid
+  const refreshSuggestionsDebounced = React.useMemo(() => debounce(refreshSuggestions, 500), [refreshSuggestions]);
+
+  // Auto-trigger suggestions when description changes
+  React.useEffect(() => {
+    if ((description || '').trim().length >= 10) {
+      refreshSuggestionsDebounced();
+    }
+  }, [description]);
+
+  // Auto-trigger suggestions when photo changes
+  React.useEffect(() => {
+    if (photoUri) {
+      refreshSuggestionsDebounced();
+    }
+  }, [photoUri]);
+
+  // Auto-trigger suggestions when photo is picked and form is valid (legacy)
   useEffect(() => {
     if (photoUri && hasValidForm() && !sugs && !sugsBusy) {
       fetchDesignSuggestions();
