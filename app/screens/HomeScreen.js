@@ -13,7 +13,7 @@ import { useUser } from '../lib/useUser';
 function HowItWorksGrid() {
   const items = [
     { id: 1, icon: 'create-outline', label: 'Describe' },
-    { id: 2, icon: 'image-outline', label: 'Add photo / scan' },
+    { id: 2, icon: 'image-outline', label: 'Photo / Room scan' },
     { id: 3, icon: 'sparkles-outline', label: 'AI preview' },
     { id: 4, icon: 'list-outline', label: 'Build plan' },
   ];
@@ -23,11 +23,19 @@ function HowItWorksGrid() {
       <Text style={chipStyles.title}>How it works</Text>
 
       <View style={chipStyles.row}>
-        {items.map((item) => (
-          <TouchableOpacity key={item.id} style={chipStyles.chip} activeOpacity={0.85}>
-            <Ionicons name={item.icon} size={20} color={colors.brand} />
-            <Text style={chipStyles.chipLabel} numberOfLines={1}>{item.label}</Text>
-          </TouchableOpacity>
+        {items.map((item, idx) => (
+          <React.Fragment key={item.id}>
+            <TouchableOpacity style={chipStyles.chip} activeOpacity={0.85}>
+              <Ionicons name={item.icon} size={20} color={colors.brand} />
+              <Text style={chipStyles.chipLabel} numberOfLines={1}>{item.label}</Text>
+            </TouchableOpacity>
+
+            {idx < items.length - 1 && (
+              <View pointerEvents="none" style={chipStyles.arrowWrap}>
+                <Ionicons name="chevron-forward" size={14} color="rgba(110,64,255,0.45)" />
+              </View>
+            )}
+          </React.Fragment>
         ))}
       </View>
     </View>
@@ -265,30 +273,36 @@ const chipWidth = 82;
 const chipStyles = StyleSheet.create({
   wrap: { marginTop: 16 },
   title: { fontSize: 16, fontWeight: '700', color: colors.ink900, marginBottom: 10 },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
+  row: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
   },
   chip: {
-    width: chipWidth,
-    height: 76,
-    backgroundColor: colors.brand50,
-    borderColor: 'rgba(110,64,255,0.12)',
-    borderWidth: 1,
+    width: chipWidth, 
+    height: 76, 
     borderRadius: 12,
-    paddingVertical: 10,
+    backgroundColor: colors.brand50, 
+    borderWidth: 1,
+    borderColor: 'rgba(110,64,255,0.12)',
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 10, 
     paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    marginHorizontal: 2,
   },
   chipLabel: {
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 11, 
+    lineHeight: 14, 
     fontWeight: '600',
-    color: colors.ink700,
-    textAlign: 'center',
-    maxWidth: chipWidth - 12,
+    color: colors.ink700, 
+    textAlign: 'center', 
+    maxWidth: chipWidth - 12, 
+    marginTop: 6,
+  },
+  arrowWrap: { 
+    width: 14, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginHorizontal: 4,
   },
 });
