@@ -10,6 +10,38 @@ import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
+function HowItWorksGrid() {
+  const items = [
+    { id: 1, icon: 'create-outline', label: 'Describe' },
+    { id: 2, icon: 'image-outline', label: 'Add photo / scan' },
+    { id: 3, icon: 'sparkles-outline', label: 'Suggestions' },
+    { id: 4, icon: 'list-circle-outline', label: 'Build plan' },
+  ];
+
+  return (
+    <View style={gridStyles.wrap}>
+      <Text style={gridStyles.title}>How it works</Text>
+      <View style={gridStyles.grid}>
+        {items.map(({ id, icon, label }) => (
+          <View
+            key={id}
+            testID={`how-card-${id}`}
+            accessibilityRole="summary"
+            style={gridStyles.card}
+          >
+            <View style={gridStyles.iconWrap}>
+              <Ionicons name={icon} size={28} color={colors.brand700} />
+            </View>
+            <Text style={gridStyles.cardLabel} numberOfLines={2}>
+              {label}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen({ navigation }) {
   const { userId } = useUser();
   const isFocused = useIsFocused();
@@ -61,21 +93,8 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* How it works section */}
-        <View style={styles.howItWorksSection}>
-          <Text style={styles.howItWorksTitle}>How it works</Text>
-          {[
-            { id: 1, icon: 'create-outline', label: 'Describe your project' },
-            { id: 2, icon: 'image-outline', label: 'Add a room photo or scan' },
-            { id: 3, icon: 'sparkles-outline', label: 'Get smart suggestions' },
-            { id: 4, icon: 'list-circle-outline', label: 'Generate your build plan' },
-          ].map(({ id, icon, label }) => (
-            <View key={id} testID={`how-step-${id}`} style={styles.howStep}>
-              <Ionicons name={icon} size={20} color={colors.brand700} style={styles.howStepIcon} />
-              <Text style={styles.howStepText}>{label}</Text>
-            </View>
-          ))}
-        </View>
+        {/* How it works grid */}
+        <HowItWorksGrid />
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -240,39 +259,61 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     fontFamily: typography.fontFamily.manropeBold,
   },
-  howItWorksSection: {
-    marginTop: 0,
-    marginBottom: 32,
-  },
-  howItWorksTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-    color: '#111',
-    fontFamily: typography.fontFamily.manropeBold,
-  },
-  howStep: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    backgroundColor: colors.brand50,
-    marginBottom: 8,
-  },
-  howStepIcon: {
-    marginRight: 10,
-  },
-  howStepText: {
-    fontSize: 14,
-    color: '#222',
-    fontFamily: typography.fontFamily.inter,
-  },
   emptyText: {
     fontSize: 14,
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 24,
+  },
+});
+
+const gridStyles = StyleSheet.create({
+  wrap: { 
+    marginTop: 20,
+    paddingHorizontal: 24,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.ink900,
+    marginBottom: 12,
+    fontFamily: typography.fontFamily.manropeBold,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    width: '48%',
+    aspectRatio: 1,
+    backgroundColor: colors.brand50,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    shadowColor: colors.brand,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  cardLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink600,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.inter,
   },
 });
