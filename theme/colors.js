@@ -44,4 +44,12 @@ export const colors = {
   tabActive: '#0F172A',
   tabInactive: '#64748B',
   tabBackground: 'rgba(255, 255, 255, 0.95)',
+  
+  // CTA colors
+  brand: '#6E40FF',
+  brand600: '#6E40FF',
+  brand700: '#5A2EE8',
+  brand50: '#F2ECFF',
+  onBrand: '#FFFFFF',
+  ctaShadow: 'rgba(110,64,255,0.28)',
 };
