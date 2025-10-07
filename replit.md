@@ -22,7 +22,7 @@ Key components include:
 
 ### Technical Implementations
 - **Backend API Integration**: Uses an Express.js backend server (`server.js`) for managing projects and entitlements, with direct fetch calls for API operations.
-- **Image Upload**: Server-side image upload via multer to Supabase Storage, with a permission-free photo picker using `ImagePicker.launchImageLibraryAsync()`.
+- **Image Upload**: Dual upload system: Server-side via multer for project images, and direct client-side upload to Supabase Storage for room scans. Client-side scans use `saveRoomScan` utility to upload to `room-scans` bucket and track in `public.room_scans` table with metadata (source, device, dimensions). Includes permission-free photo picker using `ImagePicker.launchImageLibraryAsync()` and expo-file-system for base64 conversion.
 - **New Project Screen (`NewProject.tsx`)**: Guides users through project creation, including `Smart Suggestions` (context-aware tips based on project details) and `Design Suggestions` (beta). It handles project creation, preview generation, and building without preview, with form validation and reset logic. Supports deep-linking from HomeScreen chips to focus/scroll to specific sections (desc, media, preview, plan). Preview generation enabled when either description ≥10 chars OR room photo exists (with entitlement check).
 - **Project Details Screen**: Displays project information using expandable `AccordionCard` components for plan sections (Overview, Materials, Steps, Shopping). It supports navigation via project ID or object.
 - **Plan Tabs Screen**: A modern tabbed interface with swipeable tabs for Overview, Materials, Tools, and AI Tips, using deterministic stub data.

@@ -14,6 +14,7 @@ import { api, apiRaw } from '../lib/api';
 import PromptApplyModal from '../components/PromptApplyModal';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { subscribeScanPhoto } from '../lib/scanEvents';
+import { saveRoomScan } from '../features/scans/saveRoomScan';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -31,6 +32,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyBuild, setBusyBuild] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   const [sugs, setSugs] = useState<any>(null);
   const [sugsBusy, setSugsBusy] = useState(false);
@@ -161,20 +163,22 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   // Subscribe to scan photo events
   useEffect(() => {
-    const subscription = subscribeScanPhoto((uri) => {
+    const subscription = subscribeScanPhoto(async (uri) => {
       setPhotoUri(uri);
       if (route.params?.fromScan) {
         showToast('Room photo added', 'success');
       }
+      await uploadPhotoToSupabase(uri, 'scan');
     });
     return () => subscription.remove();
-  }, []);
+  }, [draftId]);
 
   // Handle photo from scan navigation params
   useEffect(() => {
     if (route.params?.photoUri && route.params?.fromScan) {
       setPhotoUri(route.params.photoUri);
       showToast('Room photo added', 'success');
+      uploadPhotoToSupabase(route.params.photoUri, 'scan');
       // Clear params to avoid re-triggering
       navigation.setParams({ photoUri: undefined, fromScan: undefined } as any);
     }
@@ -310,11 +314,34 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return uri;
   }
 
+  async function uploadPhotoToSupabase(uri: string, source: 'scan' | 'upload') {
+    if (Platform.OS === 'web' && uri.startsWith('data:')) {
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const res = await saveRoomScan({
+        uri,
+        source,
+        projectId: draftId ?? null,
+        userId: USER_ID ?? null,
+      });
+      console.log('[scan saved]', res);
+      showToast('Photo saved', 'success');
+    } catch (e) {
+      console.error('[upload failed]', e);
+      showToast('Upload failed', 'error');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const onUploadPhoto = async () => {
     try {
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
-      // Auto-trigger handled by useEffect
+      await uploadPhotoToSupabase(uri, 'upload');
     } catch (err: any) {
       Alert.alert('Photo picker', err?.message || 'Could not select photo');
     }
@@ -640,6 +667,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <Pressable
               testID="np-photo-preview"
               onPress={onUploadPhoto}
+              disabled={uploading}
               style={{ 
                 borderRadius: 16, 
                 overflow: 'hidden', 
@@ -656,13 +684,27 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 }} 
                 resizeMode="cover"
               />
+              {uploading && (
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                </View>
+              )}
               <View style={{ 
                 padding: 12, 
                 alignItems: 'flex-end',
                 backgroundColor: '#FFFFFF',
               }}>
                 <Text style={{ color: brand.primary, fontSize: 14, fontWeight: '600' }}>
-                  Change photo
+                  {uploading ? 'Uploading...' : 'Change photo'}
                 </Text>
               </View>
             </Pressable>
