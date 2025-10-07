@@ -30,7 +30,7 @@ Key components include:
 - **Error Handling**: Comprehensive API and storage error handling, including specific messages for quota and permission errors.
 - **ProfileScreen & Billing Integration**: Manages user entitlements, current plans (Free, Casual, Pro), and integrates with Stripe for subscription management, including visual feedback for syncing.
 - **UX Enhancements**: Includes custom toast notifications, debounce hook for CTAs, haptic feedback, detailed loading states, and a health ping system for backend availability.
-- **HomeScreen "How it works"**: Responsive chip-based flow visualization with dynamic width calculation and adaptive labels for small screens. Each chip deep-links to NewProject with focus/scroll to relevant section: Describe → desc input focus, Room scan → photo picker, AI preview → suggestions card scroll, Build plan → action buttons scroll.
+- **HomeScreen "How it works"**: Clean 2×2 tile grid layout (4 tiles, 2 per row). No arrows. Each tile uses 48% width with flexWrap for responsive wrapping. Icons: Describe (create-outline), Scan (image-outline), Preview (sparkles-outline), Build (hammer from MaterialCommunityIcons). Each tile deep-links to NewProject with focus/scroll to relevant section: Describe → desc input focus, Scan → photo picker, Preview → suggestions card scroll, Build → action buttons scroll. Styling: soft lavender card (#F4F1FF), rounded (14px), subtle shadow, purple icons (#5B39F5).
 
 ## External Dependencies
 

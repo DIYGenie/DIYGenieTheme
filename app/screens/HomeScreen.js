@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
@@ -10,57 +10,51 @@ import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
-function HowItWorksGrid({ navigation }) {
-  const { width } = useWindowDimensions();
-  const isCompact = width < 380;
-
-  const items = [
-    { icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe', a11yHint: 'Focus on project description field' },
-    { icon: 'image-outline', label: 'Scan', section: 'media', a11yLabel: 'Scan', a11yHint: 'Open room scanner or choose a photo on web' },
-    { icon: 'sparkles-outline', label: 'Preview', section: 'preview', a11yLabel: 'Preview', a11yHint: 'Scroll to design suggestions' },
-    { icon: 'list-outline', label: 'Build', section: 'plan', a11yLabel: 'Build', a11yHint: 'Scroll to plan creation buttons' },
-  ];
-
-  const Sep = () => (
-    <View style={chipStyles.sep}>
-      <Text style={chipStyles.sepText}>›</Text>
-    </View>
+function HowItWorks({ navigation }) {
+  const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
+    <TouchableOpacity
+      style={hiwStyles.chip}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('NewProject', { section })}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={a11yHint}
+      accessibilityRole="button"
+    >
+      {icon}
+      <Text style={hiwStyles.label}>{label}</Text>
+    </TouchableOpacity>
   );
 
   return (
-    <View style={chipStyles.wrap}>
-      <Text style={chipStyles.title}>How it works</Text>
-
-      <View style={[chipStyles.howRow, { paddingHorizontal: 16, gap: 8 }]}>
-        {items.map((item, i) => (
-          <React.Fragment key={item.label}>
-            <View style={chipStyles.chipSlot}>
-              <TouchableOpacity
-                style={chipStyles.chip}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('NewProject', { section: item.section })}
-                accessibilityLabel={item.a11yLabel}
-                accessibilityHint={item.a11yHint}
-                accessibilityRole="button"
-              >
-                <View style={{ marginBottom: 4 }}>
-                  <Ionicons name={item.icon} size={18} color={colors.brand} />
-                </View>
-                <Text
-                  numberOfLines={1}
-                  ellipsizeMode="clip"
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.9}
-                  style={[chipStyles.chipLabel, { flexShrink: 1 }]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {i < items.length - 1 && <Sep />}
-          </React.Fragment>
-        ))}
-      </View>
+    <View style={hiwStyles.wrap}>
+      <Chip 
+        icon={<Ionicons name="create-outline" size={18} color="#5B39F5" />} 
+        label="Describe" 
+        section="desc"
+        a11yLabel="Describe"
+        a11yHint="Focus on project description field"
+      />
+      <Chip 
+        icon={<Ionicons name="image-outline" size={18} color="#5B39F5" />} 
+        label="Scan" 
+        section="media"
+        a11yLabel="Scan"
+        a11yHint="Open room scanner or choose a photo on web"
+      />
+      <Chip 
+        icon={<Ionicons name="sparkles-outline" size={18} color="#5B39F5" />} 
+        label="Preview" 
+        section="preview"
+        a11yLabel="Preview"
+        a11yHint="Scroll to design suggestions"
+      />
+      <Chip 
+        icon={<MaterialCommunityIcons name="hammer" size={18} color="#5B39F5" />} 
+        label="Build" 
+        section="plan"
+        a11yLabel="Build"
+        a11yHint="Scroll to plan creation buttons"
+      />
     </View>
   );
 }
@@ -104,7 +98,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
 
         {/* How it works grid */}
-        <HowItWorksGrid navigation={navigation} />
+        <HowItWorks navigation={navigation} />
 
         {/* CTA Button */}
         <TouchableOpacity testID="home-cta" style={styles.startProjectButton} onPress={handleNewProject}>
@@ -258,51 +252,35 @@ const styles = StyleSheet.create({
   },
 });
 
-const chipStyles = StyleSheet.create({
-  wrap: { 
-    marginTop: 0,
-  },
-  title: { 
-    fontSize: 16, 
-    fontWeight: '700', 
-    color: colors.ink900, 
-    marginTop: 8,
-    marginBottom: 10,
-  },
-  howRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+const hiwStyles = StyleSheet.create({
+  wrap: {
     marginTop: 8,
     marginBottom: 12,
-  },
-  chipSlot: {
-    flex: 1,
-    minWidth: 0,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
   },
   chip: {
-    borderRadius: 12,
+    width: '48%',
+    minHeight: 56,
+    backgroundColor: '#F4F1FF',
+    borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(138, 92, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(138,92,255,0.15)',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
-  chipLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.ink700,
-    textAlign: 'center',
-  },
-  sep: {
-    width: 10,
-    alignItems: 'center',
-  },
-  sepText: {
-    opacity: 0.45,
-    fontSize: 14,
-    lineHeight: 14,
-    color: colors.ink700,
+  label: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#1B133C',
   },
 });
