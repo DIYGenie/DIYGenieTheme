@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   popularBadge: {
-    backgroundColor: '#6F4BFF',
+    backgroundColor: brand.primary300,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   popularBadgeText: {
     fontSize: 11,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#FFFFFF',
+    color: brand.primary700,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

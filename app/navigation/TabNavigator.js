@@ -31,7 +31,7 @@ function ProjectsStack() {
 function TabBarBackground() {
   return (
     <LinearGradient
-      colors={[colors.gradientStart, colors.gradientEnd]}
+      colors={['#5B2ED1', '#B39DFF']}
       style={StyleSheet.absoluteFillObject}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
