@@ -23,13 +23,14 @@ Key components include:
 ### Technical Implementations
 - **Backend API Integration**: Uses an Express.js backend server (`server.js`) for managing projects and entitlements, with direct fetch calls for API operations.
 - **Image Upload**: Server-side image upload via multer to Supabase Storage, with a permission-free photo picker using `ImagePicker.launchImageLibraryAsync()`.
-- **New Project Screen (`NewProject.tsx`)**: Guides users through project creation, including `Smart Suggestions` (context-aware tips based on project details) and `Design Suggestions` (beta). It handles project creation, preview generation, and building without preview, with form validation and reset logic.
+- **New Project Screen (`NewProject.tsx`)**: Guides users through project creation, including `Smart Suggestions` (context-aware tips based on project details) and `Design Suggestions` (beta). It handles project creation, preview generation, and building without preview, with form validation and reset logic. Supports deep-linking from HomeScreen chips to focus/scroll to specific sections (desc, media, preview, plan).
 - **Project Details Screen**: Displays project information using expandable `AccordionCard` components for plan sections (Overview, Materials, Steps, Shopping). It supports navigation via project ID or object.
 - **Plan Tabs Screen**: A modern tabbed interface with swipeable tabs for Overview, Materials, Tools, and AI Tips, using deterministic stub data.
 - **Authentication**: Utilizes Supabase Auth, with a development mode fallback.
 - **Error Handling**: Comprehensive API and storage error handling, including specific messages for quota and permission errors.
 - **ProfileScreen & Billing Integration**: Manages user entitlements, current plans (Free, Casual, Pro), and integrates with Stripe for subscription management, including visual feedback for syncing.
 - **UX Enhancements**: Includes custom toast notifications, debounce hook for CTAs, haptic feedback, detailed loading states, and a health ping system for backend availability.
+- **HomeScreen "How it works"**: Responsive chip-based flow visualization with dynamic width calculation and adaptive labels for small screens. Each chip deep-links to NewProject with focus/scroll to relevant section: Describe → desc input focus, Room scan → photo picker, AI preview → suggestions card scroll, Build plan → action buttons scroll.
 
 ## External Dependencies
 

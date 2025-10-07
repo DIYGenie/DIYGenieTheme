@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +18,7 @@ const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-
 
 export default function NewProject({ navigation: navProp }: { navigation?: any }) {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [skillLevel, setSkillLevel] = useState('');
@@ -40,6 +41,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+
+  const scrollRef = React.useRef<ScrollView>(null);
+  const descRef = React.useRef<TextInput>(null);
+  const sugRef = React.useRef<View>(null);
+  const ctaRef = React.useRef<View>(null);
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -151,6 +157,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     });
     return unsubscribe;
   }, [navigation, draftId]);
+
+  // Handle section deep-link parameter
+  const section = route.params?.section as 'desc' | 'media' | 'preview' | 'plan' | undefined;
+
+  const scrollToView = (ref: React.RefObject<View>) => {
+    ref.current?.measureLayout(
+      findNodeHandle(scrollRef.current) as number,
+      (x, y) => scrollRef.current?.scrollTo({ y: Math.max(y - 24, 0), animated: true }),
+      () => {}
+    );
+  };
+
+  useEffect(() => {
+    if (!section) return;
+    const t = setTimeout(() => {
+      switch (section) {
+        case 'desc':
+          descRef.current?.focus();
+          break;
+        case 'media':
+          onUploadPhoto();
+          break;
+        case 'preview':
+          scrollToView(sugRef);
+          break;
+        case 'plan':
+          scrollToView(ctaRef);
+          break;
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [section]);
 
   async function ensureDraft() {
     if (draftId) return draftId;
@@ -378,6 +416,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView 
+        ref={scrollRef}
         style={styles.scrollView} 
         contentContainerStyle={{
           paddingHorizontal: spacing.lg,
@@ -395,6 +434,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         <View style={styles.fieldContainer}>
           <Text style={styles.fieldLabel}>Project Description</Text>
           <TextInput
+            ref={descRef}
             style={[styles.textArea, { height: 84 }]}
             value={description}
             onChangeText={setDescription}
@@ -578,6 +618,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
         {(!!photoUri || (description?.trim().length ?? 0) >= 10) && (
           <View 
+            ref={sugRef}
             testID="np-suggestions-card"
             style={styles.suggestionsCard}
           >
@@ -629,7 +670,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         )}
 
         {hasValidForm() && (
-          <View style={{ marginTop: 20 }}>
+          <View ref={ctaRef} style={{ marginTop: 20 }}>
             <PrimaryButton
               testID="np-generate-preview"
               title="Generate AI Preview"

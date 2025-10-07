@@ -17,12 +17,12 @@ const sidePad = 24 * 2;
 const chipWidth = Math.max(74, Math.floor((screenW - arrowsW - gapsW - sidePad) / 4));
 const isNarrow = screenW < 390;
 
-function HowItWorksGrid() {
+function HowItWorksGrid({ navigation }) {
   const items = [
-    { id: 1, icon: 'create-outline', label: 'Describe' },
-    { id: 2, icon: 'image-outline', label: isNarrow ? 'Room scan' : 'Photo / Room scan' },
-    { id: 3, icon: 'sparkles-outline', label: 'AI preview' },
-    { id: 4, icon: 'list-outline', label: 'Build plan' },
+    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc' },
+    { id: 2, icon: 'image-outline', label: isNarrow ? 'Room scan' : 'Photo / Room scan', section: 'media' },
+    { id: 3, icon: 'sparkles-outline', label: 'AI preview', section: 'preview' },
+    { id: 4, icon: 'list-outline', label: 'Build plan', section: 'plan' },
   ];
 
   return (
@@ -32,7 +32,11 @@ function HowItWorksGrid() {
       <View style={chipStyles.row}>
         {items.map((item, idx) => (
           <React.Fragment key={item.id}>
-            <TouchableOpacity style={[chipStyles.chip, { width: chipWidth }]} activeOpacity={0.85}>
+            <TouchableOpacity 
+              style={[chipStyles.chip, { width: chipWidth }]} 
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('NewProject', { section: item.section })}
+            >
               <Ionicons name={item.icon} size={18} color={colors.brand} />
               <Text style={[chipStyles.chipLabel, { maxWidth: chipWidth - 12 }]} numberOfLines={1}>
                 {item.label}
@@ -103,7 +107,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* How it works grid */}
-        <HowItWorksGrid />
+        <HowItWorksGrid navigation={navigation} />
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
