@@ -34,28 +34,28 @@ function HowItWorks({ navigation }) {
       <Text style={hiwStyles.title}>How it works</Text>
       <View style={hiwStyles.grid}>
         <Tile 
-          icon={<Ionicons name="create-outline" size={18} color="#5B39F5" />} 
+          icon={<Ionicons name="create-outline" size={20} color="#5B39F5" />} 
           label="Describe" 
           onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
           a11yLabel="Describe"
           a11yHint="Focus on project description field"
         />
         <Tile 
-          icon={<Ionicons name="image-outline" size={18} color="#5B39F5" />} 
+          icon={<Ionicons name="image-outline" size={20} color="#5B39F5" />} 
           label="Scan" 
           onPress={() => navigation.navigate('NewProject', { section: 'media' })}
           a11yLabel="Scan"
           a11yHint="Open room scanner or choose a photo on web"
         />
         <Tile 
-          icon={<Ionicons name="sparkles-outline" size={18} color="#5B39F5" />} 
+          icon={<Ionicons name="sparkles-outline" size={20} color="#5B39F5" />} 
           label="Preview" 
           onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
           a11yLabel="Preview"
           a11yHint="Scroll to design suggestions"
         />
         <Tile 
-          icon={<MaterialCommunityIcons name="hammer" size={18} color="#5B39F5" />} 
+          icon={<MaterialCommunityIcons name="hammer" size={20} color="#5B39F5" />} 
           label="Build" 
           onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
           a11yLabel="Build"
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: typography.fontFamily.interMedium,
     color: 'rgba(15,23,42,0.6)',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   startProjectButton: {
     height: 56,
@@ -193,7 +193,6 @@ const styles = StyleSheet.create({
     elevation: 6,
     width: '100%',
     paddingHorizontal: 32,
-    marginTop: 16,
   },
   startProjectText: {
     color: colors.onBrand,
@@ -262,7 +261,7 @@ const styles = StyleSheet.create({
 const hiwStyles = StyleSheet.create({
   section: { 
     marginTop: 4, 
-    marginBottom: 12, 
+    marginBottom: 16, 
     paddingHorizontal: 16,
   },
   title: { 
@@ -275,17 +274,17 @@ const hiwStyles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 10,
+    rowGap: 12,
   },
   tile: {
     width: '48%',
     minHeight: 56,
-    borderRadius: 12,
-    backgroundColor: '#F7F5FF',
+    borderRadius: 14,
+    backgroundColor: '#F6F3FF',
     borderWidth: 1,
-    borderColor: '#E7E3FF',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderColor: '#E9E3FF',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -296,8 +295,10 @@ const hiwStyles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   tileLabel: { 
-    fontSize: 13, 
+    fontSize: 14, 
     fontWeight: '600', 
-    color: '#1B133C',
+    color: '#2B2240',
+    letterSpacing: 0.15,
+    textAlign: 'center',
   },
 });
