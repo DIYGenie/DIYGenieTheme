@@ -21,34 +21,44 @@ function HowItWorksGrid({ navigation }) {
     { icon: 'list-outline', label: 'Build', section: 'plan', a11yLabel: 'Build', a11yHint: 'Scroll to plan creation buttons' },
   ];
 
+  const Sep = () => (
+    <View style={chipStyles.sep}>
+      <Text style={chipStyles.sepText}>›</Text>
+    </View>
+  );
+
   return (
     <View style={chipStyles.wrap}>
       <Text style={chipStyles.title}>How it works</Text>
 
       <View style={[chipStyles.howRow, { paddingHorizontal: 16, gap: 8 }]}>
         {items.map((item, i) => (
-          <View key={item.label} style={chipStyles.howSlot}>
-            <TouchableOpacity
-              style={[chipStyles.chip, isCompact && chipStyles.chipCompact]}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('NewProject', { section: item.section })}
-              accessibilityLabel={item.a11yLabel}
-              accessibilityHint={item.a11yHint}
-              accessibilityRole="button"
-            >
-              <View style={{ marginBottom: 4 }}>
-                <Ionicons name={item.icon} size={18} color={colors.brand} />
-              </View>
-              <Text
-                numberOfLines={1}
-                ellipsizeMode="clip"
-                allowFontScaling={false}
-                style={[chipStyles.chipLabel, isCompact && chipStyles.chipLabelCompact]}
+          <React.Fragment key={item.label}>
+            <View style={chipStyles.chipSlot}>
+              <TouchableOpacity
+                style={chipStyles.chip}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('NewProject', { section: item.section })}
+                accessibilityLabel={item.a11yLabel}
+                accessibilityHint={item.a11yHint}
+                accessibilityRole="button"
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <View style={{ marginBottom: 4 }}>
+                  <Ionicons name={item.icon} size={18} color={colors.brand} />
+                </View>
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="clip"
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.9}
+                  style={[chipStyles.chipLabel, { flexShrink: 1 }]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {i < items.length - 1 && <Sep />}
+          </React.Fragment>
         ))}
       </View>
     </View>
@@ -265,7 +275,7 @@ const chipStyles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
-  howSlot: {
+  chipSlot: {
     flex: 1,
     minWidth: 0,
   },
@@ -279,17 +289,20 @@ const chipStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(138,92,255,0.15)',
   },
-  chipCompact: {
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
   chipLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.ink700,
     textAlign: 'center',
   },
-  chipLabelCompact: {
-    fontSize: 12,
+  sep: {
+    width: 10,
+    alignItems: 'center',
+  },
+  sepText: {
+    opacity: 0.45,
+    fontSize: 14,
+    lineHeight: 14,
+    color: colors.ink700,
   },
 });
