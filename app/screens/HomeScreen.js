@@ -1,65 +1,44 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
+import HowItWorksTile from '../components/HowItWorksTile';
 
 function HowItWorks({ navigation }) {
-  const Tile = ({ icon, label, onPress, a11yLabel, a11yHint }) => (
-    <Pressable
-      style={({ pressed }) => [
-        hiwStyles.tile, 
-        pressed && hiwStyles.tilePressed
-      ]}
-      onPress={onPress}
-      hitSlop={8}
-      accessibilityLabel={a11yLabel}
-      accessibilityHint={a11yHint}
-      accessibilityRole="button"
-      android_ripple={{ color: '#E9E2FF' }}
-    >
-      {icon}
-      <Text style={hiwStyles.tileLabel}>{label}</Text>
-    </Pressable>
-  );
-
   return (
     <View style={hiwStyles.section}>
       <Text style={hiwStyles.title}>How it works</Text>
       <View style={hiwStyles.grid}>
-        <Tile 
-          icon={<Ionicons name="create-outline" size={20} color="#5B39F5" />} 
-          label="Describe" 
+        <HowItWorksTile
+          icon="create-outline"
+          label="Describe"
+          a11yLabel="Describe your project"
           onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
-          a11yLabel="Describe"
-          a11yHint="Focus on project description field"
         />
-        <Tile 
-          icon={<Ionicons name="image-outline" size={20} color="#5B39F5" />} 
-          label="Scan" 
+        <HowItWorksTile
+          icon="scan-outline"
+          label="Scan"
+          a11yLabel="Scan your room"
           onPress={() => navigation.navigate('NewProject', { section: 'media' })}
-          a11yLabel="Scan"
-          a11yHint="Open room scanner or choose a photo on web"
         />
-        <Tile 
-          icon={<Ionicons name="sparkles-outline" size={20} color="#5B39F5" />} 
-          label="Preview" 
+        <HowItWorksTile
+          icon="sparkles-outline"
+          label="Preview"
+          a11yLabel="Preview your design"
           onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
-          a11yLabel="Preview"
-          a11yHint="Scroll to design suggestions"
         />
-        <Tile 
-          icon={<MaterialCommunityIcons name="hammer" size={20} color="#5B39F5" />} 
-          label="Build" 
+        <HowItWorksTile
+          icon="hammer-outline"
+          label="Build"
+          a11yLabel="Open build plan"
           onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
-          a11yLabel="Build"
-          a11yHint="Scroll to plan creation buttons"
         />
       </View>
     </View>
@@ -108,7 +87,13 @@ export default function HomeScreen({ navigation }) {
         <HowItWorks navigation={navigation} />
 
         {/* CTA Button */}
-        <TouchableOpacity testID="home-cta" style={styles.startProjectButton} onPress={handleNewProject}>
+        <TouchableOpacity 
+          testID="home-cta" 
+          style={styles.startProjectButton} 
+          onPress={handleNewProject}
+          accessibilityRole="button"
+          accessibilityLabel="Start a new project"
+        >
           <Text style={styles.startProjectText}>Start a New Project</Text>
         </TouchableOpacity>
 
@@ -178,7 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: typography.fontFamily.interMedium,
     color: 'rgba(15,23,42,0.6)',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   startProjectButton: {
     height: 56,
@@ -222,10 +207,10 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
   },
   thumbnailPlaceholder: {
     width: 56,
@@ -260,45 +245,20 @@ const styles = StyleSheet.create({
 
 const hiwStyles = StyleSheet.create({
   section: { 
-    marginTop: 4, 
-    marginBottom: 16, 
+    marginTop: 8, 
+    marginBottom: 20, 
     paddingHorizontal: 16,
   },
   title: { 
     fontSize: 16, 
     fontWeight: '700', 
     color: '#1B133C', 
-    marginBottom: 8,
+    marginBottom: 10,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 12,
-  },
-  tile: {
-    width: '48%',
-    minHeight: 56,
-    borderRadius: 14,
-    backgroundColor: '#F6F3FF',
-    borderWidth: 1,
-    borderColor: '#E9E3FF',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  tilePressed: { 
-    backgroundColor: '#EEE9FF',
-    transform: [{ scale: 0.98 }],
-  },
-  tileLabel: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: '#2B2240',
-    letterSpacing: 0.15,
-    textAlign: 'center',
   },
 });
