@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,10 +10,17 @@ import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
+const screenW = Dimensions.get('window').width;
+const arrowsW = 10 * 3;
+const gapsW   = 8  * 3;
+const sidePad = 24 * 2;
+const chipWidth = Math.max(74, Math.floor((screenW - arrowsW - gapsW - sidePad) / 4));
+const isNarrow = screenW < 390;
+
 function HowItWorksGrid() {
   const items = [
     { id: 1, icon: 'create-outline', label: 'Describe' },
-    { id: 2, icon: 'image-outline', label: 'Photo / Room scan' },
+    { id: 2, icon: 'image-outline', label: isNarrow ? 'Room scan' : 'Photo / Room scan' },
     { id: 3, icon: 'sparkles-outline', label: 'AI preview' },
     { id: 4, icon: 'list-outline', label: 'Build plan' },
   ];
@@ -25,14 +32,16 @@ function HowItWorksGrid() {
       <View style={chipStyles.row}>
         {items.map((item, idx) => (
           <React.Fragment key={item.id}>
-            <TouchableOpacity style={chipStyles.chip} activeOpacity={0.85}>
-              <Ionicons name={item.icon} size={20} color={colors.brand} />
-              <Text style={chipStyles.chipLabel} numberOfLines={1}>{item.label}</Text>
+            <TouchableOpacity style={[chipStyles.chip, { width: chipWidth }]} activeOpacity={0.85}>
+              <Ionicons name={item.icon} size={18} color={colors.brand} />
+              <Text style={[chipStyles.chipLabel, { maxWidth: chipWidth - 12 }]} numberOfLines={1}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
 
             {idx < items.length - 1 && (
               <View pointerEvents="none" style={chipStyles.arrowWrap}>
-                <Ionicons name="chevron-forward" size={14} color="rgba(110,64,255,0.45)" />
+                <Ionicons name="chevron-forward" size={12} color="rgba(110,64,255,0.45)" />
               </View>
             )}
           </React.Fragment>
@@ -268,39 +277,35 @@ const styles = StyleSheet.create({
   },
 });
 
-const chipWidth = 82;
-
 const chipStyles = StyleSheet.create({
   wrap: { marginTop: 16 },
   title: { fontSize: 16, fontWeight: '700', color: colors.ink900, marginBottom: 10 },
   row: { 
     flexDirection: 'row', 
-    alignItems: 'center',
+    alignItems: 'center', 
+    justifyContent: 'space-between',
   },
   chip: {
-    width: chipWidth, 
-    height: 76, 
+    height: 64, 
     borderRadius: 12,
     backgroundColor: colors.brand50, 
     borderWidth: 1,
     borderColor: 'rgba(110,64,255,0.12)',
     alignItems: 'center', 
     justifyContent: 'center', 
-    paddingVertical: 10, 
-    paddingHorizontal: 8,
-    marginHorizontal: 2,
+    paddingVertical: 8, 
+    paddingHorizontal: 6,
   },
-  chipLabel: {
-    fontSize: 11, 
-    lineHeight: 14, 
-    fontWeight: '600',
+  chipLabel: { 
+    fontSize: 10, 
+    lineHeight: 13, 
+    fontWeight: '600', 
     color: colors.ink700, 
-    textAlign: 'center', 
-    maxWidth: chipWidth - 12, 
-    marginTop: 6,
+    marginTop: 6, 
+    textAlign: 'center',
   },
   arrowWrap: { 
-    width: 14, 
+    width: 10, 
     alignItems: 'center', 
     justifyContent: 'center', 
     marginHorizontal: 4,
