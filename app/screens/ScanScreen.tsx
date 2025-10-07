@@ -85,7 +85,7 @@ export default function ScanScreen() {
   const usePhoto = () => {
     if (photoUri) {
       emitScanPhoto(photoUri);
-      navigation.goBack();
+      (navigation as any).navigate('NewProject', { photoUri, fromScan: true });
     }
   };
 

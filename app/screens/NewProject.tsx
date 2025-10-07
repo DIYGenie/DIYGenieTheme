@@ -163,9 +163,22 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   useEffect(() => {
     const subscription = subscribeScanPhoto((uri) => {
       setPhotoUri(uri);
+      if (route.params?.fromScan) {
+        showToast('Room photo added', 'success');
+      }
     });
     return () => subscription.remove();
   }, []);
+
+  // Handle photo from scan navigation params
+  useEffect(() => {
+    if (route.params?.photoUri && route.params?.fromScan) {
+      setPhotoUri(route.params.photoUri);
+      showToast('Room photo added', 'success');
+      // Clear params to avoid re-triggering
+      navigation.setParams({ photoUri: undefined, fromScan: undefined } as any);
+    }
+  }, [route.params?.photoUri, route.params?.fromScan]);
 
   // Handle section deep-link parameter
   const section = route.params?.section as 'desc' | 'media' | 'preview' | 'plan' | undefined;
@@ -308,7 +321,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   };
 
   async function generatePreview() {
-    if (!hasValidForm() || !photoUri || !canPreview || busy) return;
+    const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
+    const canGenerate = (descriptionOk || !!photoUri) && canPreview;
+    
+    if (!canGenerate || busy) return;
     
     setBusy(true);
     try {
@@ -706,36 +722,45 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           </View>
         )}
 
-        {hasValidForm() && (
+        {(hasValidForm() || !!photoUri) && (
           <View ref={ctaRef} style={{ marginTop: 20 }}>
-            <PrimaryButton
-              testID="np-generate-preview"
-              title="Generate AI Preview"
-              onPress={generatePreview}
-              disabled={!photoUri || !canPreview}
-              loading={busy}
-            />
+            {(() => {
+              const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
+              const canGenerate = (descriptionOk || !!photoUri) && canPreview;
+              
+              return (
+                <>
+                  <PrimaryButton
+                    testID="np-generate-preview"
+                    title="Generate AI Preview"
+                    onPress={generatePreview}
+                    disabled={!canGenerate}
+                    loading={busy}
+                  />
 
-            {!canPreview && (
-              <Text style={styles.upgradeHint}>
-                <Text style={{ color: '#6B7280' }}>Need visual previews? </Text>
-                <Text 
-                  style={{ color: brand.primary, fontWeight: '600' }}
-                  onPress={() => navigation.navigate('Profile')}
-                >
-                  Upgrade
-                </Text>
-              </Text>
-            )}
+                  {!canPreview && (
+                    <Text style={styles.upgradeHint}>
+                      <Text style={{ color: '#6B7280' }}>Need visual previews? </Text>
+                      <Text 
+                        style={{ color: brand.primary, fontWeight: '600' }}
+                        onPress={() => navigation.navigate('Profile')}
+                      >
+                        Upgrade
+                      </Text>
+                    </Text>
+                  )}
 
-            <SecondaryButton
-              testID="np-build-without-preview"
-              title="Build Plan Without Preview"
-              onPress={onBuildWithoutPreview}
-              disabled={busyBuild}
-              loading={busyBuild}
-              style={{ marginTop: 12 }}
-            />
+                  <SecondaryButton
+                    testID="np-build-without-preview"
+                    title="Build Plan Without Preview"
+                    onPress={onBuildWithoutPreview}
+                    disabled={busyBuild}
+                    loading={busyBuild}
+                    style={{ marginTop: 12 }}
+                  />
+                </>
+              );
+            })()}
           </View>
         )}
       </ScrollView>
