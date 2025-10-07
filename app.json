@@ -15,7 +15,10 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "DIY Genie uses the camera to scan your room."
+      }
     },
     "android": {
       "adaptiveIcon": {
