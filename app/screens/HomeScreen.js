@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import HowItWorksTile from '../components/HowItWorksTile';
+import PressableScale from '../components/ui/PressableScale';
 
 function HowItWorks({ navigation }) {
   return (
@@ -19,25 +20,25 @@ function HowItWorks({ navigation }) {
         <HowItWorksTile
           icon="create-outline"
           label="Describe"
-          a11yLabel="Describe your project"
+          stepNumber={1}
           onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
         />
         <HowItWorksTile
           icon="scan-outline"
           label="Scan"
-          a11yLabel="Scan your room"
+          stepNumber={2}
           onPress={() => navigation.navigate('NewProject', { section: 'media' })}
         />
         <HowItWorksTile
           icon="sparkles-outline"
           label="Preview"
-          a11yLabel="Preview your design"
+          stepNumber={3}
           onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
         />
         <HowItWorksTile
           icon="hammer-outline"
           label="Build"
-          a11yLabel="Open build plan"
+          stepNumber={4}
           onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
         />
       </View>
@@ -87,15 +88,17 @@ export default function HomeScreen({ navigation }) {
         <HowItWorks navigation={navigation} />
 
         {/* CTA Button */}
-        <TouchableOpacity 
-          testID="home-cta" 
-          style={styles.startProjectButton} 
+        <PressableScale
+          testID="home-cta"
           onPress={handleNewProject}
+          haptic="medium"
+          scaleTo={0.97}
           accessibilityRole="button"
-          accessibilityLabel="Start a new project"
+          accessibilityLabel="Start a New Project"
+          style={styles.startProjectButton}
         >
           <Text style={styles.startProjectText}>Start a New Project</Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -119,8 +122,21 @@ function ProjectCard({ project, navigation }) {
     navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: project.id } });
   };
 
+  const statusText = project.status === 'plan_ready' 
+    ? 'Plan ready' 
+    : project.status === 'preview_ready' 
+      ? 'Preview ready' 
+      : 'In progress';
+
   return (
-    <TouchableOpacity style={styles.projectCard} onPress={handlePress}>
+    <PressableScale
+      onPress={handlePress}
+      haptic="light"
+      scaleTo={0.98}
+      accessibilityRole="button"
+      accessibilityLabel={`${project.name || 'Untitled Project'}, ${statusText}`}
+      style={styles.projectCard}
+    >
       {/* Thumbnail Placeholder */}
       <View style={styles.thumbnailPlaceholder} />
       
@@ -130,14 +146,12 @@ function ProjectCard({ project, navigation }) {
         <Text style={styles.cardTitle}>{project.name || 'Untitled Project'}</Text>
         
         {/* Subtitle */}
-        <Text style={styles.cardSubtitle}>
-          {project.status === 'plan_ready' ? 'Plan ready' : project.status === 'preview_ready' ? 'Preview ready' : 'In progress'}
-        </Text>
+        <Text style={styles.cardSubtitle}>{statusText}</Text>
       </View>
       
       {/* Chevron */}
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -200,6 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
+    minHeight: 88,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: colors.black,

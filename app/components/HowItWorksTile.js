@@ -1,28 +1,60 @@
-import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
+import PressableScale from './ui/PressableScale';
 
 export default function HowItWorksTile({
   icon = 'create-outline',
   label,
   onPress,
   a11yLabel,
+  stepNumber,
 }) {
+  const [isPressed, setIsPressed] = useState(false);
+  const opacityAnim = useRef(new Animated.Value(0.7)).current;
+
+  const handlePressIn = () => {
+    setIsPressed(true);
+    Animated.timing(opacityAnim, {
+      toValue: 1,
+      duration: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    setIsPressed(false);
+    Animated.timing(opacityAnim, {
+      toValue: 0.7,
+      duration: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const accessibilityLabel = stepNumber 
+    ? `${label} (step ${stepNumber} of 4)` 
+    : a11yLabel;
+
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
+      haptic="light"
+      scaleTo={0.98}
       accessibilityRole="button"
-      accessibilityLabel={a11yLabel}
-      style={({ pressed }) => [
+      accessibilityLabel={accessibilityLabel}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[
         styles.tile,
-        { backgroundColor: pressed ? colors.diy.tilePressed : colors.diy.tileBg },
-        pressed && { transform: [{ scale: 0.98 }] },
+        { backgroundColor: isPressed ? colors.diy.tilePressed : colors.diy.tileBg }
       ]}
     >
-      <Ionicons name={icon} size={22} color={colors.brand} />
+      <Animated.View style={{ opacity: opacityAnim }}>
+        <Ionicons name={icon} size={22} color={colors.brand} />
+      </Animated.View>
       <Text style={styles.label}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -33,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.diy.tileBorder,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
