@@ -52,4 +52,8 @@ export const colors = {
   brand50: '#F2ECFF',
   onBrand: '#FFFFFF',
   ctaShadow: 'rgba(110,64,255,0.28)',
+  
+  // Text ink colors
+  ink900: '#111111',
+  ink600: '#4B5563',
 };
