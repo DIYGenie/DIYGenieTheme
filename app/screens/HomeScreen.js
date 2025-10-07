@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,50 +11,53 @@ import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 function HowItWorks({ navigation }) {
-  const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
-    <TouchableOpacity
-      style={hiwStyles.chip}
-      activeOpacity={0.85}
+  const Tile = ({ icon, label, section, a11yLabel, a11yHint }) => (
+    <Pressable
+      style={({ pressed }) => [hiwStyles.tile, pressed && hiwStyles.tilePressed]}
       onPress={() => navigation.navigate('NewProject', { section })}
       accessibilityLabel={a11yLabel}
       accessibilityHint={a11yHint}
       accessibilityRole="button"
+      android_ripple={{ color: '#E9E2FF' }}
     >
       {icon}
-      <Text style={hiwStyles.label}>{label}</Text>
-    </TouchableOpacity>
+      <Text style={hiwStyles.tileLabel}>{label}</Text>
+    </Pressable>
   );
 
   return (
-    <View style={hiwStyles.wrap}>
-      <Chip 
-        icon={<Ionicons name="create-outline" size={18} color="#5B39F5" />} 
-        label="Describe" 
-        section="desc"
-        a11yLabel="Describe"
-        a11yHint="Focus on project description field"
-      />
-      <Chip 
-        icon={<Ionicons name="image-outline" size={18} color="#5B39F5" />} 
-        label="Scan" 
-        section="media"
-        a11yLabel="Scan"
-        a11yHint="Open room scanner or choose a photo on web"
-      />
-      <Chip 
-        icon={<Ionicons name="sparkles-outline" size={18} color="#5B39F5" />} 
-        label="Preview" 
-        section="preview"
-        a11yLabel="Preview"
-        a11yHint="Scroll to design suggestions"
-      />
-      <Chip 
-        icon={<MaterialCommunityIcons name="hammer" size={18} color="#5B39F5" />} 
-        label="Build" 
-        section="plan"
-        a11yLabel="Build"
-        a11yHint="Scroll to plan creation buttons"
-      />
+    <View style={hiwStyles.section}>
+      <Text style={hiwStyles.title}>How it works</Text>
+      <View style={hiwStyles.grid}>
+        <Tile 
+          icon={<Ionicons name="create-outline" size={18} color="#5B39F5" />} 
+          label="Describe" 
+          section="desc"
+          a11yLabel="Describe"
+          a11yHint="Focus on project description field"
+        />
+        <Tile 
+          icon={<Ionicons name="image-outline" size={18} color="#5B39F5" />} 
+          label="Scan" 
+          section="media"
+          a11yLabel="Scan"
+          a11yHint="Open room scanner or choose a photo on web"
+        />
+        <Tile 
+          icon={<Ionicons name="sparkles-outline" size={18} color="#5B39F5" />} 
+          label="Preview" 
+          section="preview"
+          a11yLabel="Preview"
+          a11yHint="Scroll to design suggestions"
+        />
+        <Tile 
+          icon={<MaterialCommunityIcons name="hammer" size={18} color="#5B39F5" />} 
+          label="Build" 
+          section="plan"
+          a11yLabel="Build"
+          a11yHint="Scroll to plan creation buttons"
+        />
+      </View>
     </View>
   );
 }
@@ -253,33 +256,42 @@ const styles = StyleSheet.create({
 });
 
 const hiwStyles = StyleSheet.create({
-  wrap: {
-    marginTop: 8,
-    marginBottom: 12,
+  section: { 
+    marginTop: 4, 
+    marginBottom: 12, 
     paddingHorizontal: 16,
+  },
+  title: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#1B133C', 
+    marginBottom: 8,
+  },
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 10,
   },
-  chip: {
+  tile: {
     width: '48%',
     minHeight: 56,
-    backgroundColor: '#F4F1FF',
-    borderRadius: 14,
+    borderRadius: 12,
+    backgroundColor: '#F7F5FF',
+    borderWidth: 1,
+    borderColor: '#E7E3FF',
     paddingVertical: 10,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    gap: 6,
   },
-  label: { 
-    fontSize: 14, 
+  tilePressed: { 
+    backgroundColor: '#EEE9FF',
+  },
+  tileLabel: { 
+    fontSize: 13, 
     fontWeight: '600', 
     color: '#1B133C',
   },
