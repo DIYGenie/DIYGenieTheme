@@ -41,7 +41,7 @@ function HowItWorksGrid({ navigation }) {
   const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
     <TouchableOpacity
       style={{
-        minWidth: 82,
+        minWidth: 78,
         borderRadius: 12,
         backgroundColor: 'rgba(138, 92, 255, 0.08)',
         borderWidth: 1,
@@ -80,11 +80,7 @@ function HowItWorksGrid({ navigation }) {
     <View style={chipStyles.wrap}>
       <Text style={chipStyles.title}>How it works</Text>
 
-      <View
-        onLayout={(e) => setHowW(e.nativeEvent.layout.width)}
-        style={{ paddingHorizontal: 8 }}
-      >
-        <View style={chipStyles.howRow}>
+      <View style={chipStyles.howRow}>
           <Chip 
             icon={items[0].icon} 
             label={items[0].label} 
@@ -117,7 +113,6 @@ function HowItWorksGrid({ navigation }) {
             a11yHint={items[3].a11yHint}
           />
         </View>
-      </View>
     </View>
   );
 }
@@ -330,8 +325,8 @@ const chipStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 8,
-    marginTop: 10,
-    marginBottom: 14,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
 });
