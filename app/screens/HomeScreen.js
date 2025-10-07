@@ -56,9 +56,25 @@ export default function HomeScreen({ navigation }) {
 
         {/* CTA Button */}
         <View style={styles.ctaSection}>
-          <TouchableOpacity style={styles.startProjectButton} onPress={handleNewProject}>
-            <Text style={styles.startProjectText}>Start Your First Project</Text>
+          <TouchableOpacity testID="home-cta" style={styles.startProjectButton} onPress={handleNewProject}>
+            <Text style={styles.startProjectText}>Start a New Project</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* How it works section */}
+        <View style={styles.howItWorksSection}>
+          <Text style={styles.howItWorksTitle}>How it works</Text>
+          {[
+            { id: 1, icon: 'create-outline', label: 'Describe your project' },
+            { id: 2, icon: 'image-outline', label: 'Add a room photo or scan' },
+            { id: 3, icon: 'sparkles-outline', label: 'Get smart suggestions' },
+            { id: 4, icon: 'list-circle-outline', label: 'Generate your build plan' },
+          ].map(({ id, icon, label }) => (
+            <View key={id} testID={`how-step-${id}`} style={styles.howStep}>
+              <Ionicons name={icon} size={20} color={colors.brand700} style={styles.howStepIcon} />
+              <Text style={styles.howStepText}>{label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Section Header */}
@@ -201,35 +217,56 @@ const styles = StyleSheet.create({
   ctaSection: {
     alignItems: 'center',
     marginTop: 24,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   startProjectButton: {
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: brand.primary,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    width: '70%',
-    height: 52,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 3,
-    // Web-specific shadow
-    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
+    shadowColor: colors.ctaShadow,
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+    width: '100%',
+    paddingHorizontal: 32,
   },
   startProjectText: {
-    fontSize: 16,
+    color: colors.onBrand,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.2,
     fontFamily: typography.fontFamily.manropeBold,
-    color: brand.primary,
-    textAlign: 'center',
+  },
+  howItWorksSection: {
+    marginTop: 0,
+    marginBottom: 32,
+  },
+  howItWorksTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+    color: '#111',
+    fontFamily: typography.fontFamily.manropeBold,
+  },
+  howStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    backgroundColor: colors.brand50,
+    marginBottom: 8,
+  },
+  howStepIcon: {
+    marginRight: 10,
+  },
+  howStepText: {
+    fontSize: 14,
+    color: '#222',
+    fontFamily: typography.fontFamily.inter,
   },
   emptyText: {
     fontSize: 14,
