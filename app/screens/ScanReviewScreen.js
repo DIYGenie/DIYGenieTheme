@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Alert, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import PressableScale from '../components/ui/PressableScale';
+import { emitScanPhoto } from '../lib/scanEvents';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -16,16 +17,10 @@ export default function ScanReviewScreen({ route, navigation }) {
   };
 
   const handleUsePhoto = () => {
-    Alert.alert(
-      'Saved',
-      "We'll use this photo in the next step.",
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Main'),
-        },
-      ]
-    );
+    if (photoUri) {
+      emitScanPhoto(photoUri);
+      navigation.navigate('NewProject');
+    }
   };
 
   if (!photoUri) {

@@ -13,6 +13,7 @@ import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import PromptApplyModal from '../components/PromptApplyModal';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
+import { subscribeScanPhoto } from '../lib/scanEvents';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -157,6 +158,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     });
     return unsubscribe;
   }, [navigation, draftId]);
+
+  // Subscribe to scan photo events
+  useEffect(() => {
+    const subscription = subscribeScanPhoto((uri) => {
+      setPhotoUri(uri);
+    });
+    return () => subscription.remove();
+  }, []);
 
   // Handle section deep-link parameter
   const section = route.params?.section as 'desc' | 'media' | 'preview' | 'plan' | undefined;
@@ -557,62 +566,90 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           </View>
 
           {!photoUri ? (
-            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between', paddingVertical: 12 }}>
+              <Pressable
+                testID="btn-scan-room"
+                style={({ pressed }) => ({
+                  flex: 1,
+                  height: 120,
+                  borderRadius: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#6D28D9' : brand.primary,
+                  shadowColor: '#7C3AED',
+                  shadowOpacity: 0.3,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                })}
+                onPress={() => navigation.navigate('Scan')}
+              >
+                <Ionicons 
+                  name="scan-outline" 
+                  size={28} 
+                  color="#FFFFFF" 
+                  style={{ marginBottom: 8 }} 
+                />
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', fontFamily: typography.fontFamily.manropeSemiBold }}>
+                  Scan room
+                </Text>
+              </Pressable>
+
               <Pressable
                 testID="btn-upload-photo"
                 style={({ pressed }) => ({
-                  width: TILE_SIZE, height: 120, borderRadius: 16, marginVertical: 8,
-                  justifyContent: 'center', alignItems: 'center',
-                  backgroundColor: '#FFF',
-                  borderWidth: 1.5, borderColor: '#E5E7EB',
-                  shadowColor: '#000', 
-                  shadowOpacity: 0.04, 
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 2 }, 
-                  elevation: 4,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                  flex: 1,
+                  height: 120,
+                  borderRadius: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  backgroundColor: pressed ? '#F9FAFB' : '#FFFFFF',
+                  borderWidth: 1.5,
+                  borderColor: '#D1D5DB',
                 })}
                 onPress={onUploadPhoto}
               >
                 <Ionicons 
-                  name="images-outline" 
-                  size={ICON_SIZE} 
-                  color="#6B7280" 
-                  style={{ marginBottom: 6 }} 
+                  name="image-outline" 
+                  size={28} 
+                  color={brand.primary} 
+                  style={{ marginBottom: 8 }} 
                 />
-                <Text style={styles.tileTitle}>Upload Photo</Text>
-                <Text style={styles.tileSubtitle}>From gallery</Text>
+                <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '600', fontFamily: typography.fontFamily.manropeSemiBold }}>
+                  Upload Photo
+                </Text>
               </Pressable>
             </View>
           ) : (
-            <View style={{ alignItems: 'center', marginTop: 8 }}>
+            <Pressable
+              testID="np-photo-preview"
+              onPress={onUploadPhoto}
+              style={{ 
+                borderRadius: 16, 
+                overflow: 'hidden', 
+                borderWidth: 1, 
+                borderColor: '#E5E7EB',
+                marginVertical: 8,
+              }}
+            >
               <Image 
-                testID="np-photo-preview"
                 source={{ uri: photoUri }} 
                 style={{ 
-                  width: TILE_SIZE, 
-                  height: 200, 
-                  borderRadius: 12,
-                  marginBottom: 12,
+                  width: '100%', 
+                  aspectRatio: 16/9,
                 }} 
                 resizeMode="cover"
               />
-              
-              <TouchableOpacity 
-                onPress={onUploadPhoto}
-                style={{ 
-                  flexDirection: 'row', 
-                  alignItems: 'center',
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                }}
-              >
-                <Ionicons name="refresh" size={16} color={brand.primary} />
-                <Text style={{ marginLeft: 6, color: brand.primary, fontSize: 14 }}>
+              <View style={{ 
+                padding: 12, 
+                alignItems: 'flex-end',
+                backgroundColor: '#FFFFFF',
+              }}>
+                <Text style={{ color: brand.primary, fontSize: 14, fontWeight: '600' }}>
                   Change photo
                 </Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </Pressable>
           )}
         </View>
 
