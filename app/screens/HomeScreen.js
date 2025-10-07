@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ const gapsW   = 8  * 3;
 const sidePad = 24 * 2;
 const chipWidth = Math.max(74, Math.floor((screenW - arrowsW - gapsW - sidePad) / 4));
 const isNarrow = screenW < 390;
+const isVeryNarrow = screenW < 360;
 
 function HowItWorksGrid({ navigation }) {
   const items = [
@@ -81,33 +82,22 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search projects…"
-            placeholderTextColor={colors.textSecondary}
-            editable={false}
-          />
-        </View>
-
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Welcome Header */}
-        <View style={styles.welcomeHeader}>
-          <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
-          <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
-        </View>
-
-        {/* CTA Button */}
-        <View style={styles.ctaSection}>
-          <TouchableOpacity testID="home-cta" style={styles.startProjectButton} onPress={handleNewProject}>
-            <Text style={styles.startProjectText}>Start a New Project</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
+        <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
 
         {/* How it works grid */}
         <HowItWorksGrid navigation={navigation} />
+
+        {/* CTA Button */}
+        <TouchableOpacity testID="home-cta" style={styles.startProjectButton} onPress={handleNewProject}>
+          <Text style={styles.startProjectText}>Start a New Project</Text>
+        </TouchableOpacity>
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -160,36 +150,57 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
   },
-  searchContainer: {
-    flexDirection: 'row',
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 24,
+  },
+  welcomeTitle: {
+    fontSize: isVeryNarrow ? 26 : 28,
+    fontFamily: typography.fontFamily.manropeBold,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    fontFamily: typography.fontFamily.interMedium,
+    color: 'rgba(15,23,42,0.6)',
+    marginBottom: 14,
+  },
+  startProjectButton: {
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: colors.brand,
     alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderRadius: 16, // rounded-2xl
-    paddingHorizontal: spacing.md,
-    height: 44,
-    marginBottom: 24,
+    justifyContent: 'center',
+    shadowColor: colors.ctaShadow,
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+    width: '100%',
+    paddingHorizontal: 32,
+    marginTop: 16,
   },
-  searchIcon: {
-    marginRight: spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.inter,
-    color: colors.textPrimary,
+  startProjectText: {
+    color: colors.onBrand,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    fontFamily: typography.fontFamily.manropeBold,
   },
   sectionHeader: {
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#0F172A',
-    marginBottom: 24,
+    marginTop: 22,
+    marginBottom: 16,
   },
   projectsSection: {
     gap: 16,
-    paddingBottom: spacing.xxxl,
   },
   projectCard: {
     backgroundColor: colors.surface,
@@ -205,7 +216,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 20,
     elevation: 3,
-    // Web-specific shadow
     boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.06)',
   },
   thumbnailPlaceholder: {
@@ -230,48 +240,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: colors.textSecondary,
   },
-  welcomeHeader: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  welcomeTitle: {
-    fontSize: 24,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    fontFamily: typography.fontFamily.interMedium,
-    color: '#475569',
-    lineHeight: 21, // 1.5 line height
-  },
-  ctaSection: {
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 24,
-  },
-  startProjectButton: {
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.ctaShadow,
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-    width: '100%',
-    paddingHorizontal: 32,
-  },
-  startProjectText: {
-    color: colors.onBrand,
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    fontFamily: typography.fontFamily.manropeBold,
-  },
   emptyText: {
     fontSize: 14,
     fontFamily: typography.fontFamily.inter,
@@ -282,8 +250,15 @@ const styles = StyleSheet.create({
 });
 
 const chipStyles = StyleSheet.create({
-  wrap: { marginTop: 16 },
-  title: { fontSize: 16, fontWeight: '700', color: colors.ink900, marginBottom: 10 },
+  wrap: { 
+    marginTop: 0,
+  },
+  title: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: colors.ink900, 
+    marginBottom: 10,
+  },
   row: { 
     flexDirection: 'row', 
     alignItems: 'center', 
