@@ -11,10 +11,14 @@ import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 function HowItWorks({ navigation }) {
-  const Tile = ({ icon, label, section, a11yLabel, a11yHint }) => (
+  const Tile = ({ icon, label, onPress, a11yLabel, a11yHint }) => (
     <Pressable
-      style={({ pressed }) => [hiwStyles.tile, pressed && hiwStyles.tilePressed]}
-      onPress={() => navigation.navigate('NewProject', { section })}
+      style={({ pressed }) => [
+        hiwStyles.tile, 
+        pressed && hiwStyles.tilePressed
+      ]}
+      onPress={onPress}
+      hitSlop={8}
       accessibilityLabel={a11yLabel}
       accessibilityHint={a11yHint}
       accessibilityRole="button"
@@ -32,28 +36,28 @@ function HowItWorks({ navigation }) {
         <Tile 
           icon={<Ionicons name="create-outline" size={18} color="#5B39F5" />} 
           label="Describe" 
-          section="desc"
+          onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
           a11yLabel="Describe"
           a11yHint="Focus on project description field"
         />
         <Tile 
           icon={<Ionicons name="image-outline" size={18} color="#5B39F5" />} 
           label="Scan" 
-          section="media"
+          onPress={() => navigation.navigate('NewProject', { section: 'media' })}
           a11yLabel="Scan"
           a11yHint="Open room scanner or choose a photo on web"
         />
         <Tile 
           icon={<Ionicons name="sparkles-outline" size={18} color="#5B39F5" />} 
           label="Preview" 
-          section="preview"
+          onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
           a11yLabel="Preview"
           a11yHint="Scroll to design suggestions"
         />
         <Tile 
           icon={<MaterialCommunityIcons name="hammer" size={18} color="#5B39F5" />} 
           label="Build" 
-          section="plan"
+          onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
           a11yLabel="Build"
           a11yHint="Scroll to plan creation buttons"
         />
@@ -289,6 +293,7 @@ const hiwStyles = StyleSheet.create({
   },
   tilePressed: { 
     backgroundColor: '#EEE9FF',
+    transform: [{ scale: 0.98 }],
   },
   tileLabel: { 
     fontSize: 13, 
