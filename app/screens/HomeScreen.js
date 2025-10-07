@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,38 +13,97 @@ import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
+import { useCameraPermission } from '../hooks/useCameraPermission';
+import PrePermissionSheet from '../components/modals/PrePermissionSheet';
 
 function HowItWorks({ navigation }) {
+  const { checkStatus, request } = useCameraPermission();
+  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+
+  const handleScanPress = async () => {
+    const status = await checkStatus();
+    
+    if (status === 'granted') {
+      navigation.navigate('Scan');
+    } else {
+      setPermissionDenied(false);
+      setShowPermissionSheet(true);
+    }
+  };
+
+  const handleContinue = async () => {
+    const result = await request();
+    
+    if (result === 'granted') {
+      setShowPermissionSheet(false);
+      setPermissionDenied(false);
+      navigation.navigate('Scan');
+    } else {
+      setPermissionDenied(true);
+    }
+  };
+
+  const handleOpenSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openSettings();
+    } else {
+      Linking.openSettings();
+    }
+    setShowPermissionSheet(false);
+  };
+
+  const handleClose = () => {
+    setShowPermissionSheet(false);
+    setPermissionDenied(false);
+  };
+
   return (
-    <View style={hiwStyles.section}>
-      <Text style={hiwStyles.title}>How it works</Text>
-      <View style={hiwStyles.grid}>
-        <HowItWorksTile
-          icon="create-outline"
-          label="Describe"
-          stepNumber={1}
-          onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
-        />
-        <HowItWorksTile
-          icon="scan-outline"
-          label="Scan"
-          stepNumber={2}
-          onPress={() => navigation.navigate('NewProject', { section: 'media' })}
-        />
-        <HowItWorksTile
-          icon="sparkles-outline"
-          label="Preview"
-          stepNumber={3}
-          onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
-        />
-        <HowItWorksTile
-          icon="hammer-outline"
-          label="Build"
-          stepNumber={4}
-          onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
-        />
+    <>
+      <View style={hiwStyles.section}>
+        <Text style={hiwStyles.title}>How it works</Text>
+        <View style={hiwStyles.grid}>
+          <HowItWorksTile
+            icon="create-outline"
+            label="Describe"
+            stepNumber={1}
+            onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
+          />
+          <HowItWorksTile
+            icon="scan-outline"
+            label="Scan"
+            stepNumber={2}
+            onPress={handleScanPress}
+          />
+          <HowItWorksTile
+            icon="sparkles-outline"
+            label="Preview"
+            stepNumber={3}
+            onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
+          />
+          <HowItWorksTile
+            icon="hammer-outline"
+            label="Build"
+            stepNumber={4}
+            onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
+          />
+        </View>
       </View>
-    </View>
+
+      <PrePermissionSheet
+        visible={showPermissionSheet}
+        title={permissionDenied ? "Camera access needed" : "Use your camera to scan the room"}
+        subtitle={permissionDenied 
+          ? "Camera access was denied. Please enable it in Settings to use the room scanner."
+          : "We'll measure and place your project preview. We never store video without your OK."
+        }
+        iconName="camera-outline"
+        primaryLabel={permissionDenied ? "Open Settings" : "Continue"}
+        secondaryLabel={permissionDenied ? "Close" : "Not now"}
+        onPrimary={permissionDenied ? handleOpenSettings : handleContinue}
+        onSecondary={handleClose}
+      />
+    </>
   );
 }
 

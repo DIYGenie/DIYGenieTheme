@@ -7,6 +7,7 @@ import HowItWorks from '../screens/HowItWorks';
 import NewProject from '../screens/NewProject';
 import NewProjectMedia from '../screens/NewProjectMedia';
 import ScanRoomIntro from '../screens/ScanRoomIntro';
+import ScanScreen from '../screens/ScanScreen';
 import ProjectPreview from '../screens/ProjectPreview';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import PlanScreen from '../screens/PlanScreen';
@@ -29,6 +30,7 @@ export default function AppNavigator() {
       <Stack.Screen name="NewProject" component={NewProject} />
       <Stack.Screen name="NewProjectMedia" component={NewProjectMedia} />
       <Stack.Screen name="ScanRoomIntro" component={ScanRoomIntro} />
+      <Stack.Screen name="Scan" component={ScanScreen} />
       <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
       <Stack.Screen name="Project" component={ProjectDetailScreen} />
       <Stack.Screen name="Plan" component={PlanScreen} />
