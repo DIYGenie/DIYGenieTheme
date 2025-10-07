@@ -23,10 +23,10 @@ function HowItWorksGrid({ navigation }) {
     : 90;
 
   const items = [
-    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe your project', a11yHint: 'Focus on project description field' },
-    { id: 2, icon: 'image-outline', label: 'Room scan', section: 'media', a11yLabel: 'Room scan (or upload photo)', a11yHint: 'Open room scanner or choose a photo on web' },
-    { id: 3, icon: 'sparkles-outline', label: 'AI preview', section: 'preview', a11yLabel: 'AI preview', a11yHint: 'Scroll to design suggestions' },
-    { id: 4, icon: 'list-outline', label: 'Build plan', section: 'plan', a11yLabel: 'Build plan', a11yHint: 'Scroll to plan creation buttons' },
+    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe', a11yHint: 'Focus on project description field' },
+    { id: 2, icon: 'image-outline', label: 'Scan', section: 'media', a11yLabel: 'Scan', a11yHint: 'Open room scanner or choose a photo on web' },
+    { id: 3, icon: 'sparkles-outline', label: 'Preview', section: 'preview', a11yLabel: 'Preview', a11yHint: 'Scroll to design suggestions' },
+    { id: 4, icon: 'list-outline', label: 'Build', section: 'plan', a11yLabel: 'Build', a11yHint: 'Scroll to plan creation buttons' },
   ];
 
   const Arrow = () => (
@@ -44,6 +44,7 @@ function HowItWorksGrid({ navigation }) {
     <TouchableOpacity
       style={{
         width: CHIP_W,
+        minWidth: 84,
         height: 64,
         borderRadius: 14,
         backgroundColor: 'rgba(138, 92, 255, 0.08)',
@@ -64,11 +65,11 @@ function HowItWorksGrid({ navigation }) {
         <Ionicons name={icon} size={18} color={colors.brand} />
       </View>
       <Text
-        numberOfLines={2}
+        numberOfLines={1}
+        ellipsizeMode="clip"
         allowFontScaling={false}
         style={{ 
           fontSize: 12,
-          lineHeight: 14,
           fontWeight: '600',
           color: colors.ink700,
           textAlign: 'center',
