@@ -1,3 +1,17 @@
+export const brand = {
+  primary: '#7C4DFF',      // main DIY Genie purple
+  primary600: '#6A3CE9',
+  primary700: '#5B2ED1',
+  primary300: '#B39DFF',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F6F6FA',
+  text: '#101828',
+  textMuted: '#667085',
+  success: '#12B76A',
+  danger:  '#EF4444',
+  border:  '#E5E7EB',
+};
+
 export const colors = {
   // Gradient colors for background only (unchanged from Welcome)
   gradientStart: '#C4B5FD', // Light Lavender
@@ -12,8 +26,8 @@ export const colors = {
   textSecondary: '#475569', // slate-600 - secondary text
   
   // Interactive colors
-  accent: '#F59E0B',     // amber-500 - primary CTA (unchanged)
-  accentPressed: '#D97706', // amber-600 - pressed state
+  accent: brand.primary,     // Updated to purple
+  accentPressed: brand.primary600, // Updated to purple pressed
   brandPurpleDeep: '#5B21B6', // purple-800 - nav bars/background accents
   purpleLight: '#C4B5FD',     // purple-300 - inactive tab/icon tint
   
