@@ -42,7 +42,11 @@ function HowItWorksGrid({ navigation }) {
               accessibilityRole="button"
             >
               <Ionicons name={item.icon} size={18} color={colors.brand} />
-              <Text style={[chipStyles.chipLabel, { maxWidth: chipWidth - 12 }]} numberOfLines={1}>
+              <Text 
+                style={chipStyles.chipLabel} 
+                numberOfLines={1}
+                ellipsizeMode="clip"
+              >
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -267,7 +271,7 @@ const chipStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   chip: {
-    minWidth: 82,
+    minWidth: 108,
     height: 64, 
     borderRadius: 12,
     backgroundColor: colors.brand50, 
@@ -276,15 +280,15 @@ const chipStyles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     paddingVertical: 8, 
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   chipLabel: { 
-    fontSize: 11, 
-    lineHeight: 14, 
+    fontSize: 13, 
     fontWeight: '600', 
     color: colors.ink700, 
     marginTop: 6, 
     textAlign: 'center',
+    flexShrink: 1,
   },
   arrowWrap: { 
     width: 10, 
