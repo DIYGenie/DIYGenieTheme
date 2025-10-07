@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, AppSta
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { supabase } from '../lib/storage';
+import { PrimaryButton } from '../components/Buttons';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 const ENDPOINTS = {
@@ -287,22 +288,19 @@ export default function ProfileScreen() {
                 testID="btn-manage-portal"
                 style={{ paddingVertical: 8, paddingHorizontal: 6 }}
               >
-                <Text style={{ color: '#F4A307', fontWeight: '600' }}>Manage</Text>
+                <Text style={{ color: brand.primary, fontWeight: '600' }}>Manage</Text>
               </Pressable>
             </View>
           </View>
 
           {ents.tier !== 'pro' && (
             <>
-              <TouchableOpacity 
-                style={styles.upgradeButton} 
+              <PrimaryButton
+                title={showUpgradePicker ? 'Cancel' : 'Upgrade Plan'}
                 onPress={() => setShowUpgradePicker(v => !v)}
                 disabled={busy}
-              >
-                <Text style={styles.upgradeButtonText}>
-                  {showUpgradePicker ? 'Cancel' : 'Upgrade Plan'}
-                </Text>
-              </TouchableOpacity>
+                style={styles.upgradeButton}
+              />
 
               {showUpgradePicker && (
                 <View style={styles.upgradeCardsContainer} testID="upgrade-cards">
@@ -369,7 +367,7 @@ export default function ProfileScreen() {
             testID="btn-sync-plan"
             style={{ alignSelf: 'center', paddingVertical: 8 }}
           >
-            <Text style={{ color: '#F4A307', fontWeight: '600' }}>
+            <Text style={{ color: brand.primary, fontWeight: '600' }}>
               {busy ? 'Syncing…' : 'Sync Plan'}
             </Text>
           </Pressable>
@@ -546,18 +544,14 @@ const styles = StyleSheet.create({
   manageButton: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#F59E0B',
+    color: brand.primary,
   },
   disabledButton: {
     color: '#9CA3AF',
   },
   upgradeButton: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#F59E0B',
+    shadowColor: brand.primary,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -673,7 +667,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   planCardCTA: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: brand.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -697,7 +691,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   upgradeFootnoteLink: {
-    color: '#F59E0B',
+    color: brand.primary,
     fontFamily: typography.fontFamily.manropeBold,
   },
   syncButton: {
@@ -708,7 +702,7 @@ const styles = StyleSheet.create({
   syncButtonText: {
     fontSize: 14,
     fontFamily: typography.fontFamily.interMedium,
-    color: '#F59E0B',
+    color: brand.primary,
   },
   disabledText: {
     color: '#9CA3AF',
