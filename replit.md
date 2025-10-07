@@ -9,62 +9,27 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-The application utilizes a component-based React Native architecture.
-- **Navigation**: Employs React Navigation v7 with a hybrid stack and tab navigation approach, starting with a welcome screen. Projects tab uses a nested stack navigator (ProjectsStack) containing ProjectsList and ProjectDetails screens, ensuring the tab bar remains visible when viewing project details. Built with @react-navigation/native-stack for nested navigation within tabs. HomeScreen correctly navigates to ProjectDetails through the Projects tab using navigation.navigate('Projects', { screen: 'ProjectDetails', params: {...} }) to maintain proper navigation hierarchy.
-- **UI Framework**: Built on Expo SDK 54 for rapid cross-platform development.
-- **Design System**: Features a centralized theme system for consistent styling across colors, typography, and spacing.
-- **State Management**: Primarily uses React's built-in state management (useState, useEffect), with potential for more advanced solutions as the app grows.
-- **Font Management**: Integrates Expo Google Fonts (Manrope and Inter) with asynchronous loading.
+The application utilizes a component-based React Native architecture with React Navigation v7 for navigation, featuring a hybrid stack and tab navigation. It is built on Expo SDK 54, employs a centralized theme system for consistent styling, and primarily uses React's built-in state management.
 
 ### Visual Design Architecture
-- **Color Scheme**: Clean, modern design with white backgrounds (#FFFFFF), dark text (#111827), and **purple brand primary color (#7C3AED / purple-600)** for CTAs. Brand palette includes primary700 (#6D28D9), primary500 (#A78BFA), and primary300 (#C4B5FD) for gradients and accents. Success states use green (#E8F6EE bg, #2E7D32 text), muted states use gray (#F3F4F6 bg, #374151 text). Tab navigation features purple gradient (brand.primary700 → brand.primary300) with white active/transparent inactive text.
-- **Design System**: Centralized UI kit in `app/ui/` with reusable components (Screen, ScreenScroll, Card, Badge, SectionTitle) and theme tokens (colors, radii, space, shadow, ui styles) from `app/ui/theme.ts` and `app/ui/components.tsx`. **Unified button system** with `PrimaryButton` (purple bg, white text) and `SecondaryButton` (white bg, purple border/text) in `app/components/Buttons.tsx`.
-- **Layout System**: Uses SafeAreaView and consistent spacing tokens (xs: 6, sm: 10, md: 14, lg: 20, xl: 28) for responsive and scalable design.
-- **Icon Strategy**: Leverages Ionicons for consistent iconography.
+The design features a clean, modern aesthetic with white backgrounds, dark text, and a **purple brand primary color (#7C3AED / purple-600)** for CTAs, using a gradient for accents. A centralized UI kit in `app/ui/` provides reusable components and theme tokens, including a unified button system. Layouts use `SafeAreaView` and consistent spacing tokens, with `Ionicons` for iconography.
 
 ### Component Architecture
-- **Screen Organization**: Screens are self-contained modules handling their own styling and basic state.
-- **Reusable Styling**: Employs consistent base styling patterns across screens using LinearGradient backgrounds and text hierarchies.
-- **AccordionCard Component**: Reusable collapsible card component (`app/components/AccordionCard.js`) that displays a title, item count badge, and expandable content list. Shows first 3 items by default with "+N more" indicator. Supports custom rendering via renderItem prop for specialized layouts (e.g., shopping items with prices). Used in ProjectDetailsScreen for plan sections.
-- **SuggestionsBox Component**: Simple reusable suggestions component (`app/components/SuggestionsBox.tsx`) for displaying AI-generated tips. Renders below description field on New Project screen with 4 starter suggestions. Features refresh button for regenerating tips and click-to-append functionality. Handles loading states and empty states gracefully.
-- **PromptCoach Component**: Modern chip-based UI component (`app/components/PromptCoach.tsx`) for smart project suggestions. Positioned directly under photo uploader on New Project screen. Features horizontally scrollable chip design (rounded borders, touchable pills), auto-refresh with 500ms debounce when description changes (≥10 chars) or photo is uploaded. Calls `/api/projects/:id/suggestions-smart` backend endpoint for context-aware tips. Includes "Improve your prompt" header with refresh link, click-to-append functionality, and graceful loading/empty states.
+Key components include:
+- **AccordionCard**: A reusable collapsible card for displaying lists, used in `ProjectDetailsScreen`.
+- **SuggestionsBox**: A simple component for displaying AI-generated tips.
+- **PromptCoach**: A modern chip-based UI for smart project suggestions, dynamically updating based on user input.
 
 ### Technical Implementations
-- **Backend API Integration**: Includes an Express.js backend server (`server.js`) running on port 3001 with CORS support for managing projects and user entitlements.
-- **API Wrapper**: Uses direct fetch calls with proper error handling for all API operations. NewProject.tsx uses BASE URL constant (defaults to production API) and USER_ID constant with fallback chain: `__DEV_USER_ID__ || EXPO_PUBLIC_TEST_USER_ID || 'e4cb3591-7272-46dd-b1f6-d7cc4e2f3d24'`.
-- **Entitlements**: Direct API call to `/me/entitlements?user_id=${USER_ID}` returns `{previewAllowed, remaining}` for gating features.
-- **Modal System**: Dropdowns for Budget and Skill utilize React Native Modals to ensure correct z-index rendering.
-- **Image Upload**: Server-side upload using multer (memoryStorage) with FormData key 'image'. Images are uploaded to Supabase Storage bucket via backend API endpoint POST /api/projects/:id/image. Version-safe image picker handles different Expo SDK versions, supporting platform-specific differences for web and native. Backend also supports direct_url parameter for automated testing. No auto-actions after upload.
-    - **Permission-Free Photo Picker**: Updated storage.ts and NewProjectMedia.js to remove explicit permission requests. Now uses ImagePicker.launchImageLibraryAsync() directly, relying on iOS/Android to dynamically prompt for permissions when needed. This eliminates "cannot grant permission" errors and provides smoother UX. Quality set to 0.85 for optimal balance between file size and image quality.
-- **File Export**: BuildPlanScreen includes save-to-phone functionality using expo-file-system/legacy API. Web platform downloads files via Blob URL download, while native platforms use FileSystem.writeAsStringAsync with expo-sharing for system share dialog. Legacy API chosen for better compatibility and clear documentation in SDK 54.
-- **New Project Screen (NewProject.tsx)**: Primary project creation interface with guided flow: Enter details → select photo → Smart Suggestions → Design Suggestions (beta) → Generate Plan. Includes testIDs for QA: np-suggestions-card, np-suggestions-refresh, np-apply-suggestions, np-generate-preview, np-build-no-preview. Form automatically resets after successful plan generation and when navigating away from tab (blur listener).
-    - **Project Creation**: Uses `ensureDraft()` helper that creates project with `user_id: USER_ID, name, budget, skill`. Returns and caches `draftId` for subsequent API calls. Validates description ≥10 chars, budget, and skill level before API call.
-    - **Smart Suggestions (PromptCoach)**: Displays directly under photo uploader with chip UI. Auto-triggers debounced refresh (500ms) when description changes (≥10 chars) or photo is uploaded. Backend analyzes project name for keywords (shelf, bench, table, cabinet) and provides context-aware tips. Photo-aware feature adds 3 additional tips when image is present (constraints, width, wood tone matching). No external AI required - uses heuristic pattern matching on backend.
-    - **Design Suggestions (beta)**: Auto-triggers after photo selection. Calls `fetchDesignSuggestions()` which POSTs to `/api/projects/:id/suggestions` with `{user_id, name, budget, skill_level, photo_uri}`. Displays checkmark bullets and tags. Features "Apply to description" button (testID: np-apply-suggestions) that merges tags and tips into description field. Includes refresh button for regenerating suggestions. All text properly wrapped in <Text> components to avoid React Native web errors.
-    - **Build Without Preview**: Button (testID: np-build-no-preview) calls `onBuildNoPreview()` which POSTs to `/api/projects/:id/build-without-preview` with `{user_id, prompt}`. Auto-generates prompt: `Build plan for: "${description}". Budget: ${budget}. Skill: ${skillLevel}.` On success, clears form state and navigates to ProjectDetails screen within Projects tab.
-- **Preview Generation**: Explicit user action via "Generate AI Preview" button → POST /api/projects/:id/preview → immediate navigation to Projects list (no polling). Preview button enabled only if previewAllowed=true AND image uploaded.
-- **Build Without Preview**: Explicit user action via button → POST /api/projects/:id/build-without-preview → immediate navigation to Projects list. Button enabled if form valid (description ≥10 chars, budget, skill) and project created.
-- **Project Details Screen**: Simplified view displaying project information with expandable accordion cards. Shows project name, status badge, room photo, and a summary card with description, budget, skill, status, and photo metadata. Features **AccordionCard** component for collapsible plan sections (Overview, Materials, Steps, Shopping). Each accordion shows first 3 items by default with "+N more" indicator, expands on tap to show all items. Shopping section includes custom rendering for item names and prices. Uses normalizePlan() helper with fallback stub data when plan is not available from backend. Supports both navigation patterns: accepts `{ project }` object (from Projects list) or `{ id }` string (from New Project flow), with automatic API fetch when only id is provided. Shows loading state while fetching project data.
-    - **Preview Gating**: Visual indicator pill "Preview used for this project" overlays photo when preview_url exists or status is 'preview_ready'. The previewUsed flag is available for any future preview CTAs to check and disable duplicate preview requests.
-    - **Navigation**: All navigation to ProjectDetails uses nested pattern: `navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } })` to maintain proper tab navigation hierarchy and prevent "was not handled by any navigator" errors.
-- **Plan Tabs Screen**: Modern tabbed interface with 4 swipeable tabs for viewing build plans:
-    - **Overview**: Shows project intro text and step-by-step progress list with step numbers
-    - **Materials**: Lists required materials with quantities and estimated costs
-    - **Tools**: Lists required tools with optional substitutes/alternatives
-    - **AI Tips**: Displays bulleted pro tips for better project results
-    - **Data Source**: Uses shared stub data from `app/lib/planStubs.ts` - a deterministic content generator based on projectId hash. Ensures Plan Outline and Plan Tabs show matching data without network calls.
-    - Uses Material Top Tabs navigator for smooth swipeable experience, consistent with app design system.
-- **Plan Screen** (Legacy): Original plan screen with expandable step-by-step instructions. Features summary cards showing estimated cost, time, and difficulty. Includes stub "Share/Export" button for future functionality. All plan data comes from project.plan object returned by backend.
-- **Authentication**: Uses Supabase Auth for user authentication, with a fallback to a development mode for entitlements if no user is authenticated or the API is unreachable.
-- **Test Mode Bypass**: Backend includes TEST_MODE flag (enabled when NODE_ENV=development) that bypasses quota checks for allowlisted test users during development and automated testing. Prevents quota exhaustion from blocking feature development.
-- **Error Handling**: Comprehensive API and storage error handling, including network error detection and structured error responses. NewProject includes specific handling for quota/permission errors with clear user-friendly messages. Includes error handling for duplicate preview requests with friendly message "You've already used the preview for this project." Errors prevent navigation and allow users to retry.
-- **ProfileScreen & Billing Integration**: Displays user entitlements, current plan, and subscription management. Features TIER_INFO metadata for tier labels and limits (Free: 2 projects, Casual $5.99/mo: 5 projects + 1 visual preview per project, Pro $14.99/mo: 25 projects + 1 visual preview per project). Includes inline upgrade picker, Stripe checkout/portal integration, sync plan functionality with visible feedback ("Syncing..." → "Synced just now"), and production-ready billing handlers with all interactive elements using Pressable components and testIDs.
-- **UX Enhancements**:
-    - **Toast Notifications**: Custom `Toast` component for animated success and error messages.
-    - **Debounce Hook**: `useDebouncePress` to prevent double-taps on CTAs.
-    - **Haptic Feedback**: Integrates `expo-haptics` for tactile feedback on key interactions.
-    - **Loading States**: Detailed loading indicators, including spinners and disabled UI elements, during API operations.
-    - **Health Ping System**: Periodically pings a `/health` endpoint to verify backend server availability and display a "Can't reach server" banner if unresponsive.
+- **Backend API Integration**: Uses an Express.js backend server (`server.js`) for managing projects and entitlements, with direct fetch calls for API operations.
+- **Image Upload**: Server-side image upload via multer to Supabase Storage, with a permission-free photo picker using `ImagePicker.launchImageLibraryAsync()`.
+- **New Project Screen (`NewProject.tsx`)**: Guides users through project creation, including `Smart Suggestions` (context-aware tips based on project details) and `Design Suggestions` (beta). It handles project creation, preview generation, and building without preview, with form validation and reset logic.
+- **Project Details Screen**: Displays project information using expandable `AccordionCard` components for plan sections (Overview, Materials, Steps, Shopping). It supports navigation via project ID or object.
+- **Plan Tabs Screen**: A modern tabbed interface with swipeable tabs for Overview, Materials, Tools, and AI Tips, using deterministic stub data.
+- **Authentication**: Utilizes Supabase Auth, with a development mode fallback.
+- **Error Handling**: Comprehensive API and storage error handling, including specific messages for quota and permission errors.
+- **ProfileScreen & Billing Integration**: Manages user entitlements, current plans (Free, Casual, Pro), and integrates with Stripe for subscription management, including visual feedback for syncing.
+- **UX Enhancements**: Includes custom toast notifications, debounce hook for CTAs, haptic feedback, detailed loading states, and a health ping system for backend availability.
 
 ## External Dependencies
 

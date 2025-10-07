@@ -1,8 +1,8 @@
 export const brand = {
-  primary: '#7C4DFF',      // main DIY Genie purple
-  primary600: '#6A3CE9',
-  primary700: '#5B2ED1',
-  primary300: '#B39DFF',
+  primary: '#7C3AED',      // purple-600 - main DIY Genie brand color
+  primary700: '#6D28D9',   // purple-700 - darker shade for gradients
+  primary500: '#A78BFA',   // purple-400 - lighter shade
+  primary300: '#C4B5FD',   // purple-300 - lightest shade for accents
   surface: '#FFFFFF',
   surfaceAlt: '#F6F6FA',
   text: '#101828',
@@ -13,8 +13,8 @@ export const brand = {
 };
 
 export const colors = {
-  // Gradient colors for background only (unchanged from Welcome)
-  gradientStart: '#C4B5FD', // Light Lavender
+  // Gradient colors for background (matching colors.js)
+  gradientStart: '#C4B5FD', // Light Lavender (purple-300)
   gradientEnd: '#93C5FD',   // Soft Sky Blue
   
   // High-contrast UI surfaces
@@ -26,19 +26,19 @@ export const colors = {
   textSecondary: '#475569', // slate-600 - secondary text
   
   // Interactive colors
-  accent: brand.primary,     // Updated to purple
-  accentPressed: brand.primary600, // Updated to purple pressed
-  brandPurpleDeep: '#5B21B6', // purple-800 - nav bars/background accents
-  purpleLight: '#C4B5FD',     // purple-300 - inactive tab/icon tint
+  accent: brand.primary,     // Purple brand color
+  accentPressed: brand.primary700, // Purple pressed state
+  brandPurpleDeep: brand.primary700, // nav bars/background accents
+  purpleLight: brand.primary300,     // inactive tab/icon tint
   
   // UI elements
   muted: '#E5E7EB',      // gray-200 - skeletons/dividers
   
-  // Legacy colors for Welcome screen (keep unchanged)
+  // Core colors
   white: '#FFFFFF',
   black: '#000000',
-  ctaOrange: '#F59E0B',
-  ctaOrangePressed: '#EA580C',
+  ctaOrange: brand.primary,        // Aliased to purple brand
+  ctaOrangePressed: brand.primary700, // Aliased to purple brand
   
   // Tab bar colors (updated for new design)
   tabActive: '#0F172A',

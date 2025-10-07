@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -117,12 +117,12 @@ const styles = StyleSheet.create({
     flex: 0.15,
   },
   ctaButton: {
-    backgroundColor: colors.ctaOrange,
+    backgroundColor: brand.primary,
     paddingHorizontal: spacing.xxxl * 1.38,
     paddingVertical: spacing.md * 1.15,
     borderRadius: layout.borderRadius.full,
     marginBottom: spacing.xl,
-    shadowColor: colors.black,
+    shadowColor: brand.primary,
     shadowOffset: {
       width: 0,
       height: 4,

@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   primaryButtonDisabled: {
-    backgroundColor: brand.primary600,
+    backgroundColor: brand.primary700,
     opacity: 0.6,
   },
   primaryButtonText: {
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonPressed: {
     opacity: 0.9,
-    backgroundColor: 'rgba(124, 77, 255, 0.05)',
+    backgroundColor: 'rgba(124, 58, 237, 0.05)',
   },
   secondaryButtonDisabled: {
     borderColor: brand.primary,
