@@ -45,14 +45,14 @@ function HowItWorksGrid({ navigation }) {
       style={{
         width: CHIP_W,
         minWidth: 84,
-        height: 64,
         borderRadius: 14,
         backgroundColor: 'rgba(138, 92, 255, 0.08)',
         borderWidth: 1,
         borderColor: 'rgba(138,92,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         marginHorizontal: GAP / 2,
       }}
       activeOpacity={0.85}
@@ -86,14 +86,9 @@ function HowItWorksGrid({ navigation }) {
 
       <View
         onLayout={(e) => setHowW(e.nativeEvent.layout.width)}
-        style={{ paddingHorizontal: 16, marginTop: 8 }}
+        style={{ paddingHorizontal: 8 }}
       >
-        <View style={{ 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          marginBottom: 12,
-        }}>
+        <View style={chipStyles.howRow}>
           <Chip 
             icon={items[0].icon} 
             label={items[0].label} 
@@ -162,7 +157,7 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView 
         style={styles.scrollView} 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 12, paddingBottom: 24 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome Header */}
@@ -231,6 +226,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingBottom: 24,
   },
   welcomeTitle: {
     fontFamily: typography.fontFamily.manropeBold,
@@ -331,6 +327,15 @@ const chipStyles = StyleSheet.create({
     fontSize: 16, 
     fontWeight: '700', 
     color: colors.ink900, 
+    marginTop: 8,
     marginBottom: 10,
+  },
+  howRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 8,
+    marginTop: 10,
+    marginBottom: 14,
   },
 });
