@@ -11,6 +11,8 @@ import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
+import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
+import EmptyState from '../components/ui/EmptyState';
 
 function HowItWorks({ navigation }) {
   return (
@@ -50,12 +52,17 @@ export default function HomeScreen({ navigation }) {
   const { userId } = useUser();
   const isFocused = useIsFocused();
   const [recent, setRecent] = useState([]);
+  const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const isVeryNarrow = winW < 360;
 
   const load = async () => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const data = await listProjects(userId);
       const items = (data?.items ?? [])
@@ -64,6 +71,8 @@ export default function HomeScreen({ navigation }) {
       setRecent(items);
     } catch (error) {
       console.error('Failed to load recent projects:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,15 +112,23 @@ export default function HomeScreen({ navigation }) {
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
 
-        {/* Project Cards */}
-        <View style={styles.projectsSection}>
-          {recent.map((project) => (
-            <ProjectCard key={project.id} project={project} navigation={navigation} />
-          ))}
-          {recent.length === 0 && (
-            <Text style={styles.emptyText}>No recent projects yet</Text>
-          )}
-        </View>
+        {/* Project Cards / Loading / Empty State */}
+        {loading ? (
+          <ProjectCardSkeleton count={2} />
+        ) : recent.length === 0 ? (
+          <EmptyState
+            title="No projects yet"
+            subtitle="Start your first DIY and it'll show up here."
+            primaryLabel="Start a New Project"
+            onPrimary={handleNewProject}
+          />
+        ) : (
+          <View style={styles.projectsSection}>
+            {recent.map((project) => (
+              <ProjectCard key={project.id} project={project} navigation={navigation} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
