@@ -78,12 +78,18 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function resetForm() {
-    setDescription('');
-    setBudget('');
-    setSkillLevel('');
-    setPhotoUri(null);
-    setSugs(null);
-    setDraftId(null);
+    try {
+      setDraftId(null);
+      setDescription('');
+      setBudget('');
+      setSkillLevel('');
+      setPhotoUri(null);
+      setSugs(null);
+      setSugsBusy(false);
+      setSugsError(undefined);
+      setApplyOpen(false);
+      setPendingTip(null);
+    } catch {}
   }
 
   function showToast(message: string, type: 'success' | 'error' = 'success') {
@@ -134,6 +140,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     return () => subscription.remove();
   }, []);
+
+  // Clear form when navigating away from tab
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (draftId) {
+        resetForm();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, draftId]);
 
   async function ensureDraft() {
     if (draftId) return draftId;
@@ -337,9 +353,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       });
       console.log('[build] accepted', res);
       showToast('Plan requested', 'success');
+      resetForm();
       navigateToProject(id);
-      setDraftId(null);
-      setPhotoUri(null);
     } finally {
       setBusyBuild(false);
     }
