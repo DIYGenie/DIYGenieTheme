@@ -20,10 +20,10 @@ const isVeryNarrow = screenW < 360;
 
 function HowItWorksGrid({ navigation }) {
   const items = [
-    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc' },
-    { id: 2, icon: 'image-outline', label: isNarrow ? 'Room scan' : 'Photo / Room scan', section: 'media' },
-    { id: 3, icon: 'sparkles-outline', label: 'AI preview', section: 'preview' },
-    { id: 4, icon: 'list-outline', label: 'Build plan', section: 'plan' },
+    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe your project', a11yHint: 'Focus on project description field' },
+    { id: 2, icon: 'image-outline', label: 'Room scan', section: 'media', a11yLabel: 'Room scan (or upload photo)', a11yHint: 'Open room scanner or choose a photo on web' },
+    { id: 3, icon: 'sparkles-outline', label: 'AI preview', section: 'preview', a11yLabel: 'AI preview', a11yHint: 'Scroll to design suggestions' },
+    { id: 4, icon: 'list-outline', label: 'Build plan', section: 'plan', a11yLabel: 'Build plan', a11yHint: 'Scroll to plan creation buttons' },
   ];
 
   return (
@@ -37,6 +37,9 @@ function HowItWorksGrid({ navigation }) {
               style={[chipStyles.chip, { width: chipWidth }]} 
               activeOpacity={0.85}
               onPress={() => navigation.navigate('NewProject', { section: item.section })}
+              accessibilityLabel={item.a11yLabel}
+              accessibilityHint={item.a11yHint}
+              accessibilityRole="button"
             >
               <Ionicons name={item.icon} size={18} color={colors.brand} />
               <Text style={[chipStyles.chipLabel, { maxWidth: chipWidth - 12 }]} numberOfLines={1}>
@@ -264,6 +267,7 @@ const chipStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   chip: {
+    minWidth: 82,
     height: 64, 
     borderRadius: 12,
     backgroundColor: colors.brand50, 
@@ -272,11 +276,11 @@ const chipStyles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     paddingVertical: 8, 
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   chipLabel: { 
-    fontSize: 10, 
-    lineHeight: 13, 
+    fontSize: 11, 
+    lineHeight: 14, 
     fontWeight: '600', 
     color: colors.ink700, 
     marginTop: 6, 
