@@ -13,14 +13,14 @@ import { useUser } from '../lib/useUser';
 function HowItWorksGrid({ navigation }) {
   const [howW, setHowW] = React.useState(0);
   
-  const GAP = 8;
-  const ARROW_W = 12;
+  const GAP = 6;
+  const ARROW_W = 10;
   const ITEMS = 7;
   const gapsTotal = GAP * (ITEMS - 1);
   const arrowsTotal = ARROW_W * 3;
   const CHIP_W = howW > 0
     ? Math.floor((howW - gapsTotal - arrowsTotal) / 4)
-    : 84;
+    : 90;
 
   const items = [
     { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe your project', a11yHint: 'Focus on project description field' },
@@ -30,14 +30,14 @@ function HowItWorksGrid({ navigation }) {
   ];
 
   const Arrow = () => (
-    <Text style={{ 
-      width: ARROW_W, 
-      textAlign: 'center', 
-      opacity: 0.5, 
-      marginHorizontal: GAP / 2,
-      fontSize: 16,
-      color: colors.ink700,
-    }}>›</Text>
+    <View style={{ width: ARROW_W, marginHorizontal: GAP / 2 }}>
+      <Text style={{ 
+        textAlign: 'center', 
+        opacity: 0.5,
+        fontSize: 16,
+        color: colors.ink700,
+      }}>›</Text>
+    </View>
   );
 
   const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
@@ -51,7 +51,7 @@ function HowItWorksGrid({ navigation }) {
         borderColor: 'rgba(138,92,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         marginHorizontal: GAP / 2,
       }}
       activeOpacity={0.85}
@@ -60,15 +60,15 @@ function HowItWorksGrid({ navigation }) {
       accessibilityHint={a11yHint}
       accessibilityRole="button"
     >
-      <View style={{ marginBottom: 6 }}>
+      <View style={{ marginBottom: 4 }}>
         <Ionicons name={icon} size={18} color={colors.brand} />
       </View>
       <Text
-        numberOfLines={1}
-        ellipsizeMode="clip"
+        numberOfLines={2}
         allowFontScaling={false}
         style={{ 
-          fontSize: 12, 
+          fontSize: 12,
+          lineHeight: 14,
           fontWeight: '600',
           color: colors.ink700,
           textAlign: 'center',
