@@ -7,11 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import PromptApplyModal from '../components/PromptApplyModal';
+import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -566,8 +567,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   paddingHorizontal: 12,
                 }}
               >
-                <Ionicons name="refresh" size={16} color="#F59E0B" />
-                <Text style={{ marginLeft: 6, color: '#F59E0B', fontSize: 14 }}>
+                <Ionicons name="refresh" size={16} color={brand.primary} />
+                <Text style={{ marginLeft: 6, color: brand.primary, fontSize: 14 }}>
                   Change photo
                 </Text>
               </TouchableOpacity>
@@ -595,7 +596,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             
             {sugsBusy ? (
               <View style={styles.suggestionsLoading}>
-                <ActivityIndicator size="small" color="#F59E0B" />
+                <ActivityIndicator size="small" color={brand.primary} />
                 <Text style={styles.suggestionsLoadingText}>Loading suggestions…</Text>
               </View>
             ) : sugs?.bullets && sugs.bullets.length > 0 ? (
@@ -629,31 +630,19 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
         {hasValidForm() && (
           <View style={{ marginTop: 20 }}>
-            <Pressable
+            <PrimaryButton
               testID="np-generate-preview"
+              title="Generate AI Preview"
               onPress={generatePreview}
-              disabled={!photoUri || !canPreview || busy}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                (!photoUri || !canPreview || busy) && styles.primaryButtonDisabled,
-                { transform: [{ scale: pressed && photoUri && canPreview && !busy ? 0.98 : 1 }] }
-              ]}
-            >
-              {busy ? (
-                <>
-                  <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.primaryButtonText}>Requesting…</Text>
-                </>
-              ) : (
-                <Text style={styles.primaryButtonText}>Generate AI Preview</Text>
-              )}
-            </Pressable>
+              disabled={!photoUri || !canPreview}
+              loading={busy}
+            />
 
             {!canPreview && (
               <Text style={styles.upgradeHint}>
                 <Text style={{ color: '#6B7280' }}>Need visual previews? </Text>
                 <Text 
-                  style={{ color: '#F59E0B', fontWeight: '600' }}
+                  style={{ color: brand.primary, fontWeight: '600' }}
                   onPress={() => navigation.navigate('Profile')}
                 >
                   Upgrade
@@ -661,25 +650,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </Text>
             )}
 
-            <Pressable
+            <SecondaryButton
               testID="np-build-without-preview"
+              title="Build Plan Without Preview"
               onPress={onBuildWithoutPreview}
               disabled={busyBuild}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                busyBuild && styles.secondaryButtonDisabled,
-                { marginTop: 12, transform: [{ scale: pressed && !busyBuild ? 0.98 : 1 }] }
-              ]}
-            >
-              {busyBuild ? (
-                <>
-                  <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 8 }} />
-                  <Text style={styles.secondaryButtonText}>Creating…</Text>
-                </>
-              ) : (
-                <Text style={styles.secondaryButtonText}>Build Plan Without Preview</Text>
-              )}
-            </Pressable>
+              loading={busyBuild}
+              style={{ marginTop: 12 }}
+            />
           </View>
         )}
       </ScrollView>
