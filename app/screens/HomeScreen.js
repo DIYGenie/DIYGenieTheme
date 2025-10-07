@@ -11,12 +11,16 @@ import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 function HowItWorksGrid({ navigation }) {
-  const { width: winW } = useWindowDimensions();
-  const H_PADDING = 16;
+  const [howW, setHowW] = React.useState(0);
+  
   const GAP = 8;
-  const ARROW_W = 14;
-  const available = winW - (H_PADDING * 2) - (GAP * 6) - (ARROW_W * 3);
-  const CHIP_W = Math.max(82, Math.floor(available / 4));
+  const ARROW_W = 12;
+  const ITEMS = 7;
+  const gapsTotal = GAP * (ITEMS - 1);
+  const arrowsTotal = ARROW_W * 3;
+  const CHIP_W = howW > 0
+    ? Math.floor((howW - gapsTotal - arrowsTotal) / 4)
+    : 84;
 
   const items = [
     { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe your project', a11yHint: 'Focus on project description field' },
@@ -25,64 +29,102 @@ function HowItWorksGrid({ navigation }) {
     { id: 4, icon: 'list-outline', label: 'Build plan', section: 'plan', a11yLabel: 'Build plan', a11yHint: 'Scroll to plan creation buttons' },
   ];
 
+  const Arrow = () => (
+    <Text style={{ 
+      width: ARROW_W, 
+      textAlign: 'center', 
+      opacity: 0.5, 
+      marginHorizontal: GAP / 2,
+      fontSize: 16,
+      color: colors.ink700,
+    }}>›</Text>
+  );
+
+  const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
+    <TouchableOpacity
+      style={{
+        width: CHIP_W,
+        height: 64,
+        borderRadius: 14,
+        backgroundColor: 'rgba(138, 92, 255, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(138,92,255,0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 10,
+        marginHorizontal: GAP / 2,
+      }}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('NewProject', { section })}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={a11yHint}
+      accessibilityRole="button"
+    >
+      <View style={{ marginBottom: 6 }}>
+        <Ionicons name={icon} size={18} color={colors.brand} />
+      </View>
+      <Text
+        numberOfLines={1}
+        ellipsizeMode="clip"
+        allowFontScaling={false}
+        style={{ 
+          fontSize: 12, 
+          fontWeight: '600',
+          color: colors.ink700,
+          textAlign: 'center',
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={chipStyles.wrap}>
       <Text style={chipStyles.title}>How it works</Text>
 
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: GAP,
-        marginTop: 8,
-        marginBottom: 12,
-        paddingHorizontal: H_PADDING,
-      }}>
-        {items.map((item, idx) => (
-          <React.Fragment key={item.id}>
-            <TouchableOpacity 
-              style={{
-                width: CHIP_W,
-                height: 64,
-                paddingHorizontal: 10,
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: colors.brand50,
-                borderWidth: 1,
-                borderColor: 'rgba(110,64,255,0.12)',
-                alignItems: 'center',
-              }}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('NewProject', { section: item.section })}
-              accessibilityLabel={item.a11yLabel}
-              accessibilityHint={item.a11yHint}
-              accessibilityRole="button"
-            >
-              <Ionicons name={item.icon} size={18} color={colors.brand} />
-              <Text 
-                numberOfLines={1}
-                ellipsizeMode="clip"
-                allowFontScaling={false}
-                style={{
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: colors.ink700,
-                  marginTop: 6,
-                  textAlign: 'center',
-                  flexShrink: 1,
-                }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-
-            {idx < items.length - 1 && (
-              <View pointerEvents="none" style={{ width: ARROW_W, alignItems: 'center', opacity: 0.5 }}>
-                <Ionicons name="chevron-forward" size={12} color="rgba(110,64,255,0.9)" />
-              </View>
-            )}
-          </React.Fragment>
-        ))}
+      <View
+        onLayout={(e) => setHowW(e.nativeEvent.layout.width)}
+        style={{ paddingHorizontal: 16, marginTop: 8 }}
+      >
+        <View style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          marginBottom: 12,
+        }}>
+          <Chip 
+            icon={items[0].icon} 
+            label={items[0].label} 
+            section={items[0].section}
+            a11yLabel={items[0].a11yLabel}
+            a11yHint={items[0].a11yHint}
+          />
+          <Arrow />
+          <Chip 
+            icon={items[1].icon} 
+            label={items[1].label} 
+            section={items[1].section}
+            a11yLabel={items[1].a11yLabel}
+            a11yHint={items[1].a11yHint}
+          />
+          <Arrow />
+          <Chip 
+            icon={items[2].icon} 
+            label={items[2].label} 
+            section={items[2].section}
+            a11yLabel={items[2].a11yLabel}
+            a11yHint={items[2].a11yHint}
+          />
+          <Arrow />
+          <Chip 
+            icon={items[3].icon} 
+            label={items[3].label} 
+            section={items[3].section}
+            a11yLabel={items[3].a11yLabel}
+            a11yHint={items[3].a11yHint}
+          />
+        </View>
       </View>
     </View>
   );
