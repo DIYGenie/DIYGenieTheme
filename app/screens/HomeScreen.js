@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
-import { colors } from '../../theme/colors.ts';
+import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   startProjectButton: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: brand.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   startProjectText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#F59E0B',
+    color: brand.primary,
     textAlign: 'center',
   },
   emptyText: {

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { Screen, Card, Badge, ui, space } from '../ui/components';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
@@ -158,7 +158,7 @@ function ProjectCard({ project, navigation }) {
           />
         ) : status === 'preview_requested' ? (
           <View style={styles.thumbnailSkeleton}>
-            <ActivityIndicator size="small" color="#F59E0B" />
+            <ActivityIndicator size="small" color={brand.primary} />
           </View>
         ) : (
           <View style={styles.thumbnailPlaceholder} />
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   filterPillActive: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: brand.primary,
   },
   filterPillInactive: {
     backgroundColor: '#F3F4F6',
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   startProjectButton: {
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: brand.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -352,6 +352,6 @@ const styles = StyleSheet.create({
   startProjectText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#F59E0B',
+    color: brand.primary,
   },
 });

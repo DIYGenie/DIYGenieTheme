@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F59E0B',
+    backgroundColor: brand.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   startScanButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: brand.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,

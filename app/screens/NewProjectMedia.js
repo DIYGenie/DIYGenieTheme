@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -93,7 +93,7 @@ export default function NewProjectMedia({ navigation, route }) {
             onPress={handleScanRoom}
             testID="btn-scan-room"
           >
-            <Ionicons name="camera" size={28} color="#F59E0B" style={styles.tileIcon} />
+            <Ionicons name="camera" size={28} color={brand.primary} style={styles.tileIcon} />
             <Text style={styles.scanRoomText}>Scan Room</Text>
           </TouchableOpacity>
           
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     height: 120,
     backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: '#F59E0B',
+    borderColor: brand.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   scanRoomText: {
     fontSize: 16,
     fontFamily: typography.fontFamily.manropeBold,
-    color: '#F59E0B',
+    color: brand.primary,
     textAlign: 'center',
   },
   uploadPhotoText: {

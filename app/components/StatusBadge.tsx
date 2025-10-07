@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { typography } from '../../theme/typography';
+import { brand } from '../../theme/colors';
 
 interface StatusBadgeProps {
   status: string;
@@ -16,13 +17,13 @@ export default function StatusBadge({ status, hasInputImage }: StatusBadgeProps)
     badgeColor = '#6B7280';
   } else if (status === 'preview_requested') {
     badgeText = 'Preview requested';
-    badgeColor = '#F59E0B';
+    badgeColor = brand.primary;
   } else if (status === 'preview_ready') {
     badgeText = 'Preview ready';
     badgeColor = '#10B981';
   } else if (status === 'plan_requested') {
     badgeText = 'Plan requested';
-    badgeColor = '#F59E0B';
+    badgeColor = brand.primary;
   } else if (status === 'plan_ready') {
     badgeText = 'Plan ready';
     badgeColor = '#10B981';

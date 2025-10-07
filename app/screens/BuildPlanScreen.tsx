@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { buildPlanFromProject, serializePlanToText } from '../lib/plan';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { brand } from '../../theme/colors';
 
 export default function BuildPlanScreen({ route, navigation }) {
   const { project, projectId } = route.params;
@@ -161,7 +162,7 @@ function Section({ title, icon, children }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon} size={24} color="#E39A33" />
+        <Ionicons name={icon} size={24} color={brand.primary} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       <View style={styles.sectionContent}>
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
   bulletNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#E39A33',
+    color: brand.primary,
     marginRight: 12,
     minWidth: 24,
   },
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#E39A33',
+    color: brand.primary,
   },
   toolRow: {
     marginBottom: 6,
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#E39A33',
+    borderLeftColor: brand.primary,
   },
   cutListPart: {
     fontSize: 17,
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E39A33',
+    backgroundColor: brand.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,

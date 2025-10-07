@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchProject, fetchPlan } from '../lib/api';
 import Toast from '../components/Toast';
+import { brand } from '../../theme/colors';
 
 export default function PlanScreen({ navigation, route }) {
   const { id } = route.params;
@@ -244,7 +245,7 @@ export default function PlanScreen({ navigation, route }) {
                 <View style={styles.listCard}>
                   {plan.tips.map((tip, index) => (
                     <View key={index} style={styles.listItem}>
-                      <Ionicons name="bulb-outline" size={18} color="#F59E0B" />
+                      <Ionicons name="bulb-outline" size={18} color={brand.primary} />
                       <Text style={styles.listItemText}>{tip}</Text>
                     </View>
                   ))}

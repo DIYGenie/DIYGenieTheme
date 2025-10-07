@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ExpandableCard from '../components/ExpandableCard';
 import { buildPlanFromProject } from '../lib/plan';
 import { api } from '../lib/api';
+import { brand } from '../../theme/colors';
 
 export default function ProjectDetailsScreen({ route, navigation }) {
   const [project, setProject] = useState(route?.params?.project || {});
@@ -47,7 +48,7 @@ export default function ProjectDetailsScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#E39A33" />
+          <ActivityIndicator size="large" color={brand.primary} />
           <Text style={styles.loadingText}>Loading project...</Text>
         </View>
       </SafeAreaView>
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
   },
 
   ctaButton: {
-    backgroundColor: '#E39A33',
+    backgroundColor: brand.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     marginBottom: 20,
-    shadowColor: '#E39A33',
+    shadowColor: brand.primary,
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   estimatedValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#E39A33',
+    color: brand.primary,
   },
 
   stepRow: {
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
   stepNumber: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#E39A33',
+    color: brand.primary,
     marginRight: 12,
     marginTop: 2,
   },

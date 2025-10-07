@@ -4,7 +4,7 @@ export const colors = {
   sub: "#6B7280",
   border: "#E5E7EB",
   card: "#F9FAFB",
-  primary: "#E39A33",
+  primary: "#7C3AED",
   primaryText: "#FFFFFF",
   successBg: "#E8F6EE",
   successText: "#2E7D32",

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   looksGoodButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: brand.primary,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 32,

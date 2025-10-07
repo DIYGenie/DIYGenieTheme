@@ -11,7 +11,7 @@ export default function OpenPlanScreen({ route, navigation }: any) {
     <ButtonPrimary
       title={name}
       onPress={() => setActive(name)}
-      style={{ paddingVertical:10, marginRight:10, backgroundColor: active===name ? "#E39A33" : "#F3F4F6" }}
+      style={{ paddingVertical:10, marginRight:10, backgroundColor: active===name ? "#7C3AED" : "#F3F4F6" }}
       textStyle={{ color: active===name ? "#fff" : "#111827", fontSize:14 }}
     />
   );
