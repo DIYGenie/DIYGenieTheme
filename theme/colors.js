@@ -55,5 +55,6 @@ export const colors = {
   
   // Text ink colors
   ink900: '#111111',
+  ink700: '#374151',
   ink600: '#4B5563',
 };

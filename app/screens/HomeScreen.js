@@ -29,12 +29,8 @@ function HowItWorksGrid() {
             accessibilityRole="summary"
             style={gridStyles.card}
           >
-            <View style={gridStyles.iconWrap}>
-              <Ionicons name={icon} size={28} color={colors.brand700} />
-            </View>
-            <Text style={gridStyles.cardLabel} numberOfLines={2}>
-              {label}
-            </Text>
+            <Ionicons name={icon} size={26} color={colors.brand} style={{ marginBottom: 0 }} />
+            <Text style={gridStyles.cardLabel}>{label}</Text>
           </View>
         ))}
       </View>
@@ -277,35 +273,25 @@ const gridStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    width: '47%',
-    height: 110,
+    width: '48%',
+    height: 92,
     backgroundColor: colors.brand50,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(110,64,255,0.08)',
-    padding: 10,
+    borderColor: 'rgba(110,64,255,0.10)',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-  },
-  iconWrap: {
-    width: 44, 
-    height: 44, 
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    alignItems: 'center', 
-    justifyContent: 'center',
-    elevation: 2, 
-    shadowColor: colors.brand, 
-    shadowOpacity: 0.15,
-    shadowRadius: 8, 
-    shadowOffset: { width: 0, height: 4 },
   },
   cardLabel: {
-    fontSize: 12.5, 
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
-    color: colors.ink600, 
+    color: colors.ink700,
     textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 6,
   },
 });
