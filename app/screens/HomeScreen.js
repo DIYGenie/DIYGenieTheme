@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,15 +10,14 @@ import { typography } from '../../theme/typography';
 import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
-const screenW = Dimensions.get('window').width;
-const arrowsW = 10 * 3;
-const gapsW   = 8  * 3;
-const sidePad = 24 * 2;
-const chipWidth = Math.max(74, Math.floor((screenW - arrowsW - gapsW - sidePad) / 4));
-const isNarrow = screenW < 390;
-const isVeryNarrow = screenW < 360;
-
 function HowItWorksGrid({ navigation }) {
+  const { width: winW } = useWindowDimensions();
+  const H_PADDING = 16;
+  const GAP = 8;
+  const ARROW_W = 14;
+  const available = winW - (H_PADDING * 2) - (GAP * 6) - (ARROW_W * 3);
+  const CHIP_W = Math.max(82, Math.floor(available / 4));
+
   const items = [
     { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe your project', a11yHint: 'Focus on project description field' },
     { id: 2, icon: 'image-outline', label: 'Room scan', section: 'media', a11yLabel: 'Room scan (or upload photo)', a11yHint: 'Open room scanner or choose a photo on web' },
@@ -30,11 +29,29 @@ function HowItWorksGrid({ navigation }) {
     <View style={chipStyles.wrap}>
       <Text style={chipStyles.title}>How it works</Text>
 
-      <View style={chipStyles.row}>
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: GAP,
+        marginTop: 8,
+        marginBottom: 12,
+        paddingHorizontal: H_PADDING,
+      }}>
         {items.map((item, idx) => (
           <React.Fragment key={item.id}>
             <TouchableOpacity 
-              style={[chipStyles.chip, { width: chipWidth }]} 
+              style={{
+                width: CHIP_W,
+                height: 64,
+                paddingHorizontal: 10,
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: colors.brand50,
+                borderWidth: 1,
+                borderColor: 'rgba(110,64,255,0.12)',
+                alignItems: 'center',
+              }}
               activeOpacity={0.85}
               onPress={() => navigation.navigate('NewProject', { section: item.section })}
               accessibilityLabel={item.a11yLabel}
@@ -43,17 +60,25 @@ function HowItWorksGrid({ navigation }) {
             >
               <Ionicons name={item.icon} size={18} color={colors.brand} />
               <Text 
-                style={chipStyles.chipLabel} 
                 numberOfLines={1}
                 ellipsizeMode="clip"
+                allowFontScaling={false}
+                style={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: colors.ink700,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  flexShrink: 1,
+                }}
               >
                 {item.label}
               </Text>
             </TouchableOpacity>
 
             {idx < items.length - 1 && (
-              <View pointerEvents="none" style={chipStyles.arrowWrap}>
-                <Ionicons name="chevron-forward" size={12} color="rgba(110,64,255,0.45)" />
+              <View pointerEvents="none" style={{ width: ARROW_W, alignItems: 'center', opacity: 0.5 }}>
+                <Ionicons name="chevron-forward" size={12} color="rgba(110,64,255,0.9)" />
               </View>
             )}
           </React.Fragment>
@@ -68,6 +93,8 @@ export default function HomeScreen({ navigation }) {
   const isFocused = useIsFocused();
   const [recent, setRecent] = useState([]);
   const insets = useSafeAreaInsets();
+  const { width: winW } = useWindowDimensions();
+  const isVeryNarrow = winW < 360;
 
   const load = async () => {
     if (!userId) return;
@@ -96,7 +123,7 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome Header */}
-        <Text style={styles.welcomeTitle}>Welcome back, Tye</Text>
+        <Text style={[styles.welcomeTitle, { fontSize: isVeryNarrow ? 26 : 28 }]}>Welcome back, Tye</Text>
         <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
 
         {/* How it works grid */}
@@ -163,7 +190,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   welcomeTitle: {
-    fontSize: isVeryNarrow ? 26 : 28,
     fontFamily: typography.fontFamily.manropeBold,
     fontWeight: '700',
     color: '#0F172A',
@@ -256,44 +282,12 @@ const styles = StyleSheet.create({
 
 const chipStyles = StyleSheet.create({
   wrap: { 
-    marginTop: 8,
-    marginBottom: 18,
+    marginTop: 0,
   },
   title: { 
     fontSize: 16, 
     fontWeight: '700', 
     color: colors.ink900, 
     marginBottom: 10,
-  },
-  row: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-  },
-  chip: {
-    minWidth: 108,
-    height: 64, 
-    borderRadius: 12,
-    backgroundColor: colors.brand50, 
-    borderWidth: 1,
-    borderColor: 'rgba(110,64,255,0.12)',
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingVertical: 8, 
-    paddingHorizontal: 12,
-  },
-  chipLabel: { 
-    fontSize: 13, 
-    fontWeight: '600', 
-    color: colors.ink700, 
-    marginTop: 6, 
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  arrowWrap: { 
-    width: 10, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    marginHorizontal: 4,
   },
 });
