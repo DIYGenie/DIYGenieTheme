@@ -30,30 +30,26 @@ function HowItWorksGrid({ navigation }) {
   ];
 
   const Arrow = () => (
-    <View style={{ width: ARROW_W, marginHorizontal: GAP / 2 }}>
-      <Text style={{ 
-        textAlign: 'center', 
-        opacity: 0.5,
-        fontSize: 16,
-        color: colors.ink700,
-      }}>›</Text>
-    </View>
+    <Text style={{ 
+      marginHorizontal: 4, 
+      opacity: 0.5,
+      fontSize: 16,
+      color: colors.ink700,
+    }}>›</Text>
   );
 
   const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
     <TouchableOpacity
       style={{
-        width: CHIP_W,
-        minWidth: 84,
-        borderRadius: 14,
+        minWidth: 82,
+        borderRadius: 12,
         backgroundColor: 'rgba(138, 92, 255, 0.08)',
         borderWidth: 1,
         borderColor: 'rgba(138,92,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         paddingVertical: 10,
-        marginHorizontal: GAP / 2,
       }}
       activeOpacity={0.85}
       onPress={() => navigation.navigate('NewProject', { section })}
@@ -69,7 +65,7 @@ function HowItWorksGrid({ navigation }) {
         ellipsizeMode="clip"
         allowFontScaling={false}
         style={{ 
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: '600',
           color: colors.ink700,
           textAlign: 'center',
@@ -333,7 +329,7 @@ const chipStyles = StyleSheet.create({
   howRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 8,
     marginTop: 10,
     marginBottom: 14,
