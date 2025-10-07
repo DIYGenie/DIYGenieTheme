@@ -19,19 +19,15 @@ function HowItWorksGrid() {
   ];
 
   return (
-    <View style={gridStyles.wrap}>
-      <Text style={gridStyles.title}>How it works</Text>
-      <View style={gridStyles.grid}>
-        {items.map(({ id, icon, label }) => (
-          <View
-            key={id}
-            testID={`how-card-${id}`}
-            accessibilityRole="summary"
-            style={gridStyles.card}
-          >
-            <Ionicons name={icon} size={26} color={colors.brand} style={{ marginBottom: 0 }} />
-            <Text style={gridStyles.cardLabel}>{label}</Text>
-          </View>
+    <View style={chipStyles.wrap}>
+      <Text style={chipStyles.title}>How it works</Text>
+
+      <View style={chipStyles.row}>
+        {items.map((item) => (
+          <TouchableOpacity key={item.id} style={chipStyles.chip} activeOpacity={0.85}>
+            <Ionicons name={item.icon} size={20} color={colors.brand} />
+            <Text style={chipStyles.chipLabel} numberOfLines={1}>{item.label}</Text>
+          </TouchableOpacity>
         ))}
       </View>
     </View>
@@ -264,34 +260,35 @@ const styles = StyleSheet.create({
   },
 });
 
-const gridStyles = StyleSheet.create({
-  wrap: { marginTop: 20 },
-  title: { fontSize: 16, fontWeight: '700', color: colors.ink900, marginBottom: 12 },
-  grid: {
+const chipWidth = 82;
+
+const chipStyles = StyleSheet.create({
+  wrap: { marginTop: 16 },
+  title: { fontSize: 16, fontWeight: '700', color: colors.ink900, marginBottom: 10 },
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'stretch',
   },
-  card: {
-    width: '48%',
-    height: 92,
+  chip: {
+    width: chipWidth,
+    height: 76,
     backgroundColor: colors.brand50,
-    borderRadius: 12,
+    borderColor: 'rgba(110,64,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(110,64,255,0.10)',
+    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 8,
-    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
-  cardLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+  chipLabel: {
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '600',
     color: colors.ink700,
     textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 6,
+    maxWidth: chipWidth - 12,
   },
 });
