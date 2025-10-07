@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
@@ -60,6 +60,7 @@ export default function HomeScreen({ navigation }) {
   const { userId } = useUser();
   const isFocused = useIsFocused();
   const [recent, setRecent] = useState([]);
+  const insets = useSafeAreaInsets();
 
   const load = async () => {
     if (!userId) return;
@@ -84,7 +85,7 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView 
         style={styles.scrollView} 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 12, paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome Header */}
@@ -153,15 +154,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 24,
   },
   welcomeTitle: {
     fontSize: isVeryNarrow ? 26 : 28,
     fontFamily: typography.fontFamily.manropeBold,
     fontWeight: '700',
     color: '#0F172A',
-    marginTop: 4,
     marginBottom: 4,
   },
   welcomeSubtitle: {
@@ -251,7 +249,8 @@ const styles = StyleSheet.create({
 
 const chipStyles = StyleSheet.create({
   wrap: { 
-    marginTop: 0,
+    marginTop: 8,
+    marginBottom: 18,
   },
   title: { 
     fontSize: 16, 
