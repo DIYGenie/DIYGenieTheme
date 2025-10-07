@@ -17,8 +17,8 @@ The application utilizes a component-based React Native architecture.
 - **Font Management**: Integrates Expo Google Fonts (Manrope and Inter) with asynchronous loading.
 
 ### Visual Design Architecture
-- **Color Scheme**: Clean, modern design with white backgrounds (#FFFFFF), dark text (#111827), and orange primary color (#E39A33) for CTAs. Success states use green (#E8F6EE bg, #2E7D32 text), muted states use gray (#F3F4F6 bg, #374151 text).
-- **Design System**: Centralized UI kit in `app/ui/` with reusable components (Screen, ScreenScroll, Card, Badge, ButtonPrimary, SectionTitle) and theme tokens (colors, radii, space, shadow, ui styles) from `app/ui/theme.ts` and `app/ui/components.tsx`.
+- **Color Scheme**: Clean, modern design with white backgrounds (#FFFFFF), dark text (#111827), and **purple brand primary color (#7C3AED / purple-600)** for CTAs. Brand palette includes primary700 (#6D28D9), primary500 (#A78BFA), and primary300 (#C4B5FD) for gradients and accents. Success states use green (#E8F6EE bg, #2E7D32 text), muted states use gray (#F3F4F6 bg, #374151 text). Tab navigation features purple gradient (brand.primary700 → brand.primary300) with white active/transparent inactive text.
+- **Design System**: Centralized UI kit in `app/ui/` with reusable components (Screen, ScreenScroll, Card, Badge, SectionTitle) and theme tokens (colors, radii, space, shadow, ui styles) from `app/ui/theme.ts` and `app/ui/components.tsx`. **Unified button system** with `PrimaryButton` (purple bg, white text) and `SecondaryButton` (white bg, purple border/text) in `app/components/Buttons.tsx`.
 - **Layout System**: Uses SafeAreaView and consistent spacing tokens (xs: 6, sm: 10, md: 14, lg: 20, xl: 28) for responsive and scalable design.
 - **Icon Strategy**: Leverages Ionicons for consistent iconography.
 
