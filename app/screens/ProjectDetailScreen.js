@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator, ScrollView, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getProject } from '../lib/api';
-import { colors } from '../../theme/colors';
+import { brand, colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { PrimaryButton } from '../components/Buttons';
 
 export default function ProjectDetailScreen({ navigation, route }) {
   const { id: projectId } = route.params;
@@ -56,7 +57,7 @@ export default function ProjectDetailScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F59E0B" />
+          <ActivityIndicator size="large" color={brand.primary} />
         </View>
       </SafeAreaView>
     );
@@ -93,9 +94,11 @@ export default function ProjectDetailScreen({ navigation, route }) {
         </View>
 
         <View style={styles.buttonContainer}>
-          <Button
-            title="Build Plan Without Preview"
+          <PrimaryButton
+            title="Get Detailed Build Plan"
             onPress={onBuildWithoutPreview}
+            loading={submitting}
+            disabled={submitting}
           />
         </View>
       </ScrollView>
