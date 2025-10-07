@@ -11,108 +11,46 @@ import { listProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 function HowItWorksGrid({ navigation }) {
-  const [howW, setHowW] = React.useState(0);
-  
-  const GAP = 6;
-  const ARROW_W = 10;
-  const ITEMS = 7;
-  const gapsTotal = GAP * (ITEMS - 1);
-  const arrowsTotal = ARROW_W * 3;
-  const CHIP_W = howW > 0
-    ? Math.floor((howW - gapsTotal - arrowsTotal) / 4)
-    : 90;
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
 
   const items = [
-    { id: 1, icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe', a11yHint: 'Focus on project description field' },
-    { id: 2, icon: 'image-outline', label: 'Scan', section: 'media', a11yLabel: 'Scan', a11yHint: 'Open room scanner or choose a photo on web' },
-    { id: 3, icon: 'sparkles-outline', label: 'Preview', section: 'preview', a11yLabel: 'Preview', a11yHint: 'Scroll to design suggestions' },
-    { id: 4, icon: 'list-outline', label: 'Build', section: 'plan', a11yLabel: 'Build', a11yHint: 'Scroll to plan creation buttons' },
+    { icon: 'create-outline', label: 'Describe', section: 'desc', a11yLabel: 'Describe', a11yHint: 'Focus on project description field' },
+    { icon: 'image-outline', label: 'Scan', section: 'media', a11yLabel: 'Scan', a11yHint: 'Open room scanner or choose a photo on web' },
+    { icon: 'sparkles-outline', label: 'Preview', section: 'preview', a11yLabel: 'Preview', a11yHint: 'Scroll to design suggestions' },
+    { icon: 'list-outline', label: 'Build', section: 'plan', a11yLabel: 'Build', a11yHint: 'Scroll to plan creation buttons' },
   ];
-
-  const Arrow = () => (
-    <Text style={{ 
-      marginHorizontal: 4, 
-      opacity: 0.5,
-      fontSize: 16,
-      color: colors.ink700,
-    }}>›</Text>
-  );
-
-  const Chip = ({ icon, label, section, a11yLabel, a11yHint }) => (
-    <TouchableOpacity
-      style={{
-        minWidth: 78,
-        borderRadius: 12,
-        backgroundColor: 'rgba(138, 92, 255, 0.08)',
-        borderWidth: 1,
-        borderColor: 'rgba(138,92,255,0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-      }}
-      activeOpacity={0.85}
-      onPress={() => navigation.navigate('NewProject', { section })}
-      accessibilityLabel={a11yLabel}
-      accessibilityHint={a11yHint}
-      accessibilityRole="button"
-    >
-      <View style={{ marginBottom: 4 }}>
-        <Ionicons name={icon} size={18} color={colors.brand} />
-      </View>
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="clip"
-        allowFontScaling={false}
-        style={{ 
-          fontSize: 13,
-          fontWeight: '600',
-          color: colors.ink700,
-          textAlign: 'center',
-        }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={chipStyles.wrap}>
       <Text style={chipStyles.title}>How it works</Text>
 
-      <View style={chipStyles.howRow}>
-          <Chip 
-            icon={items[0].icon} 
-            label={items[0].label} 
-            section={items[0].section}
-            a11yLabel={items[0].a11yLabel}
-            a11yHint={items[0].a11yHint}
-          />
-          <Arrow />
-          <Chip 
-            icon={items[1].icon} 
-            label={items[1].label} 
-            section={items[1].section}
-            a11yLabel={items[1].a11yLabel}
-            a11yHint={items[1].a11yHint}
-          />
-          <Arrow />
-          <Chip 
-            icon={items[2].icon} 
-            label={items[2].label} 
-            section={items[2].section}
-            a11yLabel={items[2].a11yLabel}
-            a11yHint={items[2].a11yHint}
-          />
-          <Arrow />
-          <Chip 
-            icon={items[3].icon} 
-            label={items[3].label} 
-            section={items[3].section}
-            a11yLabel={items[3].a11yLabel}
-            a11yHint={items[3].a11yHint}
-          />
-        </View>
+      <View style={[chipStyles.howRow, { paddingHorizontal: 16, gap: 8 }]}>
+        {items.map((item, i) => (
+          <View key={item.label} style={chipStyles.howSlot}>
+            <TouchableOpacity
+              style={[chipStyles.chip, isCompact && chipStyles.chipCompact]}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('NewProject', { section: item.section })}
+              accessibilityLabel={item.a11yLabel}
+              accessibilityHint={item.a11yHint}
+              accessibilityRole="button"
+            >
+              <View style={{ marginBottom: 4 }}>
+                <Ionicons name={item.icon} size={18} color={colors.brand} />
+              </View>
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="clip"
+                allowFontScaling={false}
+                style={[chipStyles.chipLabel, isCompact && chipStyles.chipLabelCompact]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -324,9 +262,34 @@ const chipStyles = StyleSheet.create({
   howRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
     marginTop: 8,
     marginBottom: 12,
+  },
+  howSlot: {
+    flex: 1,
+    minWidth: 0,
+  },
+  chip: {
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(138, 92, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(138,92,255,0.15)',
+  },
+  chipCompact: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  chipLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.ink700,
+    textAlign: 'center',
+  },
+  chipLabelCompact: {
+    fontSize: 12,
   },
 });
