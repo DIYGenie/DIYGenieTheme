@@ -1,7 +1,5 @@
 import * as FileSystem from 'expo-file-system';
 import { supabase } from '../../lib/supabase';
-import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
 import { Platform } from 'react-native';
 
 type SaveArgs = {
@@ -12,41 +10,53 @@ type SaveArgs = {
 };
 
 export async function saveRoomScan({ uri, source, projectId = null, userId = null }: SaveArgs) {
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Please sign in to save scans.');
+    userId = user.id;
+  }
+
   const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   const fileBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
   const file = new Blob([fileBytes], { type: 'image/jpeg' });
 
-  const id = uuidv4();
-  const path = `projects/${projectId ?? 'unassigned'}/${id}.jpg`;
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+  const path = `${userId}/${filename}`;
 
   const { error: upErr } = await supabase.storage.from('room-scans').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false,
     contentType: 'image/jpeg',
+    upsert: false,
   });
   if (upErr) throw upErr;
 
-  const { data: pub } = supabase.storage.from('room-scans').getPublicUrl(path);
-  const image_url = pub?.publicUrl ?? null;
+  const { data: signed, error: signErr } = await supabase.storage
+    .from('room-scans')
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+  if (signErr) throw signErr;
+
+  const signedUrl = signed?.signedUrl;
+  if (!signedUrl) throw new Error('Failed to create signed URL');
 
   const meta = {
     source,
     device: Platform.OS,
-    uri,
-    uploaded_path: path,
+    flow: 'new_project',
+    v: 1,
   };
-  const payload = {
-    id,
-    user_id: userId ?? null,
-    project_id: projectId,
-    image_url,
-    raw_scan_url: null,
-    dimensions: null,
-    scale_px_per_in: null,
-    meta,
-  };
-  const { error: dbErr } = await supabase.from('room_scans').insert(payload);
+
+  const { data, error: dbErr } = await supabase
+    .from('room_scans')
+    .insert({
+      user_id: userId,
+      project_id: projectId ?? null,
+      image_url: signedUrl,
+      raw_scan_url: path,
+      meta,
+    })
+    .select('*')
+    .single();
+
   if (dbErr) throw dbErr;
 
-  return { id, image_url, path };
+  return { id: data?.id, image_url: signedUrl, path };
 }

@@ -315,12 +315,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function uploadPhotoToSupabase(uri: string, source: 'scan' | 'upload') {
-    if (Platform.OS === 'web' && uri.startsWith('data:')) {
-      return;
-    }
-    
     setUploading(true);
     try {
+      if (Platform.OS === 'web' && uri.startsWith('data:')) {
+        console.log('[web] Skipping upload for data URL (web preview only)');
+        showToast('Photo added (web preview)', 'success');
+        return;
+      }
+
       const res = await saveRoomScan({
         uri,
         source,
@@ -328,7 +330,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         userId: USER_ID ?? null,
       });
       console.log('[scan saved]', res);
-      showToast('Photo saved', 'success');
+      showToast('Scan uploaded & saved', 'success');
     } catch (e) {
       console.error('[upload failed]', e);
       showToast('Upload failed', 'error');
@@ -612,6 +614,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between', paddingVertical: 12 }}>
               <Pressable
                 testID="btn-scan-room"
+                disabled={uploading}
                 style={({ pressed }) => ({
                   flex: 1,
                   height: 120,
@@ -620,10 +623,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   alignItems: 'center',
                   backgroundColor: pressed ? '#6D28D9' : brand.primary,
                   shadowColor: '#7C3AED',
-                  shadowOpacity: 0.3,
+                  shadowOpacity: uploading ? 0 : 0.3,
                   shadowRadius: 12,
                   shadowOffset: { width: 0, height: 4 },
                   elevation: 6,
+                  opacity: uploading ? 0.5 : 1,
                 })}
                 onPress={() => navigation.navigate('Scan')}
               >
@@ -640,6 +644,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
               <Pressable
                 testID="btn-upload-photo"
+                disabled={uploading}
                 style={({ pressed }) => ({
                   flex: 1,
                   height: 120,
@@ -649,18 +654,25 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   backgroundColor: pressed ? '#F9FAFB' : '#FFFFFF',
                   borderWidth: 1.5,
                   borderColor: '#D1D5DB',
+                  opacity: uploading ? 0.5 : 1,
                 })}
                 onPress={onUploadPhoto}
               >
-                <Ionicons 
-                  name="image-outline" 
-                  size={28} 
-                  color={brand.primary} 
-                  style={{ marginBottom: 8 }} 
-                />
-                <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '600', fontFamily: typography.fontFamily.manropeSemiBold }}>
-                  Upload Photo
-                </Text>
+                {uploading ? (
+                  <ActivityIndicator size="small" color={brand.primary} />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name="image-outline" 
+                      size={28} 
+                      color={brand.primary} 
+                      style={{ marginBottom: 8 }} 
+                    />
+                    <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '600', fontFamily: typography.fontFamily.manropeSemiBold }}>
+                      Upload Photo
+                    </Text>
+                  </>
+                )}
               </Pressable>
             </View>
           ) : (
