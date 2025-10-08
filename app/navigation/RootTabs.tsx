@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator, BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -9,7 +9,6 @@ import HomeScreen from '../screens/HomeScreen';
 import NewProject from '../screens/NewProject';
 import ProfileScreen from '../screens/ProfileScreen';
 import ProjectsNavigator, { ProjectsStackParamList } from './ProjectsNavigator';
-import { useAuthGate } from '../providers/AuthGate';
 
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -35,8 +34,6 @@ function TabBarBackground() {
 }
 
 export default function RootTabs() {
-  const { session, loading } = useAuthGate();
-
   const screenOpts: BottomTabNavigationOptions = {
     tabBarActiveTintColor: colors.white,
     tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.65)',
@@ -64,35 +61,6 @@ export default function RootTabs() {
     headerShown: false,
   };
 
-  // Show loading indicator while checking auth
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={colors.brand?.primary || '#7C3AED'} />
-      </View>
-    );
-  }
-
-  // If not signed in, show only Profile tab (labeled "Sign in")
-  if (!session) {
-    return (
-      // @ts-ignore - id prop requires type augmentation
-      <Tab.Navigator screenOptions={screenOpts} id="root-tabs">
-        <Tab.Screen 
-          name="Profile" 
-          component={ProfileScreen}
-          options={{
-            tabBarLabel: 'Sign in',
-            tabBarIcon: ({ focused, color, size }) => (
-              <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    );
-  }
-
-  // If signed in, show full app tabs
   return (
     // @ts-ignore - id prop requires type augmentation
     <Tab.Navigator screenOptions={screenOpts} id="root-tabs">
