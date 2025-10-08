@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +13,17 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  const redirectAfterAuth = useCallback(() => {
+    // Prefer navigating to the Projects tab on the parent with id="root-tabs"
+    // @ts-ignore (RN Navigation v6)
+    const parent = navigation.getParent?.('root-tabs');
+    if (parent) {
+      // @ts-ignore
+      parent.navigate('Projects');
+    }
+    // If parent not found, do nothing (no goBack here)
+  }, [navigation]);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -29,7 +40,7 @@ export default function AuthScreen() {
     try {
       await signIn(email, password);
       showToast('Signed in');
-      setTimeout(() => navigation.goBack(), 500);
+      setTimeout(() => redirectAfterAuth(), 500);
     } catch (error: any) {
       showToast(error?.message || 'Sign in failed');
     } finally {
@@ -47,7 +58,7 @@ export default function AuthScreen() {
     try {
       await signUp(email, password);
       showToast('Signed in');
-      setTimeout(() => navigation.goBack(), 500);
+      setTimeout(() => redirectAfterAuth(), 500);
     } catch (error: any) {
       const errorMsg = error?.message || 'Sign up failed';
       if (errorMsg.toLowerCase().includes('email not confirmed')) {
