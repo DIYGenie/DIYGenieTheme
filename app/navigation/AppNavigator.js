@@ -9,7 +9,7 @@ import NewProjectMedia from '../screens/NewProjectMedia';
 import ScanScreen from '../screens/ScanScreen';
 import ProjectPreview from '../screens/ProjectPreview';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
-import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
+import ProjectDetailsScreen from '../screens/ProjectDetails';
 import PlanScreen from '../screens/PlanScreen';
 import PlanTabsScreen from '../screens/PlanTabsScreen';
 import OpenPlanScreen from '../screens/OpenPlanScreen';
@@ -45,7 +45,7 @@ export default function AppNavigator() {
       <Stack.Screen 
         name="ProjectDetails" 
         component={ProjectDetailsScreen} 
-        options={{ title: 'Project' }} 
+        options={{ title: 'Project', headerShown: true }} 
       />
       <Stack.Screen name="Plan" component={PlanScreen} />
       <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />

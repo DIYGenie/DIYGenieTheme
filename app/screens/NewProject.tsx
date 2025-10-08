@@ -27,6 +27,7 @@ import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
 import { saveDraft, loadDraft, clearDraft } from '../lib/draft';
+import { attachScanToProject } from '../lib/scans';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -501,9 +502,20 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         method: 'POST',
       });
       console.log('[build] accepted', res);
+      
+      // Link the last scan to the project if available
+      try {
+        if (lastScan?.scanId) {
+          await attachScanToProject(lastScan.scanId, id);
+        }
+      } catch (e) {
+        console.warn('[link scan]', e);
+      }
+      
       showToast('Plan requested', 'success');
       resetForm();
-      navigateToProject(id);
+      // Navigate and pass the image URL as a fallback for immediate display
+      (navigation as any).navigate('ProjectDetails', { id, imageUrl: lastScan?.imageUrl ?? null });
     } finally {
       setBusyBuild(false);
     }

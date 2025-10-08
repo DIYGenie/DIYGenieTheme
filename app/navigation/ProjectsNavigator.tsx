@@ -1,12 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProjectsScreen from '../screens/ProjectsScreen';
-import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
 import BuildPlanScreen from '../screens/BuildPlanScreen';
 
 export type ProjectsStackParamList = {
   ProjectsList: undefined;
-  ProjectDetails: { id: string };
   BuildPlan: { projectId: string };
 };
 
@@ -21,10 +19,6 @@ export default function ProjectsNavigator() {
       <Stack.Screen
         name="ProjectsList"
         component={ProjectsScreen}
-      />
-      <Stack.Screen
-        name="ProjectDetails"
-        component={ProjectDetailsScreen}
       />
       <Stack.Screen
         name="BuildPlan"
