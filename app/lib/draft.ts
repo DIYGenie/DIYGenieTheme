@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const KEY = 'new_project_draft_v1';
 
 export type NewProjectDraft = {
+  title?: string;
   description?: string;
   budget?: string;
   skill?: string;

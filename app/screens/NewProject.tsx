@@ -41,6 +41,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const navigation = useNavigation<NavProp>();
   const route = useRoute<any>();
   const { user } = useAuth();
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [skillLevel, setSkillLevel] = useState('');
@@ -102,6 +103,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   function resetForm() {
     try {
       setDraftId(null);
+      setTitle('');
       setDescription('');
       setBudget('');
       setSkillLevel('');
@@ -172,6 +174,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   useEffect(() => {
     (async () => {
       const draft = await loadDraft();
+      if (draft.title) setTitle(draft.title);
       if (draft.description) setDescription(draft.description);
       if (draft.budget) setBudget(draft.budget);
       if (draft.skill) setSkillLevel(draft.skill);
@@ -188,8 +191,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   // Save draft when fields change
   useEffect(() => {
-    saveDraft({ description, budget, skill: skillLevel });
-  }, [description, budget, skillLevel]);
+    saveDraft({ title, description, budget, skill: skillLevel });
+  }, [title, description, budget, skillLevel]);
 
   // Clear form when navigating away from tab
   useEffect(() => {
@@ -584,8 +587,20 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Create New Project</Text>
-          <Text style={styles.subtitle}>Wish. See. Build.</Text>
+          <Text style={styles.title}>Create Your New Project</Text>
+          <Text style={styles.subtitle}>Tell us a little about your DIY project so Genie can guide you through scanning, planning, and building.</Text>
+        </View>
+
+        <View style={styles.fieldContainer}>
+          <Text style={styles.fieldLabel}>Project Title</Text>
+          <TextInput
+            style={styles.textArea}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g., Built-in Bookcase"
+            placeholderTextColor={colors.textSecondary}
+            returnKeyType="next"
+          />
         </View>
 
         <View style={styles.fieldContainer}>
