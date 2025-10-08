@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Alert, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,9 +7,15 @@ import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { supabase } from '../lib/supabase';
+import { uploadRoomScan } from '../lib/uploadRoomScan';
+import RoiModal from '../components/RoiModal';
+import MeasureModal from '../components/MeasureModal';
 
 export default function NewProjectMedia({ navigation, route }) {
   const onPickImage = route?.params?.onPickImage;
+  const [savedScan, setSavedScan] = useState(null);
+  const [showRoi, setShowRoi] = useState(false);
+  const [showMeasure, setShowMeasure] = useState(false);
 
   async function authPreflight() {
     try {
@@ -29,14 +35,14 @@ export default function NewProjectMedia({ navigation, route }) {
 
   const pickFromLibrary = async () => {
     try {
-      await authPreflight();
+      const user = await authPreflight();
       
       if (Platform.OS === 'web') {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
           const file = e.target.files[0];
           if (!file) return;
           if (!file.type?.startsWith?.('image/')) {
@@ -48,12 +54,24 @@ export default function NewProjectMedia({ navigation, route }) {
           reader.onerror = () => {
             Alert.alert('Upload failed', 'Failed to read file. Please try again.');
           };
-          reader.onload = () => {
+          reader.onload = async () => {
             const dataUrl = String(reader.result);
             console.info('[photo] picked web (media screen)', { type: file.type, size: file.size });
-            if (onPickImage) {
-              onPickImage(dataUrl);
-              navigation.goBack();
+            
+            try {
+              const result = await uploadRoomScan({
+                uri: dataUrl,
+                userId: user.id,
+                projectId: null,
+              });
+              
+              if (result?.imageUrl) {
+                setSavedScan(result);
+                Alert.alert('Success', 'Scan saved!');
+              }
+            } catch (err) {
+              console.error('[upload failed]', err);
+              Alert.alert('Upload failed', 'Could not save scan. Try again.');
             }
           };
           reader.readAsDataURL(file);
@@ -73,9 +91,21 @@ export default function NewProjectMedia({ navigation, route }) {
         if (!asset?.uri) return;
 
         console.info('[photo] picked native (media screen)', { uri: asset.uri });
-        if (onPickImage) {
-          onPickImage(asset.uri);
-          navigation.goBack();
+        
+        try {
+          const uploadResult = await uploadRoomScan({
+            uri: asset.uri,
+            userId: user.id,
+            projectId: null,
+          });
+          
+          if (uploadResult?.imageUrl) {
+            setSavedScan(uploadResult);
+            Alert.alert('Success', 'Scan saved!');
+          }
+        } catch (err) {
+          console.error('[upload failed]', err);
+          Alert.alert('Upload failed', 'Could not save scan. Try again.');
         }
       }
     } catch (e) {
@@ -87,7 +117,7 @@ export default function NewProjectMedia({ navigation, route }) {
   const handleScanRoom = async () => {
     try {
       await authPreflight();
-      Alert.alert('AR Scan (stub)', 'Use Upload Photo for now');
+      Alert.alert('AR Scan', 'AR scan coming soon! Use Upload Photo for now.');
     } catch (_) {
       // Already handled in authPreflight (alert + signOut)
     }
@@ -131,7 +161,38 @@ export default function NewProjectMedia({ navigation, route }) {
             <Text style={styles.uploadPhotoText}>Upload Photo</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Saved Scan Card */}
+        {savedScan && (
+          <View style={styles.savedScanCard}>
+            <Image
+              source={{ uri: savedScan.imageUrl }}
+              style={styles.scanImage}
+              resizeMode="cover"
+            />
+            <Text style={styles.savedScanTitle}>Saved Scan</Text>
+            <View style={styles.scanActions}>
+              <Pressable
+                onPress={() => setShowRoi(true)}
+                style={styles.actionButton}
+              >
+                <Text style={styles.actionButtonText}>Mark Area</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowMeasure(true)}
+                style={styles.actionButton}
+              >
+                <Text style={styles.actionButtonText}>Measure</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
       </View>
+
+      {/* Modals */}
+      <RoiModal visible={showRoi} onClose={() => setShowRoi(false)} scan={savedScan} />
+      <MeasureModal visible={showMeasure} onClose={() => setShowMeasure(false)} scan={savedScan} />
     </SafeAreaView>
   );
 }
@@ -232,5 +293,39 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.manropeBold,
     color: '#64748B',
     textAlign: 'center',
+  },
+  savedScanCard: {
+    marginTop: 32,
+    backgroundColor: '#F3F0FF',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  scanImage: {
+    width: 220,
+    height: 140,
+    borderRadius: 12,
+  },
+  savedScanTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: '#1F2937',
+  },
+  scanActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  actionButton: {
+    backgroundColor: brand.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  actionButtonText: {
+    color: colors.white,
+    fontSize: 15,
+    fontFamily: typography.fontFamily.manropeSemiBold,
   },
 });
