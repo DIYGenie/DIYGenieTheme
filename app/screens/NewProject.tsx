@@ -80,11 +80,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const canPreview = ents?.previewAllowed ?? false;
 
-  const signedIn = !!user?.id;
   const descOk = (description?.trim().length ?? 0) >= 10;
   const budgetOk = !!budget;
   const skillOk = !!skillLevel;
-  const canProceed = signedIn && descOk && budgetOk && skillOk;
+  const canProceed = descOk && budgetOk && skillOk;
 
   // Helper: robust navigation to a project detail (removed - using direct navigation now)
 
@@ -357,8 +356,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function uploadPhotoToSupabase(uri: string, source: 'scan' | 'upload') {
     if (!user) {
-      showToast('Please sign in to save scans', 'error');
-      (navigation as any).navigate('Auth');
+      showToast('User not found', 'error');
       return;
     }
 
@@ -392,7 +390,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const onScanRoom = () => {
     if (!canProceed) {
-      showToast('Please sign in and complete the required fields first.', 'error');
+      showToast('Please complete all required fields first.', 'error');
       return;
     }
     (navigation as any).navigate('Scan');
@@ -400,7 +398,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const onUploadPhoto = async () => {
     if (!canProceed) {
-      showToast('Please sign in and complete the required fields first.', 'error');
+      showToast('Please complete all required fields first.', 'error');
       return;
     }
     
@@ -501,7 +499,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        showToast('Please sign in first', 'error');
+        showToast('User not found', 'error');
         setBusyBuild(false);
         return;
       }
