@@ -28,6 +28,7 @@ export default function RoiModal({
   const startY = Math.max(0, Math.round((wrapH - rectH) / 2));
 
   const pos = useRef({ x: startX, y: startY });
+  const startPos = useRef({ x: 0, y: 0 });
   const [tick, setTick] = useState(0); // force re-render when dragging
 
   const pan = useMemo(
@@ -35,9 +36,14 @@ export default function RoiModal({
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: () => {
+          // Capture starting position when gesture begins
+          startPos.current = { x: pos.current.x, y: pos.current.y };
+        },
         onPanResponderMove: (_evt, g) => {
-          let nx = pos.current.x + g.dx;
-          let ny = pos.current.y + g.dy;
+          // Calculate new position from start + delta
+          let nx = startPos.current.x + g.dx;
+          let ny = startPos.current.y + g.dy;
           // clamp inside image bounds
           nx = Math.max(0, Math.min(nx, wrapW - rectW));
           ny = Math.max(0, Math.min(ny, wrapH - rectH));
