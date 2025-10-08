@@ -18,6 +18,8 @@ import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
 import { uploadRoomScan } from '../lib/uploadRoomScan';
 import { supabase } from '../lib/supabase';
+import RoiModal from '../components/RoiModal';
+import { saveRoomScanRegion } from '../lib/regions';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -46,6 +48,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
+  const [roiOpen, setRoiOpen] = useState(false);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useOptionalTabBarHeight();
@@ -780,6 +783,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 {lastScan.scanId.slice(0, 8)}…
               </Text>
             </View>
+            {lastScan?.imageUrl && (
+              <Pressable
+                onPress={() => setRoiOpen(true)}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  backgroundColor: pressed ? '#EDE9FE' : '#F3F0FF',
+                  borderWidth: 1,
+                  borderColor: '#DDD6FE',
+                })}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: brand.primary }}>
+                  Mark area
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 
@@ -900,6 +920,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setApplyOpen(false);
         }}
         onClose={() => setApplyOpen(false)}
+      />
+
+      <RoiModal
+        visible={roiOpen}
+        imageUrl={lastScan?.imageUrl ?? ''}
+        onCancel={() => setRoiOpen(false)}
+        onSave={async (points, label) => {
+          try {
+            if (!lastScan?.scanId) throw new Error('No scan');
+            const row = await saveRoomScanRegion({ scanId: lastScan.scanId, points, label });
+            showToast('Area saved', 'success');
+          } catch (e: any) {
+            showToast(e?.message ?? 'Save failed', 'error');
+          } finally {
+            setRoiOpen(false);
+          }
+        }}
       />
     </SafeAreaView>
   );
