@@ -109,7 +109,7 @@ export default function ProjectDetails() {
         }}
         style={{ backgroundColor: '#111827', marginTop: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
       >
-        <Text style={{ color: '#fff', fontWeight: '700' }}>View in Projects</Text>
+        <Text style={{ color: '#fff', fontWeight: '700' }}>Back to Projects</Text>
       </Pressable>
     </ScrollView>
   );
