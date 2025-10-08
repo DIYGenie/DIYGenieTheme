@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import type { RootTabParamList } from '../navigation/RootTabs';
+import type { ProjectsStackParamList } from '../navigation/ProjectsNavigator';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
@@ -25,8 +29,13 @@ import { saveLineMeasurement } from '../lib/measure';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
+type NavProp = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList>,
+  NativeStackNavigationProp<ProjectsStackParamList>
+>;
+
 export default function NewProject({ navigation: navProp }: { navigation?: any }) {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavProp>();
   const route = useRoute<any>();
   const { user } = useAuth();
   const [description, setDescription] = useState('');
@@ -67,24 +76,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const canPreview = ents?.previewAllowed ?? false;
 
-  // Helper: robust navigation to a project detail, across nested navigators + web
+  // Helper: robust navigation to a project detail
   function goToProject(id: string) {
-    // Try: Projects tab -> ProjectDetails
-    try { navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } }); return; } catch {}
-    // Try common standalone detail routes
-    for (const name of ['ProjectDetails', 'OpenPlan', 'Plan', 'ProjectDetailScreen']) {
-      try { navigation.navigate(name as never, { id } as never); return; } catch {}
-    }
-    // Fallback: go to Projects list
-    try { navigation.navigate('Projects' as never); } catch {}
-
-    // Web hard fallback: update URL if navigation didn't work (SPA routing)
-    if (Platform.OS === 'web') {
-      try {
-        const url = Linking.createURL(`/projects/${id}`);
-        (window as any).history.pushState({}, '', url);
-      } catch {}
-    }
+    navigation.navigate('Projects', {
+      screen: 'ProjectDetails',
+      params: { id },
+    });
   }
 
   function hasValidForm() {
@@ -330,7 +327,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   async function uploadPhotoToSupabase(uri: string, source: 'scan' | 'upload') {
     if (!user) {
       showToast('Please sign in to save scans', 'error');
-      navigation.navigate('Auth');
+      (navigation as any).navigate('Auth');
       return;
     }
 
@@ -362,16 +359,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const onScanRoom = () => {
     if (!user) {
       showToast('Please sign in to save scans', 'error');
-      navigation.navigate('Auth');
+      (navigation as any).navigate('Auth');
       return;
     }
-    navigation.navigate('Scan');
+    (navigation as any).navigate('Scan');
   };
 
   const onUploadPhoto = async () => {
     if (!user) {
       showToast('Please sign in to save scans', 'error');
-      navigation.navigate('Auth');
+      (navigation as any).navigate('Auth');
       return;
     }
     
@@ -416,12 +413,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    try {
-      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-    } catch (err) {
-      console.error('Navigation failed:', err);
-      navigation.navigate('Projects' as any);
-    }
+    navigation.navigate('Projects', {
+      screen: 'ProjectDetails',
+      params: { id },
+    });
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
