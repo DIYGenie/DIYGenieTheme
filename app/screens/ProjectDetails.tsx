@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View, Pressable } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { useSafeBack } from '../lib/useSafeBack';
 
 type RouteParams = { id: string; imageUrl?: string | null };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -11,11 +12,26 @@ const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 export default function ProjectDetails() {
   const route = useRoute<R>();
   const nav = useNavigation();
+  const safeBack = useSafeBack();
   const { id, imageUrl: fallbackImg } = route.params || ({} as any);
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
   const [scanUrl, setScanUrl] = useState<string | null>(fallbackImg ?? null);
   const [err, setErr] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    nav.setOptions({
+      headerLeft: () => (
+        <Pressable
+          onPress={safeBack}
+          style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}
+          hitSlop={8}
+        >
+          <Text style={{ fontWeight: '600' }}>Back</Text>
+        </Pressable>
+      ),
+    });
+  }, [nav, safeBack]);
 
   useEffect(() => {
     let alive = true;
