@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
@@ -28,6 +28,7 @@ import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
 import { saveDraft, loadDraft, clearDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
+import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -72,6 +73,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const descRef = React.useRef<TextInput>(null);
   const sugRef = React.useRef<View>(null);
   const ctaRef = React.useRef<View>(null);
+  const lastScanRef = useRef<{ scanId: string; imageUrl: string | null } | null>(null);
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -84,13 +86,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const skillOk = !!skillLevel;
   const canProceed = signedIn && descOk && budgetOk && skillOk;
 
-  // Helper: robust navigation to a project detail
-  function goToProject(id: string) {
-    navigation.navigate('Projects', {
-      screen: 'ProjectDetails',
-      params: { id },
-    });
-  }
+  // Helper: robust navigation to a project detail (removed - using direct navigation now)
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
@@ -369,7 +365,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         projectId: draftId ?? null,
       });
       
-      setLastScan({ scanId, imageUrl });
+      const scanData = { scanId, imageUrl };
+      setLastScan(scanData);
+      lastScanRef.current = scanData;
+      setLastScanEphemeral(scanData);
       console.log('[scan saved]', { scanId, imageUrl });
       showToast('Scan uploaded & saved', 'success');
     } catch (e) {
@@ -426,7 +425,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
       clearDraft();
-      navigation.navigate('ProjectDetails', { id });
+      (navigation as any).navigate('ProjectDetails', { id });
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');
       triggerHaptic('error');
@@ -436,7 +435,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    navigation.navigate('ProjectDetails', { id });
+    (navigation as any).navigate('ProjectDetails', { id });
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
@@ -504,18 +503,18 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       console.log('[build] accepted', res);
       
       // Link the last scan to the project if available
+      const ls = lastScanRef.current;
       try {
-        if (lastScan?.scanId) {
-          await attachScanToProject(lastScan.scanId, id);
+        if (ls?.scanId) {
+          await attachScanToProject(ls.scanId, id);
         }
       } catch (e) {
         console.warn('[link scan]', e);
       }
       
       showToast('Plan requested', 'success');
-      resetForm();
       // Navigate and pass the image URL as a fallback for immediate display
-      (navigation as any).navigate('ProjectDetails', { id, imageUrl: lastScan?.imageUrl ?? null });
+      (navigation as any).navigate('ProjectDetails', { id, imageUrl: ls?.imageUrl ?? null });
     } finally {
       setBusyBuild(false);
     }
@@ -955,6 +954,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                     loading={busyBuild}
                     style={{ marginTop: 12 }}
                   />
+                  
+                  <TouchableOpacity
+                    onPress={resetForm}
+                    style={{ marginTop: 16, alignItems: 'center' }}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
+                      Clear Form
+                    </Text>
+                  </TouchableOpacity>
                 </>
               );
             })()}
