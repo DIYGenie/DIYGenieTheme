@@ -11,6 +11,12 @@ Preferred communication style: Simple, everyday language.
 ### Frontend Architecture
 The application utilizes a component-based React Native architecture with React Navigation v7 for navigation, featuring a hybrid stack and tab navigation. It is built on Expo SDK 54, employs a centralized theme system for consistent styling, and primarily uses React's built-in state management.
 
+**Navigation Structure:**
+- **AppNavigator** (root stack): Manages top-level screens including Welcome, Auth, Scan modals, and the main tab container
+- **RootTabs** (`app/navigation/RootTabs.tsx`): Bottom tab navigator with typed navigation for Home, NewProject, Projects (nested stack), and Profile
+- **ProjectsNavigator** (`app/navigation/ProjectsNavigator.tsx`): Nested stack within Projects tab containing ProjectsList, ProjectDetails, and BuildPlan screens
+- **Typed Navigation**: Uses TypeScript composite navigation types to enable type-safe navigation from tab screens to nested stack screens (e.g., NewProject → Projects → ProjectDetails)
+
 ### Visual Design Architecture
 The design features a clean, modern aesthetic with white backgrounds, dark text, and a **purple brand primary color (#7C3AED / purple-600)** for CTAs, using a gradient for accents. A centralized UI kit in `app/ui/` provides reusable components and theme tokens, including a unified button system. Layouts use `SafeAreaView` and consistent spacing tokens, with `Ionicons` for iconography.
 
