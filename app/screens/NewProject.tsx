@@ -26,6 +26,7 @@ import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
+import { saveDraft, loadDraft, clearDraft } from '../lib/draft';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -114,6 +115,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setSugsError(undefined);
       setApplyOpen(false);
       setPendingTip(null);
+      clearDraft();
     } catch {}
   }
 
@@ -166,6 +168,21 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     return () => subscription.remove();
   }, []);
+
+  // Load draft on mount
+  useEffect(() => {
+    (async () => {
+      const draft = await loadDraft();
+      if (draft.description) setDescription(draft.description);
+      if (draft.budget) setBudget(draft.budget);
+      if (draft.skill) setSkillLevel(draft.skill);
+    })();
+  }, []);
+
+  // Save draft when fields change
+  useEffect(() => {
+    saveDraft({ description, budget, skill: skillLevel });
+  }, [description, budget, skillLevel]);
 
   // Clear form when navigating away from tab
   useEffect(() => {
@@ -407,6 +424,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
+      clearDraft();
       navigation.navigate('ProjectDetails', { id });
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');
