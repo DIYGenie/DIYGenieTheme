@@ -232,7 +232,7 @@ export default function HomeScreen({ navigation }) {
 
 function ProjectCard({ project, navigation }) {
   const handlePress = () => {
-    navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: project.id } });
+    navigation.navigate('ProjectDetails', { id: project.id });
   };
 
   const statusText = project.status === 'plan_ready' 

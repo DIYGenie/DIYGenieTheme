@@ -407,7 +407,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
-      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      navigation.navigate('ProjectDetails', { id });
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');
       triggerHaptic('error');
@@ -417,10 +417,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    navigation.navigate('Projects', {
-      screen: 'ProjectDetails',
-      params: { id },
-    });
+    navigation.navigate('ProjectDetails', { id });
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
