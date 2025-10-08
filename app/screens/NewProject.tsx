@@ -76,6 +76,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const canPreview = ents?.previewAllowed ?? false;
 
+  const signedIn = !!user?.id;
+  const descOk = (description?.trim().length ?? 0) >= 10;
+  const budgetOk = !!budget;
+  const skillOk = !!skillLevel;
+  const canProceed = signedIn && descOk && budgetOk && skillOk;
+
   // Helper: robust navigation to a project detail
   function goToProject(id: string) {
     navigation.navigate('Projects', {
@@ -357,18 +363,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   const onScanRoom = () => {
-    if (!user) {
-      showToast('Please sign in to save scans', 'error');
-      (navigation as any).navigate('Auth');
+    if (!canProceed) {
+      showToast('Please sign in and complete the required fields first.', 'error');
       return;
     }
     (navigation as any).navigate('Scan');
   };
 
   const onUploadPhoto = async () => {
-    if (!user) {
-      showToast('Please sign in to save scans', 'error');
-      (navigation as any).navigate('Auth');
+    if (!canProceed) {
+      showToast('Please sign in and complete the required fields first.', 'error');
       return;
     }
     
@@ -644,7 +648,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between', paddingVertical: 12 }}>
               <Pressable
                 testID="btn-scan-room"
-                disabled={uploading}
+                disabled={!canProceed || uploading}
                 style={({ pressed }) => ({
                   flex: 1,
                   height: 120,
@@ -653,11 +657,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   alignItems: 'center',
                   backgroundColor: pressed ? '#6D28D9' : brand.primary,
                   shadowColor: '#7C3AED',
-                  shadowOpacity: uploading ? 0 : 0.3,
+                  shadowOpacity: (!canProceed || uploading) ? 0 : 0.3,
                   shadowRadius: 12,
                   shadowOffset: { width: 0, height: 4 },
                   elevation: 6,
-                  opacity: uploading ? 0.5 : 1,
+                  opacity: (!canProceed || uploading) ? 0.5 : 1,
                 })}
                 onPress={onScanRoom}
               >
@@ -674,7 +678,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
               <Pressable
                 testID="btn-upload-photo"
-                disabled={uploading}
+                disabled={!canProceed || uploading}
                 style={({ pressed }) => ({
                   flex: 1,
                   height: 120,
@@ -684,7 +688,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   backgroundColor: pressed ? '#F9FAFB' : '#FFFFFF',
                   borderWidth: 1.5,
                   borderColor: '#D1D5DB',
-                  opacity: uploading ? 0.5 : 1,
+                  opacity: (!canProceed || uploading) ? 0.5 : 1,
                 })}
                 onPress={onUploadPhoto}
               >
