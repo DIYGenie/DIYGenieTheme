@@ -1,3 +1,10 @@
+Goal: Update the existing RoiModal so the focus rectangle is draggable and resizable via 4 corner handles (TL/TR/BR/BL). Enforce min size and keep it within image bounds. On Save, store normalized 0..1 points (TL, TR, BR, BL) exactly as before via saveRoomScanRegion.
+
+Tasks
+
+Replace app/components/RoiModal.tsx with the code below (full file overwrite):
+
+// app/components/RoiModal.tsx
 import React, { useMemo, useRef, useState } from 'react';
 import { Modal, View, Image, PanResponder, StyleSheet, Text, Pressable, LayoutChangeEvent } from 'react-native';
 
@@ -232,3 +239,24 @@ const S = StyleSheet.create({
   ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#e5e7eb' },
   ghostText: { color: '#111827' },
 });
+
+
+No other files changed. Keep your saveRoomScanRegion import/usage in NewProject.tsx exactly as you wired in Step 5a.
+
+Acceptance Criteria
+
+The focus rectangle is draggable and resizable with 4 corner handles.
+
+The rectangle cannot shrink below ~15% of image width/height and cannot leave the image bounds.
+
+The size badge updates live (percent of image).
+
+Tapping Save Area inserts into public.room_scan_regions with:
+
+kind = 'focus_area'
+
+normalized = true
+
+points = [TL, TR, BR, BL] normalized 0..1
+
+Modal closes after success; toast “Area saved” (as you already had).
