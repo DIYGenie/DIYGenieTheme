@@ -408,8 +408,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       form.append('file', blob, 'upload.jpg');
     } else {
       // Native RN needs { uri, name, type }
+      // @ts-ignore – RN FormData type
       form.append('file', {
-        // @ts-ignore – RN FormData type
         uri: photoUri,
         name: 'upload.jpg',
         type: 'image/jpeg',
