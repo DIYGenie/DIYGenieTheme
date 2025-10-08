@@ -1,7 +1,47 @@
+Goal: Make the Back button on ProjectDetails always jump to the Projects tab (no matter how you arrived there). Use the official Tab action so it can’t fall back to Home.
+
+Constraints:
+
+Do not change tab names or navigator structure.
+
+Only touch the two files below.
+
+THEME
+// REPLACE FILE: app/lib/useSafeBack.ts
+import { useCallback } from 'react';
+import { useNavigation, TabActions } from '@react-navigation/native';
+
+/**
+ * Always jump to the Projects tab.
+ * Uses TabActions.jumpTo to avoid goBack() edge cases.
+ * Looks up the parent tab navigator (id="root-tabs" if present), else falls back.
+ */
+export function useSafeBack() {
+  const navigation = useNavigation();
+
+  return useCallback(() => {
+    // Prefer the parent tabs (id="root-tabs" if set)
+    // @ts-ignore
+    const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
+    if (parent) {
+      parent.dispatch(TabActions.jumpTo('Projects'));
+      return;
+    }
+    // Fallback: try jumping directly (works if this screen itself is inside tabs)
+    // @ts-ignore
+    navigation.dispatch?.(TabActions.jumpTo('Projects'));
+  }, [navigation]);
+}
+
+THEME
+// EDIT FILE: app/screens/ProjectDetails.tsx
+// Ensure header uses our safe back and hides the default back behavior.
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
+import T from '../components/T';
 import { fetchProjectById, fetchLatestScanForProject } from '../lib/api';
 
 type RouteParams = { id: string };
@@ -50,12 +90,12 @@ export default function ProjectDetails() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
+      <T.h2 style={{ marginBottom: 6 }}>
         {project?.name || project?.title || 'Project'}
-      </Text>
-      <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16 }}>
+      </T.h2>
+      <T.muted style={{ marginBottom: 16 }}>
         Status: {project?.status || 'In progress'}
-      </Text>
+      </T.muted>
 
       {loading ? (
         <View style={{ paddingTop: 40 }}>
@@ -78,7 +118,7 @@ export default function ProjectDetails() {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
+          <T.muted>No scan image yet</T.muted>
         </View>
       )}
     </View>
