@@ -20,6 +20,8 @@ import { uploadRoomScan } from '../lib/uploadRoomScan';
 import { supabase } from '../lib/supabase';
 import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
+import MeasureModal from '../components/MeasureModal';
+import { saveLineMeasurement } from '../lib/measure';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -49,6 +51,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   const [roiOpen, setRoiOpen] = useState(false);
+  const [lastRegionId, setLastRegionId] = useState<string | null>(null);
+  const [measureOpen, setMeasureOpen] = useState(false);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useOptionalTabBarHeight();
@@ -784,21 +788,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </Text>
             </View>
             {lastScan?.imageUrl && (
-              <Pressable
-                onPress={() => setRoiOpen(true)}
-                style={({ pressed }) => ({
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 8,
-                  backgroundColor: pressed ? '#EDE9FE' : '#F3F0FF',
-                  borderWidth: 1,
-                  borderColor: '#DDD6FE',
-                })}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: brand.primary }}>
-                  Mark area
-                </Text>
-              </Pressable>
+              <View style={{ flexDirection: 'column', gap: 8 }}>
+                <Pressable
+                  onPress={() => setRoiOpen(true)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: pressed ? '#EDE9FE' : '#F3F0FF',
+                    borderWidth: 1,
+                    borderColor: '#DDD6FE',
+                  })}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: brand.primary }}>
+                    Mark area
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setMeasureOpen(true)}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: pressed ? '#EDE9FE' : '#F3F0FF',
+                    borderWidth: 1,
+                    borderColor: '#DDD6FE',
+                  })}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: brand.primary }}>
+                    Measure
+                  </Text>
+                </Pressable>
+              </View>
             )}
           </View>
         )}
@@ -930,11 +951,35 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           try {
             if (!lastScan?.scanId) throw new Error('No scan');
             const row = await saveRoomScanRegion({ scanId: lastScan.scanId, points, label });
+            setLastRegionId(row.id);
             showToast('Area saved', 'success');
           } catch (e: any) {
             showToast(e?.message ?? 'Save failed', 'error');
           } finally {
             setRoiOpen(false);
+          }
+        }}
+      />
+
+      <MeasureModal
+        visible={measureOpen}
+        scanId={lastScan?.scanId!}
+        imageUrl={lastScan?.imageUrl ?? ''}
+        regionId={lastRegionId ?? null}
+        onCancel={() => setMeasureOpen(false)}
+        onSaveLine={async ([a, b], valueInches) => {
+          try {
+            await saveLineMeasurement({
+              scanId: lastScan!.scanId,
+              regionId: lastRegionId ?? null,
+              points: [a, b],
+              valueInches,
+            });
+            showToast(`Saved ${valueInches.toFixed(1)} in`, 'success');
+          } catch (e: any) {
+            showToast(e?.message ?? 'Save failed', 'error');
+          } finally {
+            setMeasureOpen(false);
           }
         }}
       />
