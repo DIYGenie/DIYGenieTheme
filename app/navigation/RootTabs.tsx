@@ -62,7 +62,7 @@ export default function RootTabs() {
   };
 
   return (
-    <Tab.Navigator screenOptions={screenOpts} id={undefined}>
+    <Tab.Navigator screenOptions={screenOpts} id="root-tabs">
       <Tab.Screen 
         name="Home" 
         component={HomeScreen}
