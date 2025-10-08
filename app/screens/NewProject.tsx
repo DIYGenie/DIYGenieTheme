@@ -437,7 +437,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       Alert.alert('Success', 'Preview requested');
       clearDraft();
       try {
-        navigation.getParent?.('root-tabs')?.navigate('Projects', {
+        (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
           screen: 'ProjectDetails',
           params: { id },
         });
@@ -454,7 +454,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   function navigateToProject(id: string) {
     try {
-      navigation.getParent?.('root-tabs')?.navigate('Projects', {
+      (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
         screen: 'ProjectDetails',
         params: { id },
       });
@@ -540,7 +540,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       showToast('Plan requested', 'success');
       // Navigate and pass the image URL as a fallback for immediate display
       try {
-        navigation.getParent?.('root-tabs')?.navigate('Projects', {
+        (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
           screen: 'ProjectDetails',
           params: { id, imageUrl: ls?.imageUrl ?? null },
         });

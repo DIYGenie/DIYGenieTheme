@@ -100,7 +100,13 @@ export default function ProjectDetails() {
       
       <Pressable
         accessibilityRole="button"
-        onPress={() => (nav as any).navigate('Projects')}
+        onPress={() => {
+          try {
+            nav.navigate('ProjectsList' as never);
+          } catch (e) {
+            console.error('[nav error]', e);
+          }
+        }}
         style={{ backgroundColor: '#111827', marginTop: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
       >
         <Text style={{ color: '#fff', fontWeight: '700' }}>View in Projects</Text>

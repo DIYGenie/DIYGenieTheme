@@ -62,6 +62,7 @@ export default function RootTabs() {
   };
 
   return (
+    // @ts-ignore - id prop requires type augmentation
     <Tab.Navigator screenOptions={screenOpts} id="root-tabs">
       <Tab.Screen 
         name="Home" 
