@@ -436,7 +436,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
       clearDraft();
-      (navigation as any).navigate('ProjectDetails', { id });
+      try {
+        navigation.getParent?.('root-tabs')?.navigate('Projects', {
+          screen: 'ProjectDetails',
+          params: { id },
+        });
+      } catch (e) {
+        console.error('[nav error]', e);
+      }
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');
       triggerHaptic('error');
@@ -446,7 +453,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    (navigation as any).navigate('ProjectDetails', { id });
+    try {
+      navigation.getParent?.('root-tabs')?.navigate('Projects', {
+        screen: 'ProjectDetails',
+        params: { id },
+      });
+    } catch (e) {
+      console.error('[nav error]', e);
+    }
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
@@ -525,7 +539,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       
       showToast('Plan requested', 'success');
       // Navigate and pass the image URL as a fallback for immediate display
-      (navigation as any).navigate('ProjectDetails', { id, imageUrl: ls?.imageUrl ?? null });
+      try {
+        navigation.getParent?.('root-tabs')?.navigate('Projects', {
+          screen: 'ProjectDetails',
+          params: { id, imageUrl: ls?.imageUrl ?? null },
+        });
+      } catch (e) {
+        console.error('[nav error]', e);
+      }
     } finally {
       setBusyBuild(false);
     }
