@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './supabase';
 import { Platform } from 'react-native';
+import { ensureProfile } from './ensureProfile';
 
 type Args = {
   uri: string;
@@ -72,7 +73,10 @@ export async function uploadRoomScan({ uri, userId, projectId = null }: Args) {
     // If you want real dimensions later, we'll add an Image.getSize step on-device once it's in the cache.
   } catch {}
 
-  // 7) Insert DB row
+  // 7) Ensure profile exists (for FK constraint)
+  await ensureProfile(supabase);
+
+  // 8) Insert DB row
   const { error: dbErr } = await supabase.from('room_scans').insert([{
     id: scanId,
     user_id: userId,
