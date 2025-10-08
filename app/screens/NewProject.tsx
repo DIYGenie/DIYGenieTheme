@@ -107,6 +107,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setBudget('');
       setSkillLevel('');
       setPhotoUri(null);
+      setLastScan(null);
+      lastScanRef.current = null;
+      setLastScanEphemeral(null);
       setSugs(null);
       setSugsBusy(false);
       setSugsError(undefined);
@@ -166,7 +169,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return () => subscription.remove();
   }, []);
 
-  // Load draft on mount
+  // Load draft and last scan on mount
   useEffect(() => {
     (async () => {
       const draft = await loadDraft();
@@ -174,6 +177,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       if (draft.budget) setBudget(draft.budget);
       if (draft.skill) setSkillLevel(draft.skill);
     })();
+    
+    // Restore last scan from ephemeral store
+    const { getLastScan } = require('../lib/ephemeral');
+    const cached = getLastScan();
+    if (cached) {
+      setLastScan(cached);
+      lastScanRef.current = cached;
+    }
   }, []);
 
   // Save draft when fields change

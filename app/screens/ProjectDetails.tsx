@@ -97,6 +97,14 @@ export default function ProjectDetails() {
       >
         <Text style={{ color: 'white', fontWeight: '700' }}>Back</Text>
       </Pressable>
+      
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => (nav as any).navigate('Projects')}
+        style={{ backgroundColor: '#111827', marginTop: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700' }}>View in Projects</Text>
+      </Pressable>
     </ScrollView>
   );
 }
