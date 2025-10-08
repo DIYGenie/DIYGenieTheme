@@ -16,6 +16,8 @@ import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { subscribeScanPhoto } from '../lib/scanEvents';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
+import { uploadRoomScan } from '../lib/uploadRoomScan';
+import { supabase } from '../lib/supabase';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -43,6 +45,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [pendingTip, setPendingTip] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   
   const insets = useSafeAreaInsets();
   const tabBarHeight = useOptionalTabBarHeight();
@@ -332,13 +335,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         return;
       }
 
-      const res = await saveRoomScan({
+      const { scanId, imageUrl } = await uploadRoomScan({
         uri,
-        source,
+        userId: user.id,
         projectId: draftId ?? null,
-        userId: user.id ?? null,
       });
-      console.log('[scan saved]', res);
+      
+      setLastScan({ scanId, imageUrl });
+      console.log('[scan saved]', { scanId, imageUrl });
       showToast('Scan uploaded & saved', 'success');
     } catch (e) {
       console.error('[upload failed]', e);
@@ -746,6 +750,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             </Pressable>
           )}
         </View>
+
+        {lastScan && (
+          <View style={{
+            marginTop: 16,
+            padding: 12,
+            backgroundColor: '#F9FAFB',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#E5E7EB',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            <Image 
+              source={{ uri: lastScan.imageUrl }} 
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 8,
+              }}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
+                Saved scan
+              </Text>
+              <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                {lastScan.scanId.slice(0, 8)}…
+              </Text>
+            </View>
+          </View>
+        )}
 
         {(!!photoUri || (description?.trim().length ?? 0) >= 10) && (
           <View 
