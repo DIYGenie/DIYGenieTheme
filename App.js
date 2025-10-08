@@ -13,8 +13,6 @@ import {
   Inter_400Regular,
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
-import { registerRootComponent } from 'expo';
-
 import AppNavigator from './app/navigation/AppNavigator';
 import { colors } from './theme/colors';
 import { typography } from './theme/typography';
@@ -41,4 +39,4 @@ function App() {
   );
 }
 
-export default registerRootComponent(App);
+export default App;
