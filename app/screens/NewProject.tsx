@@ -312,7 +312,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function pickPhotoNative(): Promise<string> {
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.Images],
+      mediaTypes: ['images'],
       quality: 0.85,
       allowsEditing: false,
       base64: false,
