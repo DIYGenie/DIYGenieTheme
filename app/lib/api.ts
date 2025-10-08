@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export const BASE =
   (process.env.EXPO_PUBLIC_BASE_URL as string) || 'http://localhost:5000';
 
@@ -80,4 +82,20 @@ export async function listProjects(userId: string) {
     return { items: [] };
   }
   return list.data;
+}
+
+export async function fetchProjectsForCurrentUser() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const uid = data?.session?.user?.id;
+  if (!uid) return [];
+
+  try {
+    const result = await listProjects(uid);
+    const items = Array.isArray(result) ? result : (result.items || result.projects || []);
+    return items ?? [];
+  } catch (err) {
+    console.error('[fetchProjectsForCurrentUser] error:', err);
+    return [];
+  }
 }

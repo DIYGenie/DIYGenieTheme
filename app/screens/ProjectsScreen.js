@@ -1,41 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { listProjects } from '../lib/api';
+import { fetchProjectsForCurrentUser } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation }) {
   const { userId } = useUser();
-  const isFocused = useIsFocused();
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchProjects = async () => {
-    if (!userId) return;
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await listProjects(userId);
-      setProjects(data?.items ?? []);
+      const data = await fetchProjectsForCurrentUser();
+      setProjects(data ?? []);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Refetch whenever screen comes into focus
   useEffect(() => {
-    if (isFocused) {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  useFocusEffect(
+    useCallback(() => {
       fetchProjects();
-    }
-  }, [isFocused, userId]);
+    }, [fetchProjects])
+  );
 
   const handleFilterPress = (filter) => {
     setActiveFilter(filter);

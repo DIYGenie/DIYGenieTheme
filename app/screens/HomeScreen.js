@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { listProjects } from '../lib/api';
+import { fetchProjectsForCurrentUser } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
@@ -110,22 +110,17 @@ function HowItWorks({ navigation }) {
 
 export default function HomeScreen({ navigation }) {
   const { userId } = useUser();
-  const isFocused = useIsFocused();
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const isVeryNarrow = winW < 360;
 
-  const load = async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await listProjects(userId);
-      const items = (data?.items ?? [])
+      const data = await fetchProjectsForCurrentUser();
+      const items = (data ?? [])
         .sort((a, b) => new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf())
         .slice(0, 2);
       setRecent(items);
@@ -134,9 +129,15 @@ export default function HomeScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, [isFocused, userId]);
+  useEffect(() => { load(); }, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const handleNewProject = () => {
     navigation.navigate('NewProject');
