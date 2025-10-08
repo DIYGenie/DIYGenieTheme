@@ -348,7 +348,22 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
+  const onScanRoom = () => {
+    if (!user) {
+      showToast('Please sign in to save scans', 'error');
+      navigation.navigate('Auth');
+      return;
+    }
+    navigation.navigate('Scan');
+  };
+
   const onUploadPhoto = async () => {
+    if (!user) {
+      showToast('Please sign in to save scans', 'error');
+      navigation.navigate('Auth');
+      return;
+    }
+    
     try {
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
@@ -638,7 +653,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   elevation: 6,
                   opacity: uploading ? 0.5 : 1,
                 })}
-                onPress={() => navigation.navigate('Scan')}
+                onPress={onScanRoom}
               >
                 <Ionicons 
                   name="scan-outline" 

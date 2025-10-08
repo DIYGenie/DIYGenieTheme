@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, AppState, Linking, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, AppState, Linking, Alert, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,7 +106,7 @@ function PlanCard({ title, priceText, subtitle, features, ctaText, onPress, popu
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
-  const { user, signOut: authSignOut } = useAuth();
+  const { user, loading, signOut: authSignOut } = useAuth();
   const [busy, setBusy] = React.useState(false);
   const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
   const [showUpgradePicker, setShowUpgradePicker] = React.useState(false);
@@ -259,7 +259,11 @@ export default function ProfileScreen() {
           </View>
 
           {/* Auth Card */}
-          {!user ? (
+          {loading ? (
+            <View style={styles.authCard}>
+              <ActivityIndicator size="small" color={brand.primary} />
+            </View>
+          ) : !user ? (
             <View style={styles.authCard}>
               <Ionicons name="shield-checkmark-outline" size={32} color={brand.primary} style={{ marginBottom: 8 }} />
               <Text style={styles.authCardTitle}>Sign in to save scans</Text>

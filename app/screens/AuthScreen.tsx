@@ -46,10 +46,15 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await signUp(email, password);
-      showToast('Account created');
+      showToast('Signed in');
       setTimeout(() => navigation.goBack(), 500);
     } catch (error: any) {
-      showToast(error?.message || 'Sign up failed');
+      const errorMsg = error?.message || 'Sign up failed';
+      if (errorMsg.toLowerCase().includes('email not confirmed')) {
+        showToast('Check your inbox to confirm your email');
+      } else {
+        showToast(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
