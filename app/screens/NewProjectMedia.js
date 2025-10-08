@@ -6,12 +6,31 @@ import * as ImagePicker from 'expo-image-picker';
 import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { supabase } from '../lib/supabase';
 
 export default function NewProjectMedia({ navigation, route }) {
   const onPickImage = route?.params?.onPickImage;
 
+  async function authPreflight() {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const user = data?.session?.user;
+      if (!user) {
+        Alert.alert('Session expired', 'Please sign in again.');
+        await supabase.auth.signOut();
+        throw new Error('AUTH_REQUIRED');
+      }
+      return user;
+    } catch (e) {
+      throw e;
+    }
+  }
+
   const pickFromLibrary = async () => {
     try {
+      await authPreflight();
+      
       if (Platform.OS === 'web') {
         const input = document.createElement('input');
         input.type = 'file';
@@ -60,12 +79,18 @@ export default function NewProjectMedia({ navigation, route }) {
         }
       }
     } catch (e) {
+      if (e?.message === 'AUTH_REQUIRED') return;
       Alert.alert('Photo picker', e?.message || 'Could not select photo');
     }
   };
 
-  const handleScanRoom = () => {
-    Alert.alert('AR Scan (stub)', 'Use Upload Photo for now');
+  const handleScanRoom = async () => {
+    try {
+      await authPreflight();
+      Alert.alert('AR Scan (stub)', 'Use Upload Photo for now');
+    } catch (_) {
+      // Already handled in authPreflight (alert + signOut)
+    }
   };
 
   const handleBack = () => {
