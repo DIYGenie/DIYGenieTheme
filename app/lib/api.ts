@@ -99,3 +99,24 @@ export async function fetchProjectsForCurrentUser() {
     return [];
   }
 }
+
+export async function fetchProjectById(id: string) {
+  const res = await fetch(`${BASE}/api/projects/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('PROJECT_FETCH_FAILED');
+  const json = await res.json();
+  return json.item || json.project || json;
+}
+
+export async function fetchLatestScanForProject(projectId: string) {
+  const { data, error } = await supabase
+    .from('room_scans')
+    .select('id,image_url')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+  return { scanId: data.id, imageUrl: data.image_url as string };
+}
