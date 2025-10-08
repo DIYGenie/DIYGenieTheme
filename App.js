@@ -14,7 +14,6 @@ import {
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
 import AppNavigator from './app/navigation/AppNavigator';
-import { AuthGate } from './app/providers/AuthGate';
 import { colors } from './theme/colors';
 import { typography } from './theme/typography';
 
@@ -32,12 +31,10 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <AuthGate>
-        <NavigationContainer>
-          <StatusBar style="light" />
-          <AppNavigator />
-        </NavigationContainer>
-      </AuthGate>
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <AppNavigator />
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
