@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -45,7 +45,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = useOptionalTabBarHeight();
 
   const scrollRef = React.useRef<ScrollView>(null);
   const descRef = React.useRef<TextInput>(null);
