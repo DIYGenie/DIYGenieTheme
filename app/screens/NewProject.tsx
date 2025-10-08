@@ -474,6 +474,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     if (busyBuild) return;
     setBusyBuild(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast('Please sign in first', 'error');
+        setBusyBuild(false);
+        return;
+      }
+
       const id = await ensureDraft();
       if (!id) return;
 
@@ -490,7 +497,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         }
       }
 
-      const res = await apiRaw(`/api/projects/${id}/build-without-preview?user_id=${encodeURIComponent(USER_ID)}`, {
+      const res = await apiRaw(`/api/projects/${id}/build-without-preview?user_id=${encodeURIComponent(user.id)}`, {
         method: 'POST',
       });
       console.log('[build] accepted', res);
