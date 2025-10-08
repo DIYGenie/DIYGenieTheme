@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { useCameraPermission } from '../hooks/useCameraPermission';
 import PrePermissionSheet from '../components/modals/PrePermissionSheet';
+import { supabase } from '../lib/supabase';
 
 function HowItWorks({ navigation }) {
   const { checkStatus, request } = useCameraPermission();
@@ -141,6 +142,27 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('NewProject');
   };
 
+  const handlePingSupabase = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('room_scans').select('id').limit(1);
+
+      if (error) {
+        Alert.alert('Supabase ERROR', error.message);
+        console.error('Supabase error:', error);
+        return;
+      }
+
+      const userId = user?.id || 'none';
+      const message = `Supabase OK • user: ${userId} • room_scans sample loaded`;
+      Alert.alert('Supabase Connection', message);
+      console.log('Supabase ping result:', { user, data });
+    } catch (err) {
+      Alert.alert('Supabase ERROR', err.message || 'Unknown error');
+      console.error('Supabase ping failed:', err);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -167,6 +189,21 @@ export default function HomeScreen({ navigation }) {
         >
           <Text style={styles.startProjectText}>Start a New Project</Text>
         </PressableScale>
+
+        {/* Dev-only Supabase Ping Button */}
+        {__DEV__ && (
+          <PressableScale
+            testID="ping-supabase"
+            onPress={handlePingSupabase}
+            haptic="light"
+            scaleTo={0.98}
+            accessibilityRole="button"
+            accessibilityLabel="Ping Supabase (dev)"
+            style={styles.devButton}
+          >
+            <Text style={styles.devButtonText}>Ping Supabase (dev)</Text>
+          </PressableScale>
+        )}
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -275,6 +312,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.2,
     fontFamily: typography.fontFamily.manropeBold,
+  },
+  devButton: {
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    width: '100%',
+  },
+  devButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.inter,
   },
   sectionHeader: {
     fontSize: 18,
