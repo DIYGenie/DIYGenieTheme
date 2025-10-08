@@ -1,6 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import AuthGate from '../providers/AuthGate';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import RootTabs from './RootTabs';
 import HowItWorks from '../screens/HowItWorks';
@@ -18,32 +19,34 @@ const Stack = createStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-      initialRouteName="Welcome"
-    >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="Main" component={RootTabs} />
-      <Stack.Screen name="HowItWorks" component={HowItWorks} />
-      <Stack.Screen name="NewProject" component={NewProject} />
-      <Stack.Screen name="NewProjectMedia" component={NewProjectMedia} />
-      <Stack.Screen 
-        name="Scan" 
-        component={ScanScreen} 
-        options={{ headerShown: false, presentation: 'modal' }} 
-      />
-      <Stack.Screen 
-        name="Auth" 
-        component={AuthScreen} 
-        options={{ headerShown: true, title: 'Sign in' }} 
-      />
-      <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
-      <Stack.Screen name="Project" component={ProjectDetailScreen} />
-      <Stack.Screen name="Plan" component={PlanScreen} />
-      <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />
-      <Stack.Screen name="OpenPlan" component={OpenPlanScreen} options={{ headerShown: false }} />
-    </Stack.Navigator>
+    <AuthGate>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+        initialRouteName="Welcome"
+      >
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="Main" component={RootTabs} />
+        <Stack.Screen name="HowItWorks" component={HowItWorks} />
+        <Stack.Screen name="NewProject" component={NewProject} />
+        <Stack.Screen name="NewProjectMedia" component={NewProjectMedia} />
+        <Stack.Screen 
+          name="Scan" 
+          component={ScanScreen} 
+          options={{ headerShown: false, presentation: 'modal' }} 
+        />
+        <Stack.Screen 
+          name="Auth" 
+          component={AuthScreen} 
+          options={{ headerShown: true, title: 'Sign in' }} 
+        />
+        <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
+        <Stack.Screen name="Project" component={ProjectDetailScreen} />
+        <Stack.Screen name="Plan" component={PlanScreen} />
+        <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />
+        <Stack.Screen name="OpenPlan" component={OpenPlanScreen} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    </AuthGate>
   );
 }
