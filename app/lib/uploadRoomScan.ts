@@ -74,7 +74,7 @@ export async function uploadRoomScan({ uri, userId, projectId = null }: Args) {
   } catch {}
 
   // 7) Ensure profile exists (for FK constraint)
-  await ensureProfile(supabase);
+  await ensureProfile();
 
   // 8) Insert DB row
   const { error: dbErr } = await supabase.from('room_scans').insert([{

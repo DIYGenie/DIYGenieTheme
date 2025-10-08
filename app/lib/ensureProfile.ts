@@ -1,29 +1,38 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
-export async function ensureProfile(supabase: SupabaseClient) {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    throw new Error('User not authenticated');
-  }
+/**
+ * Ensures a row exists in `profiles` keyed by `user_id` (your schema).
+ * Returns the current user_id or throws if unauthenticated.
+ */
+export async function ensureProfile() {
+  const { data: sessionData, error: sErr } = await supabase.auth.getSession();
+  if (sErr) throw sErr;
 
-  const { data: existing, error: selectError } = await supabase
+  const uid = sessionData?.session?.user?.id;
+  if (!uid) throw new Error('AUTH_REQUIRED');
+
+  // Your schema uses profiles.user_id (NOT profiles.id)
+  const { data: existing, error: selErr } = await supabase
     .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .single();
+    .select('user_id')
+    .eq('user_id', uid)
+    .maybeSingle();
 
-  if (selectError && selectError.code !== 'PGRST116') {
-    throw new Error(`Failed to check profile: ${selectError.message}`);
-  }
+  if (selErr) throw selErr;
 
   if (!existing) {
-    const { error: upsertError } = await supabase
+    const { error: insErr } = await supabase
       .from('profiles')
-      .upsert({ id: user.id });
-
-    if (upsertError) {
-      throw new Error(`Failed to create profile: ${upsertError.message}`);
-    }
+      .insert({ user_id: uid });
+    if (insErr) throw insErr;
   }
+
+  return uid;
+}
+
+/**
+ * Helper for places that only need the uid and want to be sure a profile row exists.
+ */
+export async function ensureUserId(): Promise<string> {
+  return ensureProfile();
 }
