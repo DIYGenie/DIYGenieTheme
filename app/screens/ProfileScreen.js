@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, AppSta
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { supabase } from '../lib/storage';
 import { PrimaryButton } from '../components/Buttons';
+import { useAuth } from '../hooks/useAuth';
 
 const BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
 const ENDPOINTS = {
@@ -103,11 +105,14 @@ function PlanCard({ title, priceText, subtitle, features, ctaText, onPress, popu
 }
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
+  const { user, signOut: authSignOut } = useAuth();
   const [busy, setBusy] = React.useState(false);
   const [ents, setEnts] = React.useState({ tier: 'free', remaining: 0, previewAllowed: false });
   const [showUpgradePicker, setShowUpgradePicker] = React.useState(false);
   const [lastSyncAt, setLastSyncAt] = React.useState(null);
   const [syncNote, setSyncNote] = React.useState('');
+  const [toastMessage, setToastMessage] = React.useState('');
 
   const fetchEntitlementsSafe = React.useCallback(async (userId) => {
     try {
@@ -227,8 +232,9 @@ export default function ProfileScreen() {
 
   const handleLogOut = async () => {
     try {
-      await supabase.auth.signOut();
-      Alert.alert('Logged out', 'You have been signed out successfully.');
+      await authSignOut();
+      setToastMessage('Signed out');
+      setTimeout(() => setToastMessage(''), 2000);
     } catch (e) {
       Alert.alert('Log out', 'Unable to sign out. Please try again.');
     }
@@ -251,6 +257,37 @@ export default function ProfileScreen() {
             <Text style={styles.profileName}>Tye Kowalski</Text>
             <Text style={styles.profileSubtitle}>DIY Enthusiast</Text>
           </View>
+
+          {/* Auth Card */}
+          {!user ? (
+            <View style={styles.authCard}>
+              <Ionicons name="shield-checkmark-outline" size={32} color={brand.primary} style={{ marginBottom: 8 }} />
+              <Text style={styles.authCardTitle}>Sign in to save scans</Text>
+              <Text style={styles.authCardSubtitle}>Create an account to save your room scans and projects securely.</Text>
+              <TouchableOpacity
+                style={styles.authCardButton}
+                onPress={() => navigation.navigate('Auth')}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in"
+              >
+                <Text style={styles.authCardButtonText}>Sign in</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.authCard}>
+              <Ionicons name="checkmark-circle" size={32} color="#10B981" style={{ marginBottom: 8 }} />
+              <Text style={styles.authCardTitle}>Signed in</Text>
+              <Text style={styles.authCardSubtitle}>{user.email}</Text>
+              <TouchableOpacity
+                style={[styles.authCardButton, styles.authCardButtonSecondary]}
+                onPress={handleLogOut}
+                accessibilityRole="button"
+                accessibilityLabel="Sign out"
+              >
+                <Text style={styles.authCardButtonTextSecondary}>Sign out</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Your Plan Section */}
           <Text style={styles.sectionTitle}>Your Plan</Text>
@@ -445,6 +482,12 @@ export default function ProfileScreen() {
           </Pressable>
         </ScrollView>
       </SafeAreaView>
+
+      {toastMessage ? (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -502,6 +545,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.interMedium,
     color: '#475569',
+  },
+  authCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
+    marginBottom: 24,
+  },
+  authCardTitle: {
+    fontSize: 18,
+    fontFamily: typography.fontFamily.manropeBold,
+    color: colors.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  authCardSubtitle: {
+    fontSize: 14,
+    fontFamily: typography.fontFamily.inter,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  authCardButton: {
+    backgroundColor: brand.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  authCardButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.manropeSemiBold,
+  },
+  authCardButtonSecondary: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+  },
+  authCardButtonTextSecondary: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: typography.fontFamily.manropeSemiBold,
   },
   sectionTitle: {
     fontSize: 18,
@@ -737,5 +829,20 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     color: '#DC2626',
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 40,
+    left: 24,
+    right: 24,
+    backgroundColor: '#1F2937',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: typography.fontFamily.inter,
   },
 });

@@ -12,6 +12,7 @@ import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import PlanScreen from '../screens/PlanScreen';
 import PlanTabsScreen from '../screens/PlanTabsScreen';
 import OpenPlanScreen from '../screens/OpenPlanScreen';
+import AuthScreen from '../screens/AuthScreen';
 
 const Stack = createStackNavigator();
 
@@ -32,6 +33,11 @@ export default function AppNavigator() {
         name="Scan" 
         component={ScanScreen} 
         options={{ headerShown: false, presentation: 'modal' }} 
+      />
+      <Stack.Screen 
+        name="Auth" 
+        component={AuthScreen} 
+        options={{ headerShown: true, title: 'Sign in' }} 
       />
       <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
       <Stack.Screen name="Project" component={ProjectDetailScreen} />

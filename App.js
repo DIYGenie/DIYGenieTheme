@@ -18,6 +18,7 @@ import { registerRootComponent } from 'expo';
 import AppNavigator from './app/navigation/AppNavigator';
 import { colors } from './theme/colors';
 import { typography } from './theme/typography';
+import { AuthProvider } from './app/contexts/AuthContext';
 
 function App() {
   let [fontsLoaded] = useFonts({
@@ -33,10 +34,12 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="light" />
-        <AppNavigator />
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="light" />
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

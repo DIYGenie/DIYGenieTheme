@@ -15,12 +15,14 @@ import PromptApplyModal from '../components/PromptApplyModal';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { subscribeScanPhoto } from '../lib/scanEvents';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
+import { useAuth } from '../hooks/useAuth';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
 export default function NewProject({ navigation: navProp }: { navigation?: any }) {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [budget, setBudget] = useState('');
   const [skillLevel, setSkillLevel] = useState('');
@@ -131,7 +133,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function fetchEntitlements() {
-    const r = await fetchEntitlementsSafe(USER_ID);
+    const userId = user?.id || USER_ID;
+    const r = await fetchEntitlementsSafe(userId);
     const data = (r as any).data || r;
     setEnts({ 
       previewAllowed: !!(data?.previewAllowed) || false, 
@@ -315,6 +318,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function uploadPhotoToSupabase(uri: string, source: 'scan' | 'upload') {
+    if (!user) {
+      showToast('Please sign in to save scans', 'error');
+      navigation.navigate('Auth');
+      return;
+    }
+
     setUploading(true);
     try {
       if (Platform.OS === 'web' && uri.startsWith('data:')) {
@@ -327,7 +336,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         uri,
         source,
         projectId: draftId ?? null,
-        userId: USER_ID ?? null,
+        userId: user.id ?? null,
       });
       console.log('[scan saved]', res);
       showToast('Scan uploaded & saved', 'success');
