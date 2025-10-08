@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
 import { useNavigation, useRoute, CompositeNavigationProp } from '@react-navigation/native';
@@ -502,8 +502,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const ICON_SIZE = 32;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <ScrollView 
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={{ flex: 1 }}>
+            <ScrollView 
         ref={scrollRef}
         style={styles.scrollView} 
         contentContainerStyle={{
@@ -532,6 +538,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             numberOfLines={3}
             scrollEnabled={false}
             textAlignVertical="top"
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={() => Keyboard.dismiss()}
           />
           <Text style={styles.charCount}>
             {description.length}/10 characters minimum
@@ -917,9 +926,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             })()}
           </View>
         )}
-      </ScrollView>
+            </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
 
-      {toastMessage && (
+        {toastMessage && (
         <View style={[
           styles.toast,
           toastType === 'error' && styles.toastError
@@ -982,7 +993,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           }
         }}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
