@@ -233,7 +233,20 @@ export default function HomeScreen({ navigation }) {
 
 function ProjectCard({ project, navigation }) {
   const handlePress = () => {
-    navigation.navigate('ProjectDetails', { id: project.id });
+    const id = project?.id || project?.project_id;
+    if (!id) return;
+
+    // Navigate to ProjectDetails inside the Projects tab's nested stack
+    // @ts-ignore
+    const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
+
+    if (parent?.navigate) {
+      parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      return;
+    }
+    // Fallback: try direct nested navigate (harmless if ignored)
+    // @ts-ignore
+    navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
   };
 
   const statusText = project.status === 'plan_ready' 
