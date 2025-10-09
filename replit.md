@@ -16,6 +16,7 @@ The application utilizes a component-based React Native architecture with React 
 - **RootTabs** (`app/navigation/RootTabs.tsx`): Bottom tab navigator with typed navigation for Home, NewProject, Projects (nested stack), and Profile
 - **ProjectsNavigator** (`app/navigation/ProjectsNavigator.tsx`): Nested stack within Projects tab containing ProjectsList, ProjectDetails, and BuildPlan screens
 - **Typed Navigation**: Uses TypeScript composite navigation types to enable type-safe navigation from tab screens to nested stack screens (e.g., NewProject → Projects → ProjectDetails)
+- **Smart Back Navigation** (`app/lib/useSafeBack.ts`): Intelligent back navigation hook using CommonActions and TabActions. First attempts goBack() if stack history exists, then navigates to Projects tab with ProjectsList as the only route (ensuring clean stack state), with fallback to tab jump and final fallback to navigation reset. Guarantees users always return to a valid state, eliminating orphaned navigation states.
 
 ### Visual Design Architecture
 The design features a clean, modern aesthetic with white backgrounds, dark text, and a **purple brand primary color (#7C3AED / purple-600)** for CTAs, using a gradient for accents. A centralized UI kit in `app/ui/` provides reusable components and theme tokens, including a unified button system. Layouts use `SafeAreaView` and consistent spacing tokens, with `Ionicons` for iconography.
