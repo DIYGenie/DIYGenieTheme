@@ -1,8 +1,13 @@
+Goal: For uploaded photos, hide both tool buttons (Mark Area and Measure). Tools are AR-only. Keep the thumbnail card; show a small note explaining tools appear after an AR scan. Do not mount MeasureModal for uploads.
+
+THEME
+// REPLACE FILE: app/screens/NewProjectMedia.js
 import React, { useState } from 'react';
-import { View, Pressable, Text, Image, Alert } from 'react-native';
+import { View, Pressable, Text, Image } from 'react-native';
+import Toast from '../components/Toast';
 import { supabase } from '../lib/supabase';
 import { ensureProjectForDraft } from '../lib/draft';
-import RoiModal from '../components/RoiModal';
+import RoiModal from '../components/RoiModal'; // AR-only tool; MeasureModal removed for uploads
 
 export default function NewProjectMedia(props) {
   const { draft, onDraftChange, isFormValid, onBlocked } = props;
@@ -13,7 +18,7 @@ export default function NewProjectMedia(props) {
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if (!user) {
-      Alert.alert('Session expired', 'Please sign in again.');
+      Toast.show('Session expired. Please sign in again.');
       await supabase.auth.signOut();
       throw new Error('AUTH_REQUIRED');
     }
@@ -29,38 +34,47 @@ export default function NewProjectMedia(props) {
   };
 
   const handleScan = guard(async () => {
-    Alert.alert('AR Scan', 'AR scan coming soon!');
+    // AR scan will be implemented; for now, just inform user
+    Toast.show('AR scan coming soon!');
+    // When AR is implemented, set source:'ar' and show ROI:
+    // setSavedScan({ imageUrl: <frame>, scanId: <id>, projectId: draft.projectId, source: 'ar' });
   });
 
   const handleUpload = guard(async () => {
     try {
       await authPreflight();
 
+      // 1) Ensure there is a project for this draft
       const projectId = await ensureProjectForDraft(draft);
       if (!draft?.projectId) onDraftChange?.({ ...draft, projectId });
 
+      // 2) Perform the upload
       const { uploadRoomScan } = await import('../lib/uploadRoomScan');
-      const result = await uploadRoomScan();
+      const result = await uploadRoomScan(); // { imageUrl, scanId }
       if (!result?.scanId) {
-        Alert.alert('Upload failed', 'Try again.');
+        Toast.show('Upload failed. Try again.');
         return;
       }
 
+      // 3) Link the scan to the project (authoritative association)
       await supabase.from('room_scans').update({ project_id: projectId }).eq('id', result.scanId);
 
+      // 4) Store with explicit source='upload' → tools hidden
       setSavedScan({ ...result, projectId, source: 'upload' });
-      Alert.alert('Success', 'Scan saved to project!');
+      Toast.show('Scan saved to project!');
     } catch (e) {
       if (String(e?.message || e).includes('AUTH_REQUIRED')) return;
       console.log('[upload/link failed]', e);
-      Alert.alert('Upload failed', 'Please try again.');
+      Toast.show('Upload failed. Please try again.');
     }
   });
 
+  // Tools are AR-only:
   const canAdjustArea = !!savedScan && savedScan.source === 'ar';
 
   return (
     <View style={{ gap: 12, marginTop: 8 }}>
+      {/* Scan / Upload */}
       <Pressable
         onPress={handleScan}
         style={{
@@ -87,6 +101,7 @@ export default function NewProjectMedia(props) {
         <Text style={{ color: 'white', fontWeight: '600' }}>Upload Photo</Text>
       </Pressable>
 
+      {/* Saved Scan Card (single-scan mode) */}
       {savedScan && (
         <View
           style={{
@@ -104,6 +119,7 @@ export default function NewProjectMedia(props) {
           />
           <Text style={{ marginTop: 8, fontWeight: '600' }}>Saved Scan</Text>
 
+          {/* AR-only tools (uploads hide both buttons) */}
           {canAdjustArea ? (
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 10 }}>
               <Pressable
@@ -119,13 +135,14 @@ export default function NewProjectMedia(props) {
               </Pressable>
             </View>
           ) : (
-            <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13, textAlign: 'center' }}>
+            <Text style={{ marginTop: 8, color: '#6B7280', textAlign: 'center' }}>
               Tools are available when you use <Text style={{ fontWeight: '700' }}>Scan Room</Text>.
             </Text>
           )}
         </View>
       )}
 
+      {/* Mount ROI tool only when AR-enabled */}
       {canAdjustArea ? (
         <RoiModal visible={showRoi} onClose={() => setShowRoi(false)} scan={savedScan} />
       ) : null}
