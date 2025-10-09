@@ -258,25 +258,30 @@ export async function waitForPlanReady(
   return null; // timed out still not ready
 }
 
-// Unified loader for the user's projects (Newest first) — **Supabase direct**
+// Unified loader for the user's projects (Newest first) — Supabase direct
 export async function fetchMyProjects(): Promise<any[]> {
   const { data: sess } = await supabase.auth.getSession();
   const userId = sess?.session?.user?.id;
   if (!userId) throw new Error('AUTH_REQUIRED');
 
-  // Query projects table directly (RLS applies). Newest first.
+  // Select only columns we know exist. (No `title`.)
   const { data, error } = await supabase
     .from('projects')
-    .select('id, name, title, status, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .select('id, name, status, created_at, updated_at, budget, skill_level')
+    .eq('user_id', userId);
 
   if (error) {
     console.log('[projects fetch supabase error]', error.message || error);
     return [];
   }
 
-  const list = data ?? [];
-  console.log('[projects fetch supabase] userId=%s → %d items', userId, list.length);
-  return list;
+  const list = Array.isArray(data) ? data : [];
+  // Sort newest first on client (handles schemas without strict timestamps)
+  const toTime = (x: any) => {
+    const ts = Date.parse(x?.updated_at || x?.created_at || '');
+    return Number.isNaN(ts) ? 0 : ts;
+  };
+  const sorted = [...list].sort((a, b) => toTime(b) - toTime(a));
+  console.log('[projects fetch supabase] userId=%s → %d items', userId, sorted.length);
+  return sorted;
 }
