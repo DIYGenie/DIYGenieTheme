@@ -32,9 +32,15 @@ export default function ProjectsScreen({ navigation }) {
     fetchProjects();
   }, [fetchProjects]);
 
+  // Auto-refresh list whenever this screen gains focus
   useFocusEffect(
     useCallback(() => {
-      fetchProjects();
+      // guard in case load is undefined in older code
+      if (typeof fetchProjects === 'function') {
+        console.log('[projects] focus → refetch');
+        fetchProjects();
+      }
+      return () => {};
     }, [fetchProjects])
   );
 

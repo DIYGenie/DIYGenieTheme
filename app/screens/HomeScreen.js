@@ -133,9 +133,14 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Keep "Recent Projects" fresh when returning to Home
   useFocusEffect(
     useCallback(() => {
-      load();
+      if (typeof load === 'function') {
+        console.log('[home] focus → refetch recent projects');
+        load();
+      }
+      return () => {};
     }, [load])
   );
 
