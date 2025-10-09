@@ -2,7 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown } from '../lib/api';
+import {
+  fetchProjectById,
+  fetchLatestScanForProject,
+  fetchProjectPlanMarkdown,
+  buildPlanWithoutPreview,
+  waitForPlanReady,
+} from '../lib/api';
 import Markdown from '../components/Markdown';
 
 type RouteParams = { id: string };
@@ -91,6 +97,28 @@ export default function ProjectDetails() {
     }, [load])
   );
 
+  const smartRefresh = useCallback(async () => {
+    if (!projectId) return;
+    setPlanLoading(true);
+    try {
+      const fresh = await fetchProjectById(projectId, { timeoutMs: 8000 }).catch(() => project);
+      if (fresh) setProject(fresh);
+      if (!fresh || fresh.status !== 'ready') {
+        await buildPlanWithoutPreview(projectId);
+      }
+      const md = await waitForPlanReady(projectId, { totalMs: 15000, stepMs: 900 });
+      if (md !== null) {
+        setPlanMd(md);
+      } else {
+        setPlanMd(null);
+      }
+    } catch (e) {
+      console.log('[plan smartRefresh error]', String((e as any)?.message || e));
+    } finally {
+      setPlanLoading(false);
+    }
+  }, [projectId, project]);
+
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
       <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
@@ -129,18 +157,7 @@ export default function ProjectDetails() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, fontWeight: '700' }}>Plan</Text>
           <Pressable
-            onPress={async () => {
-              if (!projectId) return;
-              setPlanLoading(true);
-              try {
-                const md = await fetchProjectPlanMarkdown(projectId, { timeoutMs: 10000 });
-                setPlanMd(md);
-              } catch (e) {
-                console.log('[plan refresh error]', String(e));
-              } finally {
-                setPlanLoading(false);
-              }
-            }}
+            onPress={smartRefresh}
             style={{ paddingHorizontal: 10, paddingVertical: 6 }}
           >
             <Text style={{ color: '#7C3AED', fontWeight: '600' }}>Refresh</Text>

@@ -222,3 +222,34 @@ export async function fetchProjectPlanMarkdown(
     clearTimeout(timeout);
   }
 }
+
+export async function buildPlanWithoutPreview(projectId: string): Promise<boolean> {
+  const base =
+    (global as any).__API_BASE_URL__ ??
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
+    process.env.EXPO_PUBLIC_BASE_URL ??
+    process.env.API_BASE ??
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+  const url = `${base}/api/projects/${projectId}/build-without-preview`;
+  const res = await fetch(url, { method: 'POST' });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`build failed: ${res.status} ${t}`);
+  }
+  return true;
+}
+
+export async function waitForPlanReady(
+  projectId: string,
+  opts?: { totalMs?: number; stepMs?: number }
+): Promise<string | null> {
+  const totalMs = opts?.totalMs ?? 12000;
+  const stepMs = opts?.stepMs ?? 800;
+  const start = Date.now();
+  while (Date.now() - start < totalMs) {
+    const md = await fetchProjectPlanMarkdown(projectId).catch(() => null);
+    if (md !== null) return md;
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+  return null;
+}
