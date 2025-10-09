@@ -12,8 +12,12 @@ export default function NewProjectMedia(props) {
   } = props;
 
   const [savedScan, setSavedScan] = useState(null);
+  console.log('[NPMedia] vFINAL (js) render', { hasSavedScan: !!savedScan });
 
-  console.log('[NPMedia] v3 render', { hasSavedScan: !!savedScan });
+  const guard = (fn) => () => {
+    if (!isFormValid) { onBlocked?.(); return; }
+    fn && fn();
+  };
 
   async function authPreflight() {
     const { data } = await supabase.auth.getSession();
@@ -26,14 +30,6 @@ export default function NewProjectMedia(props) {
     return user;
   }
 
-  const guard = (fn) => () => {
-    if (!isFormValid) {
-      onBlocked?.();
-      return;
-    }
-    fn && fn();
-  };
-
   const handleScan = guard(async () => {
     Alert.alert('AR Scan', 'AR scan coming soon.');
   });
@@ -41,16 +37,12 @@ export default function NewProjectMedia(props) {
   const handleUpload = guard(async () => {
     try {
       await authPreflight();
-
       const projectId = await ensureProjectForDraft(draft);
       if (!draft?.projectId) onDraftChange({ ...draft, projectId });
 
       const { uploadRoomScan } = await import('../lib/uploadRoomScan');
       const result = await uploadRoomScan();
-      if (!result?.scanId) {
-        Alert.alert('Upload failed', 'Try again.');
-        return;
-      }
+      if (!result?.scanId) { Alert.alert('Upload failed', 'Try again.'); return; }
 
       await supabase.from('room_scans').update({ project_id: projectId }).eq('id', result.scanId);
 
@@ -69,9 +61,7 @@ export default function NewProjectMedia(props) {
         onPress={handleScan}
         style={{
           backgroundColor: isFormValid ? '#7C3AED' : '#C7C7C7',
-          padding: 14,
-          borderRadius: 14,
-          alignItems: 'center',
+          padding: 14, borderRadius: 14, alignItems: 'center',
           opacity: isFormValid ? 1 : 0.7,
         }}
       >
@@ -82,9 +72,7 @@ export default function NewProjectMedia(props) {
         onPress={handleUpload}
         style={{
           backgroundColor: isFormValid ? '#7C3AED' : '#C7C7C7',
-          padding: 14,
-          borderRadius: 14,
-          alignItems: 'center',
+          padding: 14, borderRadius: 14, alignItems: 'center',
           opacity: isFormValid ? 1 : 0.7,
         }}
       >
@@ -92,20 +80,8 @@ export default function NewProjectMedia(props) {
       </Pressable>
 
       {savedScan && (
-        <View
-          style={{
-            marginTop: 16,
-            backgroundColor: '#F3F0FF',
-            borderRadius: 16,
-            padding: 12,
-            alignItems: 'center',
-          }}
-        >
-          <Image
-            source={{ uri: savedScan.imageUrl }}
-            style={{ width: 220, height: 140, borderRadius: 12 }}
-            resizeMode="cover"
-          />
+        <View style={{ marginTop: 16, backgroundColor: '#F3F0FF', borderRadius: 16, padding: 12, alignItems: 'center' }}>
+          <Image source={{ uri: savedScan.imageUrl }} style={{ width: 220, height: 140, borderRadius: 12 }} resizeMode="cover" />
           <Text style={{ marginTop: 8, fontWeight: '600' }}>Saved scan</Text>
           <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13, textAlign: 'center' }}>
             Tools appear when you use <Text style={{ fontWeight: '700' }}>Scan room</Text>.
