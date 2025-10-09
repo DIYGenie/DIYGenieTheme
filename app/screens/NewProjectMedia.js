@@ -55,7 +55,12 @@ export default function NewProjectMedia(props) {
         .eq('id', result.scanId);
 
       // NOTE: uploads are non-AR; disable measurement in UI for V1
-      setSavedScan({ ...result, projectId, source: 'upload', allowMeasure: false });
+      setSavedScan({
+        ...result,
+        projectId,
+        source: 'upload',
+        allowMeasure: false, // <-- key flag the UI will read
+      });
       Alert.alert('Success', 'Scan saved to project!');
     } catch (e) {
       console.log('[upload/link failed]', e);
@@ -68,6 +73,11 @@ export default function NewProjectMedia(props) {
   const handleScan = guard(async () => {
     Alert.alert('AR Scan', 'AR scan coming soon!');
   });
+
+  // Helper: only AR scans (future) can measure; uploads cannot.
+  const canMeasure =
+    !!savedScan &&
+    (savedScan.allowMeasure === true || savedScan.source === 'ar'); // strict
 
   return (
     <View style={{ gap: 12, marginTop: 8 }}>
@@ -122,8 +132,7 @@ export default function NewProjectMedia(props) {
             >
               <Text style={{ color: 'white', fontWeight: '600' }}>Mark Area</Text>
             </Pressable>
-            {/* Measurements available only for AR scans in V1 */}
-            {savedScan?.allowMeasure ? (
+            {canMeasure ? (
               <Pressable
                 onPress={() => setShowMeasure(true)}
                 style={{ backgroundColor: '#7C3AED', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}
@@ -132,7 +141,7 @@ export default function NewProjectMedia(props) {
               </Pressable>
             ) : null}
           </View>
-          {!savedScan?.allowMeasure ? (
+          {!canMeasure ? (
             <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13, textAlign: 'center' }}>
               Measurements are available when you use <Text style={{ fontWeight: '700' }}>Scan room</Text>.
             </Text>
@@ -141,8 +150,10 @@ export default function NewProjectMedia(props) {
       )}
 
       <RoiModal visible={showRoi} onClose={() => setShowRoi(false)} scan={savedScan} />
-      {/* Keep MeasureModal wired but only reachable when allowMeasure=true */}
-      <MeasureModal visible={showMeasure} onClose={() => setShowMeasure(false)} scan={savedScan} />
+      {/* Only mount MeasureModal when allowed, so it cannot appear via state glitches */}
+      {canMeasure ? (
+        <MeasureModal visible={showMeasure} onClose={() => setShowMeasure(false)} scan={savedScan} />
+      ) : null}
     </View>
   );
 }
