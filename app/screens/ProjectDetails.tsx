@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
+import { logNavTree } from '../lib/navDebug';
 import { fetchProjectById, fetchLatestScanForProject } from '../lib/api';
 
 type RouteParams = { id: string };
@@ -34,10 +35,15 @@ export default function ProjectDetails() {
 
   useEffect(() => {
     navigation.setOptions({
-      // Hide the default back behavior and render our own
       headerBackVisible: false,
       headerLeft: () => (
-        <Pressable onPress={safeBack} style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
+        <Pressable
+          onPress={() => {
+            logNavTree(navigation as any, 'onBackPress');
+            safeBack();
+          }}
+          style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+        >
           <Text style={{ fontWeight: '600' }}>Back</Text>
         </Pressable>
       ),
@@ -45,8 +51,17 @@ export default function ProjectDetails() {
     });
   }, [navigation, safeBack]);
 
-  useEffect(() => { load(); }, [load]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useEffect(() => {
+    logNavTree(navigation as any, 'mount ProjectDetails');
+    load();
+  }, [load, navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      logNavTree(navigation as any, 'focus ProjectDetails');
+      load();
+    }, [load, navigation])
+  );
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
