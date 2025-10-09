@@ -11,6 +11,7 @@ import {
 } from '../lib/api';
 import Markdown from '../components/Markdown';
 import StatusBadge from '../components/StatusBadge';
+import { useInterval } from '../hooks/useInterval';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -31,7 +32,10 @@ export default function ProjectDetails() {
   const abortRef = useRef<AbortController | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isBuilding = (s?: string) =>
+  const status = (project?.plan_status || project?.status || '').toLowerCase();
+  const isBuilding = /requested|building|queued|pending/.test(status) && !/ready|done|error|failed/.test(status);
+
+  const isBuildingOld = (s?: string) =>
     !!s && (s.includes('requested') || s.includes('building') || s === 'draft');
   const isReady = (s?: string) =>
     !!s && (s.includes('plan_ready') || s.includes('preview_ready') || s === 'ready');
@@ -63,7 +67,7 @@ export default function ProjectDetails() {
         
         // (re)arm polling based on latest status
         clearPoll();
-        if (isBuilding(p?.status)) {
+        if (isBuildingOld(p?.status)) {
           pollRef.current = setInterval(() => {
             // cheap re-check: only refetch project
             fetchProjectById(projectId).then(np => {
@@ -145,6 +149,11 @@ export default function ProjectDetails() {
   );
 
   useEffect(() => () => clearPoll(), []);
+
+  // Auto-poll while building
+  useInterval(() => {
+    if (isBuilding) load();
+  }, isBuilding ? 8000 : null);
 
   // Smart refresh: if project is not ready, start build; then poll for plan.
   const smartRefresh = useCallback(async () => {
@@ -231,25 +240,32 @@ export default function ProjectDetails() {
         </View>
       )}
 
-      <View style={{ marginTop: 20, padding: 14, borderRadius: 14, backgroundColor: '#F9FAFB' }}>
+      <View style={{ marginTop: 16, backgroundColor: '#F6F7FB', borderRadius: 12, padding: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, fontWeight: '700' }}>Plan</Text>
-          <RefreshLink />
+          <Text style={{ fontWeight: '700' }}>Plan</Text>
+
+          {isBuilding ? (
+            <Pressable onPress={load} style={{ padding: 6 }}>
+              <Text style={{ color: '#6D28D9', fontWeight: '600' }}>Refresh</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => (navigation as any).navigate('BuildPlan', { id: projectId })}
+              style={{ backgroundColor: '#6D28D9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+            >
+              <Text style={{ color: 'white', fontWeight: '700' }}>View Plan</Text>
+            </Pressable>
+          )}
         </View>
-        {planLoading ? (
-          <View style={{ paddingVertical: 16 }}>
-            <ActivityIndicator />
-          </View>
-        ) : planMd === null ? (
-          <Text style={{ color: '#6B7280', marginTop: 8 }}>
+
+        {isBuilding ? (
+          <Text style={{ color: '#6B7280', marginTop: 6 }}>
             Your plan is building. This screen will update automatically; you can also tap Refresh.
           </Text>
-        ) : planMd.trim().length === 0 ? (
-          <Text style={{ color: '#6B7280', marginTop: 8 }}>No plan content yet.</Text>
         ) : (
-          <View style={{ marginTop: 10 }}>
-            <Markdown content={planMd} />
-          </View>
+          <Text style={{ color: '#6B7280', marginTop: 6 }}>
+            Plan is ready. Tap "View Plan" to see materials, tools, cuts, steps, time & cost.
+          </Text>
         )}
       </View>
     </ScrollView>
