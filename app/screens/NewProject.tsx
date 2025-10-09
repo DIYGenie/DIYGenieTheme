@@ -71,6 +71,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const descRef = React.useRef<TextInput>(null);
   const ctaRef = React.useRef<View>(null);
   const lastScanRef = useRef<{ scanId: string; imageUrl: string | null } | null>(null);
+  const anchors = useRef<{title:number; desc:number; budget:number; skill:number}>({
+    title: 0, desc: 0, budget: 0, skill: 0,
+  });
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -81,6 +84,28 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const budgetOk = !!budget;
   const skillOk = !!skillLevel;
   const canProceed = descOk && budgetOk && skillOk;
+
+  const validateDraft = (d:any) => {
+    if (!d?.name?.trim()) return 'title';
+    if (!d?.description?.trim() || d?.description?.trim().length < 10) return 'desc';
+    if (!d?.budget) return 'budget';
+    if (!d?.skill_level) return 'skill';
+    return null;
+  };
+
+  const handleBlocked = () => {
+    const miss = validateDraft({ name: title, description, budget, skill_level: skillLevel });
+    if (!miss) return;
+    const messages:any = {
+      title: 'Please add a project title.',
+      desc: 'Please add a brief project description (10+ characters).',
+      budget: 'Please pick a budget range.',
+      skill: 'Please select your skill level.',
+    };
+    Alert.alert('Almost there', messages[miss]);
+    const y = Math.max((anchors.current as any)[miss] - 24, 0);
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: true }));
+  };
 
   // Ensure Projects stack has ProjectsList, then push details on top
   const goToProjectDetailsSeeded = (projectId: string, extraParams?: any) => {
@@ -536,27 +561,25 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={{ flex: 1 }}>
-            <ScrollView 
-        ref={scrollRef}
-        style={styles.scrollView} 
-        contentContainerStyle={{
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.md,
-          paddingBottom: Math.max(tabBarHeight + 20, insets.bottom + 20),
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Your New Project</Text>
-          <Text style={styles.subtitle}>Provide details about your DIY project and watch the magic unfold!</Text>
-        </View>
+        <ScrollView 
+          ref={scrollRef}
+          style={styles.scrollView}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            paddingBottom: Math.max(tabBarHeight + 20, insets.bottom + 20) + 40,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Your New Project</Text>
+            <Text style={styles.subtitle}>Provide details about your DIY project and watch the magic unfold!</Text>
+          </View>
 
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Project Title</Text>
+          <View onLayout={(e)=> anchors.current.title = e.nativeEvent.layout.y} style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Project Title</Text>
           <TextInput
             style={styles.textArea}
             value={title}
@@ -567,10 +590,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             blurOnSubmit
             onSubmitEditing={() => Keyboard.dismiss()}
           />
-        </View>
+          </View>
 
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>Project Description</Text>
+          <View onLayout={(e)=> anchors.current.desc = e.nativeEvent.layout.y} style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Project Description</Text>
           <TextInput
             ref={descRef}
             style={[styles.textArea, { height: 84 }]}
@@ -586,13 +609,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             blurOnSubmit
             onSubmitEditing={() => Keyboard.dismiss()}
           />
-          <Text style={styles.charCount}>
-            {description.length}/10 characters minimum
-          </Text>
-        </View>
+            <Text style={styles.charCount}>
+              {description.length}/10 characters minimum
+            </Text>
+          </View>
 
-        <View style={styles.budgetFieldWrapper}>
-          <View style={styles.fieldContainer}>
+          <View onLayout={(e)=> anchors.current.budget = e.nativeEvent.layout.y} style={styles.budgetFieldWrapper}>
+            <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Budget</Text>
             <Pressable 
               style={styles.dropdown}
@@ -635,11 +658,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 </View>
               </Pressable>
             </Modal>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.skillFieldWrapper}>
-          <View style={styles.fieldContainer}>
+          <View onLayout={(e)=> anchors.current.skill = e.nativeEvent.layout.y} style={styles.skillFieldWrapper}>
+            <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Skill Level</Text>
             <Pressable 
               style={styles.dropdown}
@@ -682,10 +705,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 </View>
               </Pressable>
             </Modal>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.tilesContainer}>
+          <View style={styles.tilesContainer}>
           <View style={{ 
             marginTop: 12, 
             marginBottom: 8, 
@@ -810,9 +833,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </View>
             </Pressable>
           )}
-        </View>
+          </View>
 
-        {lastScan && (
+          {lastScan && (
           <View style={{
             marginTop: 16,
             padding: 12,
@@ -877,9 +900,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </View>
             )}
           </View>
-        )}
+          )}
 
-        {(hasValidForm() || !!photoUri) && (
+          {(hasValidForm() || !!photoUri) && (
           <View ref={ctaRef} style={{ marginTop: 20 }}>
             {(() => {
               const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
@@ -928,10 +951,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               );
             })()}
           </View>
-        )}
-            </ScrollView>
-          </View>
-        </TouchableWithoutFeedback>
+          )}
+        </ScrollView>
 
         {toastMessage && (
         <View style={[

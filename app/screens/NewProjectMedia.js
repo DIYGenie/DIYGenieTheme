@@ -82,9 +82,13 @@ export default function NewProjectMedia(props) {
       {savedScan && (
         <View style={{ marginTop: 16, backgroundColor: '#F3F0FF', borderRadius: 16, padding: 12, alignItems: 'center' }}>
           <Image source={{ uri: savedScan.imageUrl }} style={{ width: 220, height: 140, borderRadius: 12 }} resizeMode="cover" />
-          <Text style={{ marginTop: 8, fontWeight: '600' }}>Saved scan</Text>
+          <Text style={{ marginTop: 8, fontWeight: '600' }}>
+            {savedScan?.source === 'upload' ? 'Uploaded photo' : 'Saved scan'}
+          </Text>
           <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13, textAlign: 'center' }}>
-            Tools appear when you use <Text style={{ fontWeight: '700' }}>Scan room</Text>.
+            {savedScan?.source === 'upload'
+              ? 'AR tools appear after Scan room (coming soon).'
+              : 'Tools appear when you use Scan room.'}
           </Text>
         </View>
       )}
