@@ -15,7 +15,6 @@ import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
-import PromptApplyModal from '../components/PromptApplyModal';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { subscribeScanPhoto } from '../lib/scanEvents';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
@@ -55,11 +54,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [busyBuild, setBusyBuild] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  const [sugs, setSugs] = useState<any>(null);
-  const [sugsBusy, setSugsBusy] = useState(false);
-  const [sugsError, setSugsError] = useState<string | undefined>(undefined);
-  const [applyOpen, setApplyOpen] = React.useState(false);
-  const [pendingTip, setPendingTip] = React.useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
@@ -72,7 +66,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const scrollRef = React.useRef<ScrollView>(null);
   const descRef = React.useRef<TextInput>(null);
-  const sugRef = React.useRef<View>(null);
   const ctaRef = React.useRef<View>(null);
   const lastScanRef = useRef<{ scanId: string; imageUrl: string | null } | null>(null);
 
@@ -92,14 +85,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return description.trim().length >= 10 && !!budget && !!skillLevel;
   }
 
-  function normalizeAppend(base: string, add: string) {
-    const b = base.trim();
-    const a = add.trim().replace(/\s+/g, ' ');
-    if (!b) return a;
-    const endPunct = /[.!?]$/.test(b) ? '' : '.';
-    return `${b}${endPunct} ${a}`;
-  }
-
   function resetForm() {
     try {
       setDraftId(null);
@@ -111,11 +96,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setLastScan(null);
       lastScanRef.current = null;
       setLastScanEphemeral(null);
-      setSugs(null);
-      setSugsBusy(false);
-      setSugsError(undefined);
-      setApplyOpen(false);
-      setPendingTip(null);
       clearDraft();
     } catch {}
   }
@@ -248,9 +228,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         case 'media':
           onUploadPhoto();
           break;
-        case 'preview':
-          scrollToView(sugRef);
-          break;
         case 'plan':
           scrollToView(ctaRef);
           break;
@@ -287,35 +264,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     setDraftId(id);
     return id;
   }
-
-  async function fetchSuggestions() {
-    if (!draftId) return;
-    setSugsBusy(true);
-    try {
-      const r = await api(`/api/projects/${draftId}/suggestions`, {
-        method: 'POST',
-        body: JSON.stringify({ user_id: USER_ID }),
-      });
-      if (!r.ok) {
-        console.warn('Suggestions error', r.status, r.data);
-        return;
-      }
-      setSugsError(undefined);
-      setSugs({
-        bullets: r.data?.suggestions || [],
-        tags: r.data?.tags || []
-      });
-    } finally {
-      setSugsBusy(false);
-    }
-  }
-
-  // Auto-trigger suggestions when photo is picked and form is valid
-  useEffect(() => {
-    if (photoUri && hasValidForm() && !sugs && !sugsBusy) {
-      fetchSuggestions();
-    }
-  }, [photoUri, description, budget, skillLevel]);
 
   function pickPhotoWeb(): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -910,59 +858,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           </View>
         )}
 
-        {(!!photoUri || (description?.trim().length ?? 0) >= 10) && (
-          <View 
-            ref={sugRef}
-            testID="np-suggestions-card"
-            style={styles.suggestionsCard}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={styles.suggestionsTitle}>Suggestions</Text>
-              <Pressable
-                testID="np-suggestions-refresh"
-                onPress={fetchSuggestions}
-                disabled={sugsBusy}
-                style={[styles.suggestionsRefresh, sugsBusy && { opacity: 0.5 }]}
-              >
-                <Ionicons name="refresh" size={14} color="#6B7280" style={{ marginRight: 4 }} />
-                <Text style={styles.suggestionsRefreshText}>{sugsBusy ? 'Refreshing…' : 'Refresh'}</Text>
-              </Pressable>
-            </View>
-            
-            {sugsBusy ? (
-              <View style={styles.suggestionsLoading}>
-                <ActivityIndicator size="small" color={brand.primary} />
-                <Text style={styles.suggestionsLoadingText}>Loading suggestions…</Text>
-              </View>
-            ) : sugs?.bullets && sugs.bullets.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-                {sugs.bullets.map((suggestion: string, idx: number) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => { setPendingTip(suggestion); setApplyOpen(true); }}
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 12,
-                      borderRadius: 9999,
-                      borderWidth: 1,
-                      borderColor: '#DDD',
-                      marginRight: 8,
-                    }}
-                  >
-                    <Text>{suggestion}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ) : (
-              <Text style={{ opacity: 0.6, fontSize: 14 }}>Tips will appear after you add a photo or describe your project.</Text>
-            )}
-            
-            {sugsError && (
-              <Text style={styles.suggestionsError}>{sugsError}</Text>
-            )}
-          </View>
-        )}
-
         {(hasValidForm() || !!photoUri) && (
           <View ref={ctaRef} style={{ marginTop: 20 }}>
             {(() => {
@@ -1025,20 +920,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       )}
-
-      <PromptApplyModal
-        visible={applyOpen}
-        tip={pendingTip}
-        onReplace={() => {
-          if (pendingTip) setDescription(pendingTip);
-          setApplyOpen(false);
-        }}
-        onAppend={() => {
-          if (pendingTip) setDescription(prev => normalizeAppend(prev || '', pendingTip));
-          setApplyOpen(false);
-        }}
-        onClose={() => setApplyOpen(false)}
-      />
 
       <RoiModal
         visible={roiOpen}
@@ -1221,98 +1102,6 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.inter,
     color: '#6B7280',
     marginTop: 2,
-  },
-  suggestionsCard: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-  },
-  suggestionsTitle: {
-    fontSize: 15,
-    fontFamily: typography.fontFamily.manropeBold,
-    color: '#111827',
-    marginBottom: 12,
-  },
-  suggestionsLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  suggestionsLoadingText: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: '#6B7280',
-  },
-  suggestionBullet: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  suggestionText: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: typography.fontFamily.inter,
-    color: '#374151',
-    lineHeight: 20,
-  },
-  suggestionMeta: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: '#9CA3AF',
-    marginTop: 8,
-  },
-  tagsRow: {
-    marginTop: 4,
-  },
-  applyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  applyRowCaption: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
-  applyButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-  },
-  applyButtonText: {
-    fontSize: 13,
-    fontFamily: typography.fontFamily.inter,
-    color: '#374151',
-    fontWeight: '500' as any,
-  },
-  suggestionsRefresh: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingVertical: 4,
-  },
-  suggestionsRefreshText: {
-    fontSize: 13,
-    fontFamily: typography.fontFamily.inter,
-    color: '#6B7280',
-  },
-  suggestionsError: {
-    fontSize: 12,
-    fontFamily: typography.fontFamily.inter,
-    color: '#DC2626',
-    marginTop: 6,
   },
   primaryButton: {
     backgroundColor: '#F59E0B',
