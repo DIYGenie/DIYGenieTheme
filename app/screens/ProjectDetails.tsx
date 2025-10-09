@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown } from '../lib/api';
+import Markdown from '../components/Markdown';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -16,6 +17,8 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
+  const [planMd, setPlanMd] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -35,6 +38,19 @@ export default function ProjectDetails() {
       if (!controller.signal.aborted) {
         setProject(p);
         setScan(s);
+        if (p?.status === 'ready') {
+          setPlanLoading(true);
+          try {
+            const md = await fetchProjectPlanMarkdown(projectId, { signal: controller.signal, timeoutMs: 10000 });
+            if (!controller.signal.aborted) setPlanMd(md);
+          } catch (e) {
+            if ((e as any)?.name !== 'AbortError') console.log('[plan fetch error]', String(e));
+          } finally {
+            if (!controller.signal.aborted) setPlanLoading(false);
+          }
+        } else {
+          setPlanMd(null);
+        }
       }
     } catch (e: any) {
       // Ignore aborts; log other errors and still release spinner
@@ -76,7 +92,7 @@ export default function ProjectDetails() {
   );
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
       <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
         {project?.name || project?.title || 'Project'}
       </Text>
@@ -108,6 +124,44 @@ export default function ProjectDetails() {
           <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
         </View>
       )}
-    </View>
+
+      <View style={{ marginTop: 20, padding: 14, borderRadius: 14, backgroundColor: '#F9FAFB' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16, fontWeight: '700' }}>Plan</Text>
+          <Pressable
+            onPress={async () => {
+              if (!projectId) return;
+              setPlanLoading(true);
+              try {
+                const md = await fetchProjectPlanMarkdown(projectId, { timeoutMs: 10000 });
+                setPlanMd(md);
+              } catch (e) {
+                console.log('[plan refresh error]', String(e));
+              } finally {
+                setPlanLoading(false);
+              }
+            }}
+            style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+          >
+            <Text style={{ color: '#7C3AED', fontWeight: '600' }}>Refresh</Text>
+          </Pressable>
+        </View>
+        {planLoading ? (
+          <View style={{ paddingVertical: 16 }}>
+            <ActivityIndicator />
+          </View>
+        ) : planMd === null ? (
+          <Text style={{ color: '#6B7280', marginTop: 8 }}>
+            Your plan is building. Come back in a moment or tap Refresh.
+          </Text>
+        ) : planMd.trim().length === 0 ? (
+          <Text style={{ color: '#6B7280', marginTop: 8 }}>No plan content yet.</Text>
+        ) : (
+          <View style={{ marginTop: 10 }}>
+            <Markdown content={planMd} />
+          </View>
+        )}
+      </View>
+    </ScrollView>
   );
 }

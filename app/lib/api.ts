@@ -194,3 +194,31 @@ export async function fetchLatestScanForProject(projectId: string) {
   if (!data) return null;
   return { scanId: data.id as string, imageUrl: data.image_url as string };
 }
+
+export async function fetchProjectPlanMarkdown(
+  projectId: string,
+  opts?: { signal?: AbortSignal; timeoutMs?: number }
+): Promise<string | null> {
+  const base =
+    (global as any).__API_BASE_URL__ ??
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
+    process.env.EXPO_PUBLIC_BASE_URL ??
+    process.env.API_BASE ??
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+  const url = `${base}/api/projects/${projectId}/plan`;
+  const controller = new AbortController();
+  const signal = opts?.signal ?? controller.signal;
+  const timeout = setTimeout(() => controller.abort(), opts?.timeoutMs ?? 10000);
+  try {
+    const res = await fetch(url, { method: 'GET', signal });
+    if (res.status === 409) {
+      return null;
+    }
+    if (!res.ok) throw new Error(`plan fetch failed: ${res.status}`);
+    const md = await res.text();
+    return md ?? '';
+  } finally {
+    clearTimeout(timeout);
+  }
+}
