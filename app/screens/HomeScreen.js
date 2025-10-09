@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert, InteractionManager } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -236,17 +236,28 @@ function ProjectCard({ project, navigation }) {
     const id = project?.id || project?.project_id;
     if (!id) return;
 
-    // Navigate to ProjectDetails inside the Projects tab's nested stack
+    // Prefer parent tabs (id="root-tabs" if present)
     // @ts-ignore
     const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
 
     if (parent?.navigate) {
-      parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      // 1) Jump to Projects tab with its LIST as the active child
+      parent.navigate('Projects', { screen: 'ProjectsList' });
+
+      // 2) After nav settles, push ProjectDetails on that stack
+      InteractionManager.runAfterInteractions(() => {
+        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+      });
       return;
     }
-    // Fallback: try direct nested navigate (harmless if ignored)
+
+    // Fallback if no parent available (harmless if ignored)
     // @ts-ignore
-    navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+    navigation.navigate('Projects', { screen: 'ProjectsList' });
+    InteractionManager.runAfterInteractions(() => {
+      // @ts-ignore
+      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+    });
   };
 
   const statusText = project.status === 'plan_ready' 
