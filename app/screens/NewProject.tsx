@@ -535,6 +535,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           paddingBottom: Math.max(tabBarHeight + 20, insets.bottom + 20),
         }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
@@ -550,7 +551,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             onChangeText={setTitle}
             placeholder="e.g., Built-in Bookcase"
             placeholderTextColor={colors.textSecondary}
-            returnKeyType="next"
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={() => Keyboard.dismiss()}
           />
         </View>
 
@@ -582,6 +585,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <Pressable 
               style={styles.dropdown}
               onPress={() => {
+                Keyboard.dismiss();
                 setShowBudgetDropdown(true);
                 setShowSkillDropdown(false);
               }}
@@ -628,6 +632,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <Pressable 
               style={styles.dropdown}
               onPress={() => {
+                Keyboard.dismiss();
                 setShowSkillDropdown(true);
                 setShowBudgetDropdown(false);
               }}
