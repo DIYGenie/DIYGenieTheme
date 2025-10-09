@@ -22,6 +22,7 @@ export default function DraggableRect({
   const [container, setContainer] = useState<Size>({ w: 1, h: 1 });
   const [rect, setRect] = useState<PxRect>({ x: 0, y: 0, w: 0, h: 0 });
   const ready = useRef(false);
+  const MIN_SIDE = 120; // px – initial rectangle won't be tiny
 
   const toNorm = useCallback(
     (r: PxRect): NormRect => ({
@@ -127,9 +128,15 @@ export default function DraggableRect({
         setContainer(sz);
         if (!ready.current && width > 0 && height > 0) {
           ready.current = true;
-          const px = fromNorm(initial);
+          // Start centered with a reasonable minimum size
+          const base = fromNorm(initial); // px from provided normalized initial
+          const w0 = Math.max(base.w, MIN_SIDE);
+          const h0 = Math.max(base.h, MIN_SIDE);
+          const x0 = Math.max((sz.w - w0) / 2, 0);
+          const y0 = Math.max((sz.h - h0) / 2, 0);
+          const px = { x: x0, y: y0, w: Math.min(w0, sz.w), h: Math.min(h0, sz.h) };
           setRect(px);
-          onChange?.(initial);
+          onChange?.(toNorm(px));
         }
       }}
     >
