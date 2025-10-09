@@ -25,7 +25,7 @@ import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
-import { saveDraft, loadDraft, clearDraft } from '../lib/draft';
+import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 
@@ -342,12 +342,28 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
-  const onScanRoom = () => {
+  const onScanRoom = async () => {
     if (!canProceed) {
       showToast('Please complete all required fields first.', 'error');
       return;
     }
-    (navigation as any).navigate('Scan');
+    
+    try {
+      Keyboard.dismiss();
+      const draft = { 
+        projectId: draftId, 
+        title, 
+        name: title, 
+        budget, 
+        skill_level: skillLevel 
+      };
+      const pid = draftId ?? (await ensureProjectForDraft(draft));
+      if (!draftId) setDraftId(pid);
+      (navigation as any).navigate('Scan', { projectId: pid });
+    } catch (e) {
+      console.log('[scan nav failed]', String((e as any)?.message || e));
+      showToast('Could not start scan. Please try again.', 'error');
+    }
   };
 
   const onUploadPhoto = async () => {
