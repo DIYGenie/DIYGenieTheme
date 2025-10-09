@@ -164,15 +164,36 @@ export async function fetchProjectById(id: string) {
 }
 
 export async function fetchLatestScanForProject(projectId: string) {
-  const { data, error } = await supabase
+  // 1) Try scans linked to this project
+  const { data: byProject, error: errProject } = await supabase
     .from('room_scans')
-    .select('id,image_url')
+    .select('id,image_url,project_id')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data) return null;
-  return { scanId: data.id, imageUrl: data.image_url as string };
+  if (errProject) throw errProject;
+  if (byProject) {
+    return { scanId: byProject.id as string, imageUrl: byProject.image_url as string };
+  }
+
+  // 2) Fallback: user's latest scan (handles cases where uploads weren't linked to project)
+  const { data: sessionData, error: sErr } = await supabase.auth.getSession();
+  if (sErr) throw sErr;
+  const uid = sessionData?.session?.user?.id;
+  if (!uid) return null;
+
+  const { data: byUser, error: errUser } = await supabase
+    .from('room_scans')
+    .select('id,image_url,project_id,user_id')
+    .eq('user_id', uid)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (errUser) throw errUser;
+  if (!byUser) return null;
+
+  return { scanId: byUser.id as string, imageUrl: byUser.image_url as string };
 }
