@@ -1,27 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import DraggableRect from '../components/DraggableRect';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
+  const [norm, setNorm] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0.2, y: 0.2, w: 0.5, h: 0.35 });
 
   return (
-    <View style={{ flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 8 }}>AR Scan</Text>
-      <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center', marginBottom: 16 }}>
-        AR Scan is coming soon. For now, you can upload a photo.
+    <View style={{ flex: 1, padding: 16 }}>
+      <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 8 }}>Adjust area</Text>
+      <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>
+        Drag or resize the rectangle to the target spot. (Camera disabled in this preview.)
       </Text>
 
+      {/* Camera preview placeholder with adjustable ROI */}
+      <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center' }}>
+        <DraggableRect
+          initial={norm}
+          onChange={(n) => {
+            setNorm(n);
+          }}
+          style={{ width: '100%' }}
+        />
+      </View>
+
       <Pressable
-        onPress={() => navigation.goBack()}
-        style={{
-          backgroundColor: '#7C3AED',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 12,
+        onPress={() => {
+          console.log('[roi] normalized', norm);
+          navigation.goBack();
         }}
+        style={{ backgroundColor: '#7C3AED', paddingVertical: 12, borderRadius: 12, marginTop: 16, alignItems: 'center' }}
       >
-        <Text style={{ color: 'white', fontWeight: '600' }}>Close</Text>
+        <Text style={{ color: 'white', fontWeight: '600' }}>Save area & Close</Text>
       </Pressable>
     </View>
   );
