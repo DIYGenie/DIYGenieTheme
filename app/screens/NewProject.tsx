@@ -588,7 +588,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       >
         <View style={styles.header}>
           <Text style={styles.title}>Create Your New Project</Text>
-          <Text style={styles.subtitle}>Tell us a little about your DIY project so Genie can guide you through scanning, planning, and building.</Text>
+          <Text style={styles.subtitle}>Provide details about your DIY project and watch the magic unfold!</Text>
         </View>
 
         <View style={styles.fieldContainer}>
