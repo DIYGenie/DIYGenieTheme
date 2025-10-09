@@ -27,7 +27,21 @@ export default function ProjectDetails() {
   const [planMd, setPlanMd] = useState<string | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [autoPolled, setAutoPolled] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isBuilding = (s?: string) =>
+    !!s && (s.includes('requested') || s.includes('building') || s === 'draft');
+  const isReady = (s?: string) =>
+    !!s && (s.includes('plan_ready') || s.includes('preview_ready') || s === 'ready');
+
+  const clearPoll = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -46,6 +60,19 @@ export default function ProjectDetails() {
       if (!controller.signal.aborted) {
         setProject(p);
         setScan(s);
+        
+        // (re)arm polling based on latest status
+        clearPoll();
+        if (isBuilding(p?.status)) {
+          pollRef.current = setInterval(() => {
+            // cheap re-check: only refetch project
+            fetchProjectById(projectId).then(np => {
+              setProject(prev => ({ ...prev, ...np }));
+              if (isReady(np?.status)) clearPoll();
+            }).catch(()=>{});
+          }, 5000); // 5s cadence
+        }
+        
         if (p?.status === 'ready') {
           setPlanLoading(true);
           try {
@@ -102,17 +129,22 @@ export default function ProjectDetails() {
   useEffect(() => {
     load();
     return () => {
-      // Abort when unmounting
       abortRef.current?.abort();
+      clearPoll();
     };
   }, [load]);
 
   useFocusEffect(
     useCallback(() => {
       load();
-      return () => abortRef.current?.abort();
+      return () => {
+        abortRef.current?.abort();
+        clearPoll();
+      };
     }, [load])
   );
+
+  useEffect(() => () => clearPoll(), []);
 
   // Smart refresh: if project is not ready, start build; then poll for plan.
   const smartRefresh = useCallback(async () => {
@@ -145,6 +177,25 @@ export default function ProjectDetails() {
       smartRefresh();
     }
   }, [project, planMd, planLoading, autoPolled, smartRefresh]);
+
+  const RefreshLink = () => (
+    <Pressable
+      onPress={async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        await load();
+        setRefreshing(false);
+      }}
+      disabled={refreshing}
+      style={{ paddingHorizontal: 8, paddingVertical: 4, opacity: refreshing ? 0.6 : 1 }}
+    >
+      {refreshing ? (
+        <ActivityIndicator size="small" color="#7C3AED" />
+      ) : (
+        <Text style={{ color: '#7C3AED', fontWeight: '600' }}>Refresh</Text>
+      )}
+    </Pressable>
+  );
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -183,12 +234,7 @@ export default function ProjectDetails() {
       <View style={{ marginTop: 20, padding: 14, borderRadius: 14, backgroundColor: '#F9FAFB' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, fontWeight: '700' }}>Plan</Text>
-          <Pressable
-            onPress={smartRefresh}
-            style={{ paddingHorizontal: 10, paddingVertical: 6 }}
-          >
-            <Text style={{ color: '#7C3AED', fontWeight: '600' }}>Refresh</Text>
-          </Pressable>
+          <RefreshLink />
         </View>
         {planLoading ? (
           <View style={{ paddingVertical: 16 }}>
