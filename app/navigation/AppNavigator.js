@@ -6,7 +6,8 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import RootTabs from './RootTabs';
 import HowItWorks from '../screens/HowItWorks';
 import NewProject from '../screens/NewProject';
-import NewProjectMedia from '../screens/NewProjectMedia';
+// Force the minimal JS component (upload-only)
+import NewProjectMedia from '../screens/NewProjectMedia.js';
 import ScanScreen from '../screens/ScanScreen';
 import ProjectPreview from '../screens/ProjectPreview';
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
