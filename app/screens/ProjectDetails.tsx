@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
@@ -10,6 +10,7 @@ import {
   waitForPlanReady,
 } from '../lib/api';
 import Markdown from '../components/Markdown';
+import StatusBadge from '../components/StatusBadge';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -71,7 +72,8 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  useEffect(() => {
+  // Dev-friendly back, and dynamic header title/status
+  useLayoutEffect(() => {
     navigation.setOptions({
       headerBackVisible: false,
       headerLeft: () => (
@@ -79,9 +81,23 @@ export default function ProjectDetails() {
           <Text style={{ fontWeight: '600' }}>Back</Text>
         </Pressable>
       ),
-      title: 'Project',
+      headerTitle: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: 260 }}>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 16, fontWeight: '700' }}
+          >
+            {project?.name || 'Project'}
+          </Text>
+          {!!project?.status && (
+            <View style={{ marginLeft: 8 }}>
+              <StatusBadge status={project.status} />
+            </View>
+          )}
+        </View>
+      ),
     });
-  }, [navigation, safeBack]);
+  }, [navigation, safeBack, project?.name, project?.status]);
 
   useEffect(() => {
     load();

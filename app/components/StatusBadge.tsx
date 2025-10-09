@@ -5,7 +5,7 @@ import { brand } from '../../theme/colors';
 
 interface StatusBadgeProps {
   status: string;
-  hasInputImage: boolean;
+  hasInputImage?: boolean;
 }
 
 export default function StatusBadge({ status, hasInputImage }: StatusBadgeProps) {
