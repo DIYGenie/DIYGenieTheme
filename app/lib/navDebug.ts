@@ -24,9 +24,24 @@ export function logNavTree(navigation: NavLike, label: string) {
       );
     };
 
-    // current level
-    // @ts-ignore
     const currentState = navigation.getState?.();
+
+    // ⬇️ NEW: peek into the Projects tab's child state (to discover its stack root)
+    const parent = parentRootTabs || parentAny;
+    const parentState = parent?.getState?.();
+    let projectsChild: any = '(no projects child)';
+    if (parentState?.routes) {
+      const projectsRoute = parentState.routes.find((r: any) => r.name === 'Projects');
+      const child = projectsRoute?.state;
+      if (child?.routes) {
+        projectsChild = {
+          type: child.type,
+          index: child.index,
+          routes: child.routes.map((r: any) => r.name),
+          current: child.routes?.[child.index || 0]?.name,
+        };
+      }
+    }
 
     console.log('NAV DEBUG ::', label, {
       current: {
@@ -36,6 +51,7 @@ export function logNavTree(navigation: NavLike, label: string) {
       },
       parent_root_tabs: fmt(parentRootTabs),
       parent_any: fmt(parentAny),
+      projects_child: projectsChild, // ⬅️ shows true root name we should navigate to
     });
   } catch (e) {
     console.log('NAV DEBUG ERROR ::', label, String(e));

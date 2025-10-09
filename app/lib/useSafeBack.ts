@@ -3,41 +3,61 @@ import { useNavigation, TabActions } from '@react-navigation/native';
 
 type NavLike = {
   getParent?: (id?: string) => any;
+  getState?: () => any;
   dispatch?: (action: any) => void;
   navigate?: (name: string, params?: any) => void;
 };
 
+function getTabParent(nav: NavLike) {
+  // Prefer explicit id if set in RootTabs.tsx
+  const byId = nav.getParent?.('root-tabs');
+  if (byId) return byId;
+  return nav.getParent?.();
+}
+
+function getProjectsChildRootName(tabParent: any): string | null {
+  const st = tabParent?.getState?.();
+  if (!st?.routes) return null;
+
+  const projectsRoute = st.routes.find((r: any) => r.name === 'Projects');
+  // If the Projects tab hosts a nested stack, its state will be here
+  const child = projectsRoute?.state;
+  if (child?.routes?.length) {
+    // Root of that stack is routes[0] (or use child.index if you want current)
+    const root = child.routes[0]?.name;
+    return typeof root === 'string' ? root : null;
+  }
+  return null;
+}
+
+/**
+ * Jump to the Projects tab AND its root stack screen (Projects list).
+ * - Reads the tab parent's state to discover the nested stack's root route name.
+ * - Falls back to jumpTo('Projects') if the child isn't a stack.
+ */
 export function useSafeBack() {
   const navigation = useNavigation() as unknown as NavLike;
 
   return useCallback(() => {
-    // Get the tab parent (prefer id="root-tabs" if present)
-    const tabParent =
-      (navigation.getParent && navigation.getParent('root-tabs')) ||
-      (navigation.getParent && navigation.getParent());
+    const tabParent = getTabParent(navigation);
 
-    // 1) If we have a tab parent, navigate into its NESTED stack screen for Projects.
-    //    We try a few common screen names for the Projects list.
-    const targets = ['Projects', 'ProjectsScreen', 'ProjectsList'];
-    if (tabParent?.navigate) {
-      for (const screenName of targets) {
-        try {
-          // Navigate to the Projects tab, and inside it to the list screen.
-          tabParent.navigate('Projects', { screen: screenName });
-          console.log('SAFEBACK :: parent.navigate("Projects", { screen:', screenName, '})');
-          return;
-        } catch (_e) {
-          // try next name
-        }
+    if (tabParent) {
+      const childRoot = getProjectsChildRootName(tabParent);
+
+      if (childRoot) {
+        console.log(
+          'SAFEBACK :: parent.navigate("Projects", { screen:', childRoot, '})'
+        );
+        tabParent.navigate('Projects', { screen: childRoot });
+        return;
       }
-      // Fallback: at least jump to the Projects tab
+
+      console.log('SAFEBACK :: parent TabActions.jumpTo("Projects") (no child stack)');
       tabParent.dispatch?.(TabActions.jumpTo('Projects'));
-      console.log('SAFEBACK :: parent TabActions.jumpTo("Projects") fallback');
       return;
     }
 
-    // 2) Ultimate fallback: try direct navigate from current nav
+    console.log('SAFEBACK :: no tab parent -> direct navigate("Projects")');
     navigation.navigate?.('Projects');
-    console.log('SAFEBACK :: direct navigation.navigate("Projects") fallback');
   }, [navigation]);
 }
