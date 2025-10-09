@@ -31,6 +31,9 @@ import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
+// V1: tools are AR-only (hide on Upload flow)
+const __HIDE_MEDIA_TOOLS = true;
+
 type NavProp = CompositeNavigationProp<
   BottomTabNavigationProp<RootTabParamList>,
   NativeStackNavigationProp<ProjectsStackParamList>
@@ -821,7 +824,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 {lastScan.scanId.slice(0, 8)}…
               </Text>
             </View>
-            {lastScan?.imageUrl && (
+            {/* V1: hide tool buttons for uploads */}
+            {__HIDE_MEDIA_TOOLS ? null : lastScan?.imageUrl && (
               <View style={{ flexDirection: 'column', gap: 8 }}>
                 <Pressable
                   onPress={() => setRoiOpen(true)}
@@ -921,46 +925,52 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         </View>
       )}
 
-      <RoiModal
-        visible={roiOpen}
-        imageUrl={lastScan?.imageUrl ?? ''}
-        onCancel={() => setRoiOpen(false)}
-        onSave={async (points, label) => {
-          try {
-            if (!lastScan?.scanId) throw new Error('No scan');
-            const row = await saveRoomScanRegion({ scanId: lastScan.scanId, points, label });
-            setLastRegionId(row.id);
-            showToast('Area saved', 'success');
-          } catch (e: any) {
-            showToast(e?.message ?? 'Save failed', 'error');
-          } finally {
-            setRoiOpen(false);
-          }
-        }}
-      />
+      {/* V1: hide ROI modal for upload flow */}
+      {__HIDE_MEDIA_TOOLS ? null : (
+        <RoiModal
+          visible={roiOpen}
+          imageUrl={lastScan?.imageUrl ?? ''}
+          onCancel={() => setRoiOpen(false)}
+          onSave={async (points, label) => {
+            try {
+              if (!lastScan?.scanId) throw new Error('No scan');
+              const row = await saveRoomScanRegion({ scanId: lastScan.scanId, points, label });
+              setLastRegionId(row.id);
+              showToast('Area saved', 'success');
+            } catch (e: any) {
+              showToast(e?.message ?? 'Save failed', 'error');
+            } finally {
+              setRoiOpen(false);
+            }
+          }}
+        />
+      )}
 
-      <MeasureModal
-        visible={measureOpen}
-        scanId={lastScan?.scanId!}
-        imageUrl={lastScan?.imageUrl ?? ''}
-        regionId={lastRegionId ?? null}
-        onCancel={() => setMeasureOpen(false)}
-        onSaveLine={async ([a, b], valueInches) => {
-          try {
-            await saveLineMeasurement({
-              scanId: lastScan!.scanId,
-              regionId: lastRegionId ?? null,
-              points: [a, b],
-              valueInches,
-            });
-            showToast(`Saved ${valueInches.toFixed(1)} in`, 'success');
-          } catch (e: any) {
-            showToast(e?.message ?? 'Save failed', 'error');
-          } finally {
-            setMeasureOpen(false);
-          }
-        }}
-      />
+      {/* V1: hide Measure modal for upload flow */}
+      {__HIDE_MEDIA_TOOLS ? null : (
+        <MeasureModal
+          visible={measureOpen}
+          scanId={lastScan?.scanId!}
+          imageUrl={lastScan?.imageUrl ?? ''}
+          regionId={lastRegionId ?? null}
+          onCancel={() => setMeasureOpen(false)}
+          onSaveLine={async ([a, b], valueInches) => {
+            try {
+              await saveLineMeasurement({
+                scanId: lastScan!.scanId,
+                regionId: lastRegionId ?? null,
+                points: [a, b],
+                valueInches,
+              });
+              showToast(`Saved ${valueInches.toFixed(1)} in`, 'success');
+            } catch (e: any) {
+              showToast(e?.message ?? 'Save failed', 'error');
+            } finally {
+              setMeasureOpen(false);
+            }
+          }}
+        />
+      )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
