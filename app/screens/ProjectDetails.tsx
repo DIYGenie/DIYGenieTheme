@@ -25,6 +25,7 @@ export default function ProjectDetails() {
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   const [planMd, setPlanMd] = useState<string | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
+  const [autoPolled, setAutoPolled] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -97,6 +98,7 @@ export default function ProjectDetails() {
     }, [load])
   );
 
+  // Smart refresh: if project is not ready, start build; then poll for plan.
   const smartRefresh = useCallback(async () => {
     if (!projectId) return;
     setPlanLoading(true);
@@ -106,10 +108,11 @@ export default function ProjectDetails() {
       if (!fresh || fresh.status !== 'ready') {
         await buildPlanWithoutPreview(projectId);
       }
-      const md = await waitForPlanReady(projectId, { totalMs: 15000, stepMs: 900 });
+      const md = await waitForPlanReady(projectId, { totalMs: 60000, stepMs: 1200, maxStepMs: 5000 });
       if (md !== null) {
         setPlanMd(md);
       } else {
+        // still not ready—leave "building" message
         setPlanMd(null);
       }
     } catch (e) {
@@ -118,6 +121,14 @@ export default function ProjectDetails() {
       setPlanLoading(false);
     }
   }, [projectId, project]);
+
+  // Auto-poll once after first load if plan isn't ready yet.
+  useEffect(() => {
+    if (project && planMd === null && !planLoading && !autoPolled) {
+      setAutoPolled(true);
+      smartRefresh();
+    }
+  }, [project, planMd, planLoading, autoPolled, smartRefresh]);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -169,7 +180,7 @@ export default function ProjectDetails() {
           </View>
         ) : planMd === null ? (
           <Text style={{ color: '#6B7280', marginTop: 8 }}>
-            Your plan is building. Come back in a moment or tap Refresh.
+            Your plan is building. This screen will update automatically; you can also tap Refresh.
           </Text>
         ) : planMd.trim().length === 0 ? (
           <Text style={{ color: '#6B7280', marginTop: 8 }}>No plan content yet.</Text>

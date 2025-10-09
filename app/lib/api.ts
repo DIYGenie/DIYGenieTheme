@@ -239,17 +239,21 @@ export async function buildPlanWithoutPreview(projectId: string): Promise<boolea
   return true;
 }
 
+// Poll plan endpoint until it is available (or time out). Uses gentle backoff.
 export async function waitForPlanReady(
   projectId: string,
-  opts?: { totalMs?: number; stepMs?: number }
+  opts?: { totalMs?: number; stepMs?: number; maxStepMs?: number }
 ): Promise<string | null> {
-  const totalMs = opts?.totalMs ?? 12000;
-  const stepMs = opts?.stepMs ?? 800;
+  const totalMs = opts?.totalMs ?? 60000;       // wait up to 60s
+  let stepMs = opts?.stepMs ?? 1200;            // start at 1.2s
+  const maxStep = opts?.maxStepMs ?? 5000;      // cap at 5s
   const start = Date.now();
   while (Date.now() - start < totalMs) {
     const md = await fetchProjectPlanMarkdown(projectId).catch(() => null);
-    if (md !== null) return md;
+    if (md !== null) return md; // ready (even if empty string)
     await new Promise((r) => setTimeout(r, stepMs));
+    // backoff a bit each loop
+    stepMs = Math.min(Math.floor(stepMs * 1.35), maxStep);
   }
-  return null;
+  return null; // timed out still not ready
 }
