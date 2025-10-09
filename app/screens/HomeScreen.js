@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert, InteractionManager, RefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -133,6 +133,17 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Pull-to-refresh state + handler
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
   // Keep "Recent Projects" fresh when returning to Home
   useFocusEffect(
     useCallback(() => {
@@ -175,6 +186,9 @@ export default function HomeScreen({ navigation }) {
         style={styles.scrollView} 
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Welcome Header */}
         <Text style={[styles.welcomeTitle, { fontSize: isVeryNarrow ? 26 : 28 }]}>Welcome back, Tye</Text>
