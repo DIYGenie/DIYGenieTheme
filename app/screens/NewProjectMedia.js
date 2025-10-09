@@ -54,7 +54,8 @@ export default function NewProjectMedia(props) {
         .update({ project_id: projectId })
         .eq('id', result.scanId);
 
-      setSavedScan({ ...result, projectId }); // single-scan mode
+      // NOTE: uploads are non-AR; disable measurement in UI for V1
+      setSavedScan({ ...result, projectId, source: 'upload', allowMeasure: false });
       Alert.alert('Success', 'Scan saved to project!');
     } catch (e) {
       console.log('[upload/link failed]', e);
@@ -121,17 +122,26 @@ export default function NewProjectMedia(props) {
             >
               <Text style={{ color: 'white', fontWeight: '600' }}>Mark Area</Text>
             </Pressable>
-            <Pressable
-              onPress={() => setShowMeasure(true)}
-              style={{ backgroundColor: '#7C3AED', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}
-            >
-              <Text style={{ color: 'white', fontWeight: '600' }}>Measure</Text>
-            </Pressable>
+            {/* Measurements available only for AR scans in V1 */}
+            {savedScan?.allowMeasure ? (
+              <Pressable
+                onPress={() => setShowMeasure(true)}
+                style={{ backgroundColor: '#7C3AED', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>Measure</Text>
+              </Pressable>
+            ) : null}
           </View>
+          {!savedScan?.allowMeasure ? (
+            <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13, textAlign: 'center' }}>
+              Measurements are available when you use <Text style={{ fontWeight: '700' }}>Scan room</Text>.
+            </Text>
+          ) : null}
         </View>
       )}
 
       <RoiModal visible={showRoi} onClose={() => setShowRoi(false)} scan={savedScan} />
+      {/* Keep MeasureModal wired but only reachable when allowMeasure=true */}
       <MeasureModal visible={showMeasure} onClose={() => setShowMeasure(false)} scan={savedScan} />
     </View>
   );
