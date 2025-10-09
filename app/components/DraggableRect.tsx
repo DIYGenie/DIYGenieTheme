@@ -64,8 +64,12 @@ export default function DraggableRect({
   const dragResponder = useMemo(
     () =>
       PanResponder.create({
+        // Let children (corner handles) win first.
+        onStartShouldSetPanResponderCapture: () => false,
+        onMoveShouldSetPanResponderCapture: () => false,
         onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) + Math.abs(g.dy) > 2,
+        onPanResponderTerminationRequest: () => false,
         onPanResponderMove: (_e, g) => {
           update({ ...rect, x: rect.x + g.dx, y: rect.y + g.dy });
         },
@@ -75,8 +79,12 @@ export default function DraggableRect({
 
   function handleHandleDrag(which: 'tl' | 'tr' | 'bl' | 'br') {
     return PanResponder.create({
+      // Corner handles must capture the gesture immediately
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_e, g) => {
         let { x, y, w, h } = rect;
         if (which === 'tl') {
@@ -158,13 +166,16 @@ const styles = StyleSheet.create({
   },
   handle: {
     position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#7C3AED',
+    // Easier to grab even if you miss by a few px
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  tl: { left: -8, top: -8 },
-  tr: { right: -8, top: -8 },
-  bl: { left: -8, bottom: -8 },
-  br: { right: -8, bottom: -8 },
+  tl: { left: -14, top: -14 },
+  tr: { right: -14, top: -14 },
+  bl: { left: -14, bottom: -14 },
+  br: { right: -14, bottom: -14 },
 });
