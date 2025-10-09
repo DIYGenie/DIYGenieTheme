@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, InteractionManager } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
 import {
@@ -12,6 +12,7 @@ import {
 import Markdown from '../components/Markdown';
 import StatusBadge from '../components/StatusBadge';
 import { useInterval } from '../hooks/useInterval';
+import { ROOT_TABS_ID, PROJECTS_TAB, PROJECTS_LIST_SCREEN, PLAN_SCREEN } from '../navigation/routeNames';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -250,7 +251,17 @@ export default function ProjectDetails() {
             </Pressable>
           ) : (
             <Pressable
-              onPress={() => (navigation as any).navigate('BuildPlan', { id: projectId })}
+              onPress={() => {
+                const parent = (navigation as any).getParent?.(ROOT_TABS_ID) ?? (navigation as any).getParent?.();
+                if (parent) {
+                  parent.navigate(PROJECTS_TAB, { screen: PROJECTS_LIST_SCREEN });
+                  InteractionManager.runAfterInteractions(() => {
+                    parent.navigate(PROJECTS_TAB, { screen: PLAN_SCREEN, params: { id: projectId } });
+                  });
+                  return;
+                }
+                (navigation as any).navigate(PLAN_SCREEN, { id: projectId });
+              }}
               style={{ backgroundColor: '#6D28D9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
             >
               <Text style={{ color: 'white', fontWeight: '700' }}>View Plan</Text>
