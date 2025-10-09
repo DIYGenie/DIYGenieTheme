@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, InteractionManager, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
 import { useNavigation, useRoute, CompositeNavigationProp } from '@react-navigation/native';
@@ -28,6 +28,7 @@ import { saveLineMeasurement } from '../lib/measure';
 import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
+import { useShake } from '../hooks/useShake';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -71,9 +72,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const descRef = React.useRef<TextInput>(null);
   const ctaRef = React.useRef<View>(null);
   const lastScanRef = useRef<{ scanId: string; imageUrl: string | null } | null>(null);
-  const anchors = useRef<{title:number; desc:number; budget:number; skill:number}>({
-    title: 0, desc: 0, budget: 0, skill: 0,
-  });
+  
+  type MissingKey = 'title' | 'description' | 'budget' | 'skill' | null;
+  const [missing, setMissing] = useState<MissingKey>(null);
+  const posRef = useRef<Record<string, number>>({});
+  
+  const titleShake = useShake();
+  const descShake = useShake();
+  const budgetShake = useShake();
+  const skillShake = useShake();
 
   const budgetOptions = ['$', '$$', '$$$'];
   const skillOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -85,26 +92,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const skillOk = !!skillLevel;
   const canProceed = descOk && budgetOk && skillOk;
 
-  const validateDraft = (d:any) => {
-    if (!d?.name?.trim()) return 'title';
-    if (!d?.description?.trim() || d?.description?.trim().length < 10) return 'desc';
-    if (!d?.budget) return 'budget';
-    if (!d?.skill_level) return 'skill';
+  const labelFor: Record<Exclude<MissingKey, null>, string> = {
+    title: 'Project Title',
+    description: 'Project Description',
+    budget: 'Budget',
+    skill: 'Skill Level',
+  };
+
+  const firstMissing = (): MissingKey => {
+    if (!title?.trim?.()) return 'title';
+    if (!description || description.trim().length < 10) return 'description';
+    if (!budget) return 'budget';
+    if (!skillLevel) return 'skill';
     return null;
   };
 
   const handleBlocked = () => {
-    const miss = validateDraft({ name: title, description, budget, skill_level: skillLevel });
+    const miss = firstMissing();
     if (!miss) return;
-    const messages:any = {
-      title: 'Please add a project title.',
-      desc: 'Please add a brief project description (10+ characters).',
-      budget: 'Please pick a budget range.',
-      skill: 'Please select your skill level.',
-    };
-    Alert.alert('Almost there', messages[miss]);
-    const y = Math.max((anchors.current as any)[miss] - 24, 0);
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y, animated: true }));
+    setMissing(miss);
+    
+    // Shake the field
+    ({ title: titleShake, description: descShake, budget: budgetShake, skill: skillShake } as any)[miss].shake();
+    
+    // Scroll into view
+    const y = posRef.current[miss] ?? 0;
+    scrollRef.current?.scrollTo({ y: Math.max(y - 24, 0), animated: true });
+    
+    // Message
+    Alert.alert('Almost there', `Please fill in ${labelFor[miss]} to continue.`);
+    
+    // Clear outline after a short delay
+    setTimeout(() => setMissing(null), 1400);
   };
 
   // Ensure Projects stack has ProjectsList, then push details on top
@@ -578,44 +597,67 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             <Text style={styles.subtitle}>Provide details about your DIY project and watch the magic unfold!</Text>
           </View>
 
-          <View onLayout={(e)=> anchors.current.title = e.nativeEvent.layout.y} style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Project Title</Text>
-          <TextInput
-            style={styles.textArea}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="e.g., Built-in Bookcase"
-            placeholderTextColor={colors.textSecondary}
-            returnKeyType="done"
-            blurOnSubmit
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          </View>
-
-          <View onLayout={(e)=> anchors.current.desc = e.nativeEvent.layout.y} style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Project Description</Text>
-          <TextInput
-            ref={descRef}
-            style={[styles.textArea, { height: 84 }]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="e.g. Build 3 floating shelves for living room wall (minimum 10 characters)"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={3}
-            scrollEnabled={false}
-            textAlignVertical="top"
-            returnKeyType="done"
-            blurOnSubmit
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-            <Text style={styles.charCount}>
-              {description.length}/10 characters minimum
-            </Text>
-          </View>
-
-          <View onLayout={(e)=> anchors.current.budget = e.nativeEvent.layout.y} style={styles.budgetFieldWrapper}>
+          <Animated.View
+            onLayout={(e) => { posRef.current.title = e.nativeEvent.layout.y; }}
+            style={[
+              titleShake.style,
+              missing === 'title' && { borderWidth: 2, borderColor: '#EF4444', borderRadius: 12, padding: 2 },
+            ]}
+          >
             <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Project Title</Text>
+              <TextInput
+                style={styles.textArea}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="e.g., Built-in Bookcase"
+                placeholderTextColor={colors.textSecondary}
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={() => Keyboard.dismiss()}
+              />
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            onLayout={(e) => { posRef.current.description = e.nativeEvent.layout.y; }}
+            style={[
+              descShake.style,
+              missing === 'description' && { borderWidth: 2, borderColor: '#EF4444', borderRadius: 12, padding: 2 },
+            ]}
+          >
+            <View style={styles.fieldContainer}>
+              <Text style={styles.fieldLabel}>Project Description</Text>
+              <TextInput
+                ref={descRef}
+                style={[styles.textArea, { height: 84 }]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="e.g. Build 3 floating shelves for living room wall (minimum 10 characters)"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={3}
+                scrollEnabled={false}
+                textAlignVertical="top"
+                returnKeyType="done"
+                blurOnSubmit
+                onSubmitEditing={() => Keyboard.dismiss()}
+              />
+              <Text style={styles.charCount}>
+                {description.length}/10 characters minimum
+              </Text>
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            onLayout={(e) => { posRef.current.budget = e.nativeEvent.layout.y; }}
+            style={[
+              budgetShake.style,
+              missing === 'budget' && { borderWidth: 2, borderColor: '#EF4444', borderRadius: 12, padding: 2 },
+            ]}
+          >
+            <View style={styles.budgetFieldWrapper}>
+              <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Budget</Text>
             <Pressable 
               style={styles.dropdown}
@@ -658,10 +700,18 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 </View>
               </Pressable>
             </Modal>
+              </View>
             </View>
-          </View>
+          </Animated.View>
 
-          <View onLayout={(e)=> anchors.current.skill = e.nativeEvent.layout.y} style={styles.skillFieldWrapper}>
+          <Animated.View
+            onLayout={(e) => { posRef.current.skill = e.nativeEvent.layout.y; }}
+            style={[
+              skillShake.style,
+              missing === 'skill' && { borderWidth: 2, borderColor: '#EF4444', borderRadius: 12, padding: 2 },
+            ]}
+          >
+            <View style={styles.skillFieldWrapper}>
             <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Skill Level</Text>
             <Pressable 
@@ -705,8 +755,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 </View>
               </Pressable>
             </Modal>
+              </View>
             </View>
-          </View>
+          </Animated.View>
 
           <View style={styles.tilesContainer}>
           <View style={{ 
