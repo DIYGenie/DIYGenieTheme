@@ -84,27 +84,83 @@ export async function listProjects(userId: string) {
   return list.data;
 }
 
+type AnyJson = Record<string, any>;
+
+function extractItems(json: AnyJson | any): any[] {
+  if (Array.isArray(json)) return json;
+  if (!json || typeof json !== 'object') return [];
+  return json.items || json.projects || json.data || [];
+}
+
 export async function fetchProjectsForCurrentUser() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
   const uid = data?.session?.user?.id;
   if (!uid) return [];
 
-  try {
-    const result = await listProjects(uid);
-    const items = Array.isArray(result) ? result : (result.items || result.projects || []);
-    return items ?? [];
-  } catch (err) {
-    console.error('[fetchProjectsForCurrentUser] error:', err);
-    return [];
+  const API_BASE =
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+  const paramVariants = [
+    `user_id=${encodeURIComponent(uid)}`,
+    `userId=${encodeURIComponent(uid)}`,
+    `uid=${encodeURIComponent(uid)}`,
+  ];
+
+  // Try user-filtered endpoints first
+  for (const q of paramVariants) {
+    try {
+      const url = `${API_BASE}/api/projects?${q}`;
+      const res = await fetch(url, { headers: { accept: 'application/json' } });
+      if (!res.ok) continue;
+
+      const json = await res.json();
+      const items = extractItems(json) ?? [];
+      console.log('[projects fetch]', q, '→', Array.isArray(items) ? items.length : 0);
+
+      if (Array.isArray(items) && items.length > 0) {
+        return items;
+      }
+      // If shape returned a single object (rare), normalize to array
+      if (!Array.isArray(items) && items) {
+        return [items];
+      }
+    } catch (e) {
+      console.log('[projects fetch error]', q, String(e));
+    }
   }
+
+  // Final fallback: fetch all and filter client-side by user_id
+  try {
+    const url = `${API_BASE}/api/projects`;
+    const res = await fetch(url, { headers: { accept: 'application/json' } });
+    if (res.ok) {
+      const json = await res.json();
+      const items = extractItems(json) ?? [];
+      const filtered = items.filter((it: any) => {
+        const val = it.user_id || it.userId || it.uid;
+        return val === uid;
+      });
+      console.log('[projects fetch] fallback(all) ->', filtered.length);
+      return filtered;
+    }
+  } catch (e) {
+    console.log('[projects fetch error] fallback(all)', String(e));
+  }
+
+  return [];
 }
 
 export async function fetchProjectById(id: string) {
-  const res = await fetch(`${BASE}/api/projects/${encodeURIComponent(id)}`);
+  const API_BASE =
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+  const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error('PROJECT_FETCH_FAILED');
   const json = await res.json();
-  return json.item || json.project || json;
+  return (json as AnyJson).item || (json as AnyJson).project || json;
 }
 
 export async function fetchLatestScanForProject(projectId: string) {
