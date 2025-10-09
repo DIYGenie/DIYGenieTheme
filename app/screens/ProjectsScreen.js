@@ -7,7 +7,7 @@ import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchProjectsForCurrentUser } from '../lib/api';
+import { fetchMyProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation }) {
@@ -16,13 +16,14 @@ export default function ProjectsScreen({ navigation }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Unified loader
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchProjectsForCurrentUser();
-      setProjects(data ?? []);
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      const items = await fetchMyProjects();
+      setProjects(items);
+    } catch (e) {
+      console.log('[projects load error]', String(e?.message || e));
     } finally {
       setLoading(false);
     }
@@ -35,7 +36,6 @@ export default function ProjectsScreen({ navigation }) {
   // Auto-refresh list whenever this screen gains focus
   useFocusEffect(
     useCallback(() => {
-      // guard in case load is undefined in older code
       if (typeof fetchProjects === 'function') {
         console.log('[projects] focus → refetch');
         fetchProjects();

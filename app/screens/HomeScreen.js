@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchProjectsForCurrentUser } from '../lib/api';
+import { fetchMyProjects } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
@@ -111,21 +111,19 @@ function HowItWorks({ navigation }) {
 export default function HomeScreen({ navigation }) {
   const { userId } = useUser();
   const [recent, setRecent] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const isVeryNarrow = winW < 360;
 
+  // Use the same unified loader and then slice to "recent"
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchProjectsForCurrentUser();
-      const items = (data ?? [])
-        .sort((a, b) => new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf())
-        .slice(0, 2);
-      setRecent(items);
-    } catch (error) {
-      console.error('Failed to load recent projects:', error);
+      const items = await fetchMyProjects();
+      setRecent(items.slice(0, 5)); // show top 5 newest
+    } catch (e) {
+      console.log('[home recent load error]', String(e?.message || e));
     } finally {
       setLoading(false);
     }

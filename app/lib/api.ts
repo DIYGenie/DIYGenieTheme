@@ -257,3 +257,39 @@ export async function waitForPlanReady(
   }
   return null; // timed out still not ready
 }
+
+// Unified loader for the user's projects (Newest first)
+export async function fetchMyProjects(): Promise<any[]> {
+  // 1) Who is the user?
+  const { data: sess } = await supabase.auth.getSession();
+  const userId = sess?.session?.user?.id;
+  if (!userId) throw new Error('AUTH_REQUIRED');
+
+  // 2) Webhooks base (same as other calls here)
+  const base =
+    (global as any).__API_BASE_URL__ ??
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
+    process.env.EXPO_PUBLIC_BASE_URL ??
+    process.env.API_BASE ??
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+  // 3) Fetch list
+  const url = `${base}/api/projects?user_id=${encodeURIComponent(userId)}`;
+  const res = await fetch(url, { method: 'GET' });
+  if (!res.ok) throw new Error(`projects fetch failed: ${res.status}`);
+  const body = await res.json().catch(() => null);
+  // Accept either {items:[...]} or bare array
+  const list: any[] = Array.isArray(body) ? body : body?.items ?? [];
+
+  // 4) Sort newest first (created_at or updated_at; fallback to id)
+  const toTime = (x: any): number => {
+    const c = x?.created_at || x?.updated_at || '';
+    const t = Date.parse(c);
+    if (!Number.isNaN(t)) return t;
+    // fallback: stringify id for stable-ish order
+    return Date.now() - Math.random() * 1000;
+  };
+  const sorted = [...list].sort((a, b) => toTime(b) - toTime(a));
+  console.log('[projects fetch unified] userId=%s → %d items', userId, sorted.length);
+  return sorted;
+}
