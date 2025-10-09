@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigation, TabActions } from '@react-navigation/native';
+import { useNavigation, TabActions, StackActions } from '@react-navigation/native';
 
 type NavLike = {
   getParent?: (id?: string) => any;
@@ -9,55 +9,44 @@ type NavLike = {
 };
 
 function getTabParent(nav: NavLike) {
-  // Prefer explicit id if set in RootTabs.tsx
-  const byId = nav.getParent?.('root-tabs');
-  if (byId) return byId;
-  return nav.getParent?.();
+  // Prefer explicit id if set in RootTabs.tsx; otherwise climb one level
+  return nav.getParent?.('root-tabs') || nav.getParent?.();
 }
 
-function getProjectsChildRootName(tabParent: any): string | null {
+function getProjectsChildKey(tabParent: any): string | null {
+  // Find the Projects tab and its nested stack key
   const st = tabParent?.getState?.();
   if (!st?.routes) return null;
-
   const projectsRoute = st.routes.find((r: any) => r.name === 'Projects');
-  // If the Projects tab hosts a nested stack, its state will be here
+  // When the Projects tab hosts a Stack, its child navigator state has a key
   const child = projectsRoute?.state;
-  if (child?.routes?.length) {
-    // Root of that stack is routes[0] (or use child.index if you want current)
-    const root = child.routes[0]?.name;
-    return typeof root === 'string' ? root : null;
-  }
-  return null;
+  return child?.key || null;
 }
 
 /**
- * Jump to the Projects tab AND its root stack screen (Projects list).
- * - Reads the tab parent's state to discover the nested stack's root route name.
- * - Falls back to jumpTo('Projects') if the child isn't a stack.
+ * Always return to the Projects LIST:
+ * 1) jump to the Projects tab
+ * 2) popToTop on the nested Projects stack (target = child stack key)
  */
 export function useSafeBack() {
   const navigation = useNavigation() as unknown as NavLike;
 
   return useCallback(() => {
     const tabParent = getTabParent(navigation);
-
     if (tabParent) {
-      const childRoot = getProjectsChildRootName(tabParent);
+      // Ensure we're on the Projects tab
+      tabParent.dispatch(TabActions.jumpTo('Projects'));
 
-      if (childRoot) {
-        console.log(
-          'SAFEBACK :: parent.navigate("Projects", { screen:', childRoot, '})'
-        );
-        tabParent.navigate('Projects', { screen: childRoot });
-        return;
+      // If Projects tab hosts a stack, pop it to the root list screen
+      const childKey = getProjectsChildKey(tabParent);
+      if (childKey) {
+        tabParent.dispatch({ ...StackActions.popToTop(), target: childKey });
       }
-
-      console.log('SAFEBACK :: parent TabActions.jumpTo("Projects") (no child stack)');
-      tabParent.dispatch?.(TabActions.jumpTo('Projects'));
       return;
     }
 
-    console.log('SAFEBACK :: no tab parent -> direct navigate("Projects")');
+    // Fallbacks if no tab parent found
+    navigation.dispatch?.(TabActions.jumpTo('Projects'));
     navigation.navigate?.('Projects');
   }, [navigation]);
 }
