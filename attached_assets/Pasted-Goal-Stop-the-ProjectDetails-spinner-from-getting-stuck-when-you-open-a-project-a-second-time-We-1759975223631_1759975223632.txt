@@ -1,7 +1,47 @@
+Goal: Stop the ProjectDetails spinner from getting “stuck” when you open a project a second time. We’ll make the project fetch abortable with a timeout, and cancel any in-flight request whenever you navigate or refocus.
+
+THEME
+// EDIT FILE: app/lib/api.ts
+// Make fetchProjectById abortable and add a timeout.
+
+const API_BASE =
+  process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+  'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+type FetchProjOpts = { signal?: AbortSignal; timeoutMs?: number };
+
+export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
+  const controller = opts.signal ? null : new AbortController();
+  const signal = opts.signal ?? controller!.signal;
+  const timeoutMs = opts.timeoutMs ?? 8000;
+
+  let to: any;
+  if (!opts.signal) {
+    to = setTimeout(() => controller?.abort(), timeoutMs);
+  }
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(id)}`,
+      { signal, headers: { accept: 'application/json' } }
+    );
+    if (!res.ok) throw new Error(`PROJECT_FETCH_FAILED:${res.status}`);
+    const json = await res.json();
+    return (json as any).item || (json as any).project || json;
+  } finally {
+    if (to) clearTimeout(to);
+  }
+}
+
+THEME
+// EDIT FILE: app/screens/ProjectDetails.tsx
+// Abort in-flight loads when leaving/re-opening, and apply a fetch timeout.
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
+import T from '../components/T';
 import { fetchProjectById, fetchLatestScanForProject } from '../lib/api';
 
 type RouteParams = { id: string };
@@ -77,12 +117,12 @@ export default function ProjectDetails() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
+      <T.h2 style={{ marginBottom: 6 }}>
         {project?.name || project?.title || 'Project'}
-      </Text>
-      <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16 }}>
+      </T.h2>
+      <T.muted style={{ marginBottom: 16 }}>
         Status: {project?.status || 'In progress'}
-      </Text>
+      </T.muted>
 
       {loading ? (
         <View style={{ paddingTop: 40 }}>
@@ -105,7 +145,7 @@ export default function ProjectDetails() {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
+          <T.muted>No scan image yet</T.muted>
         </View>
       )}
     </View>

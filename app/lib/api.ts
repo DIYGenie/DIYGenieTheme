@@ -152,15 +152,33 @@ export async function fetchProjectsForCurrentUser() {
   return [];
 }
 
-export async function fetchProjectById(id: string) {
-  const API_BASE =
-    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
-    'https://diy-genie-webhooks-tyekowalski.replit.app';
+const API_BASE =
+  process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+  'https://diy-genie-webhooks-tyekowalski.replit.app';
 
-  const res = await fetch(`${API_BASE}/api/projects/${encodeURIComponent(id)}`);
-  if (!res.ok) throw new Error('PROJECT_FETCH_FAILED');
-  const json = await res.json();
-  return (json as AnyJson).item || (json as AnyJson).project || json;
+type FetchProjOpts = { signal?: AbortSignal; timeoutMs?: number };
+
+export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
+  const controller = opts.signal ? null : new AbortController();
+  const signal = opts.signal ?? controller!.signal;
+  const timeoutMs = opts.timeoutMs ?? 8000;
+
+  let to: any;
+  if (!opts.signal) {
+    to = setTimeout(() => controller?.abort(), timeoutMs);
+  }
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/projects/${encodeURIComponent(id)}`,
+      { signal, headers: { accept: 'application/json' } }
+    );
+    if (!res.ok) throw new Error(`PROJECT_FETCH_FAILED:${res.status}`);
+    const json = await res.json();
+    return (json as any).item || (json as any).project || json;
+  } finally {
+    if (to) clearTimeout(to);
+  }
 }
 
 export async function fetchLatestScanForProject(projectId: string) {
