@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, InteractionManager } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
 import { useNavigation, useRoute, CompositeNavigationProp } from '@react-navigation/native';
@@ -82,7 +82,24 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const skillOk = !!skillLevel;
   const canProceed = descOk && budgetOk && skillOk;
 
-  // Helper: robust navigation to a project detail (removed - using direct navigation now)
+  // Ensure Projects stack has ProjectsList, then push details on top
+  const goToProjectDetailsSeeded = (projectId: string, extraParams?: any) => {
+    const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
+    if (parent) {
+      // Step 1: land on Projects tab → ProjectsList
+      parent.navigate('Projects', { screen: 'ProjectsList' });
+      // Step 2: after nav settles, push ProjectDetails
+      InteractionManager.runAfterInteractions(() => {
+        parent.navigate('Projects', { 
+          screen: 'ProjectDetails', 
+          params: { id: projectId, ...extraParams } 
+        });
+      });
+      return;
+    }
+    // Fallback: try local navigate (will still work but may not seed)
+    navigation.navigate('ProjectDetails' as any, { id: projectId, ...extraParams } as any);
+  };
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
@@ -404,14 +421,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
       clearDraft();
-      try {
-        (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
-          screen: 'ProjectDetails',
-          params: { id },
-        });
-      } catch (e) {
-        console.error('[nav error]', e);
-      }
+      goToProjectDetailsSeeded(id);
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');
       triggerHaptic('error');
@@ -421,14 +431,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   function navigateToProject(id: string) {
-    try {
-      (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
-        screen: 'ProjectDetails',
-        params: { id },
-      });
-    } catch (e) {
-      console.error('[nav error]', e);
-    }
+    goToProjectDetailsSeeded(id);
   }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
@@ -507,14 +510,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       
       showToast('Plan requested', 'success');
       // Navigate and pass the image URL as a fallback for immediate display
-      try {
-        (navigation as any).getParent?.('root-tabs')?.navigate('Projects', {
-          screen: 'ProjectDetails',
-          params: { id, imageUrl: ls?.imageUrl ?? null },
-        });
-      } catch (e) {
-        console.error('[nav error]', e);
-      }
+      goToProjectDetailsSeeded(id, { imageUrl: ls?.imageUrl ?? null });
     } finally {
       setBusyBuild(false);
     }
