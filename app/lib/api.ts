@@ -212,6 +212,7 @@ export async function fetchProjectPlanMarkdown(
   const timeout = setTimeout(() => controller.abort(), opts?.timeoutMs ?? 10000);
   try {
     const res = await fetch(url, { method: 'GET', signal });
+    console.log('[plan fetch] GET /api/projects/:id/plan status', res.status);
     if (res.status === 409) {
       return null;
     }
