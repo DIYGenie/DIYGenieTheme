@@ -426,3 +426,29 @@ export async function updateProjectProgress(
   });
   return res.data || { completed_steps: [], current_step_index: 0 };
 }
+
+// AR Measurement
+export type MeasureStart = { ok: true; scan_id: string; job_id: string };
+export type MeasureStatus =
+  | { ok: true; ready: false }
+  | { ok: true; ready: true; overlay_url: string; image_url?: string }
+  | { ok: false; error: string };
+
+export async function requestScanMeasurement(projectId: string, scanId: string): Promise<MeasureStart> {
+  const url = `/api/projects/${projectId}/scans/${scanId}/measure`;
+  const res = await api(url, { method: 'POST' });
+  if (!res.ok) throw new Error(`[measure] start failed ${res.status}`);
+  return res.data as MeasureStart;
+}
+
+export async function pollScanMeasurement(projectId: string, scanId: string, { tries = 30, intervalMs = 2000 } = {}) {
+  const url = `/api/projects/${projectId}/scans/${scanId}/measure/status`;
+  for (let i = 0; i < tries; i++) {
+    const res = await api(url, { method: 'GET' });
+    const body = res.data as MeasureStatus;
+    if (!body.ok) throw new Error(`[measure] status error: ${'error' in body ? body.error : 'unknown'}`);
+    if (body.ready) return body; // {overlay_url, image_url?}
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+  throw new Error('[measure] timeout');
+}
