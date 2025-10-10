@@ -181,6 +181,16 @@ export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
   }
 }
 
+export async function pollProjectReady(projectId: string, opts = { tries: 40, interval: 2000 }) {
+  for (let i = 0; i < opts.tries; i++) {
+    const item = await fetchProjectById(projectId).catch(() => null);
+    const ready = item?.status === 'ready' || !!item?.plan;
+    if (ready) return { ok: true, item };
+    await new Promise(r => setTimeout(r, opts.interval));
+  }
+  return { ok: false };
+}
+
 export async function fetchLatestScanForProject(projectId: string) {
   const { data, error } = await supabase
     .from('room_scans')
