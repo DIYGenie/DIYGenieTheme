@@ -57,7 +57,9 @@ export default function DraggableRect({
       clamped.h = Math.min(clamped.h, container.h - clamped.y);
 
       setRect(clamped);
-      onChange?.(toNorm(clamped));
+      const norm = toNorm(clamped);
+      console.log('[scan overlay] region selected', norm);
+      onChange?.(norm);
     },
     [container.w, container.h, onChange, toNorm]
   );
@@ -166,10 +168,10 @@ export default function DraggableRect({
 const styles = StyleSheet.create({
   rect: {
     position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#7C3AED',
-    borderRadius: 10,
-    backgroundColor: 'rgba(124,58,237,0.12)',
+    borderWidth: 3,
+    borderColor: 'rgba(147, 51, 234, 0.8)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(147, 51, 234, 0.4)',
   },
   handle: {
     position: 'absolute',
@@ -177,7 +179,6 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: '#7C3AED',
-    // Easier to grab even if you miss by a few px
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
