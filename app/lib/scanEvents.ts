@@ -4,26 +4,36 @@ export async function saveArScan(opts: {
   projectId: string;
   imageUrl?: string;
   roi?: { x: number; y: number; w: number; h: number };
-}): Promise<{ scanId: string }> {
+}): Promise<{ scanId: string; imageUrl?: string; source: 'ar' }> {
   if (!opts.projectId) throw new Error('PROJECT_ID_REQUIRED');
   
   const { projectId, imageUrl, roi } = opts;
+  
+  console.log('[scan] saveArScan start', { projectId, roi, source: 'ar' });
 
   const { data, error } = await supabase
     .from('room_scans')
-    .insert({
-      project_id: projectId,
-      image_url: imageUrl || null,
-      source: 'ar',
-      meta: roi ? { roi } : null,
-    })
-    .select('id')
+    .insert([
+      {
+        project_id: projectId,
+        source: 'ar',
+        roi: roi || null,
+        image_url: imageUrl || null,
+      }
+    ])
+    .select('id, project_id, source, image_url, roi, created_at')
     .single();
 
-  if (error) throw error;
-  if (!data) throw new Error('Failed to create AR scan');
-
-  return { scanId: data.id };
+  if (error) {
+    console.log('[scan] save failed', error.message || error);
+    throw error;
+  }
+  
+  return { 
+    scanId: data.id, 
+    imageUrl: data.image_url ?? undefined, 
+    source: 'ar' as const 
+  };
 }
 
 export async function requestPreviewIfEligible(projectId: string): Promise<void> {

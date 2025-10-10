@@ -40,6 +40,21 @@ export default function NewProjectMedia(props) {
 
     try {
       await authPreflight();
+      
+      // Guard: Validate all required fields before project creation
+      const nameOk = (draft?.name || '').trim().length >= 3;
+      const descOk = (draft?.description || '').trim().length >= 10;
+      const budgetOk = !!draft?.budget;
+      const skillOk = !!draft?.skill_level;
+
+      if (!nameOk || !descOk || !budgetOk || !skillOk) {
+        Alert.alert(
+          'Almost there',
+          'Please fill in Title (≥3 chars), Description (≥10 chars), Budget and Skill level before scanning.'
+        );
+        return;
+      }
+      
       const projectId = await ensureProjectForDraft(draft);
       if (!draft?.projectId) onDraftChange({ ...draft, projectId });
 
@@ -57,6 +72,21 @@ export default function NewProjectMedia(props) {
   const handleUpload = guard(async () => {
     try {
       await authPreflight();
+      
+      // Guard: Validate all required fields before project creation
+      const nameOk = (draft?.name || '').trim().length >= 3;
+      const descOk = (draft?.description || '').trim().length >= 10;
+      const budgetOk = !!draft?.budget;
+      const skillOk = !!draft?.skill_level;
+
+      if (!nameOk || !descOk || !budgetOk || !skillOk) {
+        Alert.alert(
+          'Almost there',
+          'Please fill in Title (≥3 chars), Description (≥10 chars), Budget and Skill level before uploading.'
+        );
+        return;
+      }
+      
       const projectId = await ensureProjectForDraft(draft);
       if (!draft?.projectId) onDraftChange({ ...draft, projectId });
 

@@ -591,6 +591,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           style={styles.scrollView}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          scrollEnabled={!roiOpen && !measureOpen}
           contentContainerStyle={{
             paddingHorizontal: spacing.lg,
             paddingTop: spacing.md,
