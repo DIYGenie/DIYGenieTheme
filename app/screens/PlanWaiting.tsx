@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { InteractionManager } from 'react-native';
-import { fetchProjectPlanMarkdown } from '../lib/api';
+import { fetchProjectPlanMarkdown, fetchProjectById } from '../lib/api';
+import { saveLocalPlanMarkdown, generateLocalPlanMarkdown } from '../lib/localPlan';
 
 type Params = { id: string };
 type R = RouteProp<Record<'PlanWaiting', Params>, 'PlanWaiting'>;
@@ -32,10 +33,28 @@ export default function PlanWaiting() {
           return;
         }
       } catch (e: any) {
+        if (e?.status === 409 && tries >= 10) {
+          console.log('[wait] max tries reached, generating local plan');
+          const p = await fetchProjectById(id).catch(() => ({} as any));
+          const md = generateLocalPlanMarkdown({
+            title: p?.name || p?.title,
+            description: p?.description,
+            budget: p?.budget,
+            skill_level: p?.skill_level || p?.skill,
+          });
+          await saveLocalPlanMarkdown(id, md);
+          
+          const parent = navigation.getParent?.();
+          parent?.navigate('Projects', { screen: 'ProjectsList' });
+          InteractionManager.runAfterInteractions(() => {
+            parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+          });
+          return;
+        }
         if (e?.status !== 409) console.log('[wait] poll error', e);
       }
 
-      if (!cancelled) setTimeout(poll, 2000);
+      if (!cancelled && tries < 10) setTimeout(poll, 2000);
     }
 
     poll();

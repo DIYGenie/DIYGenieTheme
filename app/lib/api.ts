@@ -199,6 +199,14 @@ export async function fetchProjectPlanMarkdown(
   projectId: string,
   opts?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<string | null> {
+  const { getLocalPlanMarkdown } = await import('./localPlan');
+  
+  const local = await getLocalPlanMarkdown(projectId);
+  if (local) {
+    console.log('[plan fetch] using local cached plan');
+    return local;
+  }
+
   const base =
     (global as any).__API_BASE_URL__ ??
     process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
@@ -214,9 +222,15 @@ export async function fetchProjectPlanMarkdown(
     const res = await fetch(url, { method: 'GET', signal });
     console.log('[plan fetch] GET /api/projects/:id/plan status', res.status);
     if (res.status === 409) {
-      return null;
+      const err: any = new Error(`plan fetch failed: ${res.status}`);
+      err.status = 409;
+      throw err;
     }
-    if (!res.ok) throw new Error(`plan fetch failed: ${res.status}`);
+    if (!res.ok) {
+      const err: any = new Error(`plan fetch failed: ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     const md = await res.text();
     return md ?? '';
   } finally {
