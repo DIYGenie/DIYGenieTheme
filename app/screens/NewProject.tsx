@@ -452,6 +452,17 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     try {
       Keyboard.dismiss();
       const projectId = await getOrCreateProjectId(); // throws + shows Alert on failure
+      
+      // Persist draft before leaving for Scan (survives remount just in case)
+      await saveNewProjectDraft({
+        projectId: draftId ?? projectId,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      console.log('[draft] preserve before scan');
+      
       (navigation as any).navigate('Scan', { projectId });
     } catch (e) {
       // Error already shown by getOrCreateProjectId
@@ -472,6 +483,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     try {
       const projectId = await getOrCreateProjectId(); // throws + shows Alert on failure
+      
+      // Persist draft before upload (in case something goes wrong)
+      await saveNewProjectDraft({
+        projectId: draftId ?? projectId,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      console.log('[draft] preserve before upload');
       
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
