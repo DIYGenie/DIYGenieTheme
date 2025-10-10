@@ -1,14 +1,24 @@
 // app/lib/scanEvents.ts
 import { supabase } from '../lib/supabase';
 import { requestScanMeasurement } from './api';
+import { MEASURE_API_ENABLED } from './config';
 
 export type Roi = { x: number; y: number; w: number; h: number };
 
 export async function startMeasurementJob(projectId: string, scanId: string) {
+  if (!MEASURE_API_ENABLED) {
+    console.log('[measure] skipped (feature disabled)');
+    return;
+  }
+  
   try {
     console.log('[measure] start', { projectId, scanId });
-    await requestScanMeasurement(projectId, scanId);
-    console.log('[measure] started');
+    const result = await requestScanMeasurement(projectId, scanId);
+    if (result.ok) {
+      console.log('[measure] started');
+    } else {
+      console.log('[measure] skipped (feature disabled)');
+    }
   } catch (e: any) {
     console.log('[measure] start failed', e?.message || e);
   }
@@ -40,8 +50,12 @@ export async function saveArScan(opts: {
     throw error;
   }
 
-  // Trigger measurement job (non-blocking)
-  setTimeout(() => startMeasurementJob(projectId, data.id).catch(() => {}), 0);
+  // Trigger measurement job only if enabled (non-blocking)
+  if (MEASURE_API_ENABLED) {
+    setTimeout(() => startMeasurementJob(projectId, data.id).catch(() => {}), 0);
+  } else {
+    console.log('[measure] skipped (feature disabled)');
+  }
 
   return { scanId: data.id, imageUrl: data.image_url, source: 'ar' };
 }
