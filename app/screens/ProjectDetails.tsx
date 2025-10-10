@@ -382,22 +382,42 @@ export default function ProjectDetails() {
       {/* Detail Sheets */}
       {sheet === 'materials' && planObj && (
         <DetailSheet title="Materials" onClose={() => setSheet(null)}>
-          <SectionListCard title="Materials" items={(planObj?.materials || []).map(m => `${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}`)} />
+          <SectionListCard 
+            title="Materials" 
+            items={(planObj?.materials || []).map(m => `${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}`)} 
+            projectId={projectId}
+            sectionKey="materials"
+          />
         </DetailSheet>
       )}
       {sheet === 'cuts' && planObj && (
         <DetailSheet title="Cuts" onClose={() => setSheet(null)}>
-          <SectionListCard title="Cuts" items={(planObj?.cuts || []).map(c => `${c.part} - ${c.size}${c.qty ? ` (${c.qty})` : ''}`)} />
+          <SectionListCard 
+            title="Cuts" 
+            items={(planObj?.cuts || []).map(c => `${c.part} - ${c.size}${c.qty ? ` (${c.qty})` : ''}`)} 
+            projectId={projectId}
+            sectionKey="cuts"
+          />
         </DetailSheet>
       )}
       {sheet === 'tools' && planObj && (
         <DetailSheet title="Tools" onClose={() => setSheet(null)}>
-          <SectionListCard title="Tools" items={planObj?.tools || []} />
+          <SectionListCard 
+            title="Tools" 
+            items={planObj?.tools || []} 
+            projectId={projectId}
+            sectionKey="tools"
+          />
         </DetailSheet>
       )}
       {sheet === 'steps' && planObj && (
         <DetailSheet title="Steps" onClose={() => setSheet(null)}>
-          <SectionListCard title="Steps" items={(planObj?.steps || []).map(s => typeof s === 'string' ? s : s.title || 'Step')} />
+          <SectionListCard 
+            title="Steps" 
+            items={(planObj?.steps || []).map(s => typeof s === 'string' ? s : s.title || 'Step')} 
+            projectId={projectId}
+            sectionKey="steps"
+          />
         </DetailSheet>
       )}
       {sheet === 'timeAndCost' && planObj && (

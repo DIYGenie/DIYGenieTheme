@@ -1,24 +1,58 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 
 export function SectionListCard({
   title,
   items,
+  projectId,
+  sectionKey,
 }: {
   title: string;
   items: string[];
+  projectId?: string;
+  sectionKey?: string;
 }) {
   const ref = useRef<View>(null);
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const storageKey = projectId && sectionKey ? `checkboxes:${projectId}:${sectionKey}` : null;
+
+  useEffect(() => {
+    if (!storageKey) return;
+    
+    AsyncStorage.getItem(storageKey).then(data => {
+      if (data) {
+        setCheckedItems(new Set(JSON.parse(data)));
+      }
+    });
+  }, [storageKey]);
+
+  const toggleCheckbox = async (index: number) => {
+    const newChecked = new Set(checkedItems);
+    if (newChecked.has(index)) {
+      newChecked.delete(index);
+    } else {
+      newChecked.add(index);
+    }
+    setCheckedItems(newChecked);
+    
+    if (storageKey) {
+      await AsyncStorage.setItem(storageKey, JSON.stringify(Array.from(newChecked)));
+    }
+  };
 
   const handleCopy = async () => {
     try {
       await Clipboard.setStringAsync(items.join('\n'));
+      Alert.alert('Copied!', `${items.length} items copied to clipboard`);
     } catch (e) {
       console.log('[copy error]', e);
+      Alert.alert('Error', 'Could not copy to clipboard');
     }
   };
 
@@ -30,16 +64,17 @@ export function SectionListCard({
       
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        console.log('[save] permission denied');
+        Alert.alert('Permission Required', 'Please grant photo library access to save images');
         return;
       }
       
       const asset = await MediaLibrary.createAssetAsync(uri);
       await MediaLibrary.createAlbumAsync('DIY Genie', asset, false);
       
-      console.log('[save] saved to photos');
+      Alert.alert('Saved!', 'Image saved to your Photos in "DIY Genie" album');
     } catch (e) {
       console.log('[save error]', e);
+      Alert.alert('Error', 'Could not save to photos');
     }
   };
 
@@ -74,28 +109,39 @@ export function SectionListCard({
       {items.length === 0 ? (
         <Text style={{ opacity: 0.6 }}>No items listed.</Text>
       ) : (
-        items.map((t, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginVertical: 6,
-            }}
-          >
-            <View
+        items.map((t, i) => {
+          const isChecked = checkedItems.has(i);
+          return (
+            <TouchableOpacity
+              key={i}
+              onPress={() => toggleCheckbox(i)}
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 5,
-                borderWidth: 1,
-                borderColor: '#D1D5DB',
-                marginRight: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginVertical: 6,
               }}
-            />
-            <Text style={{ flex: 1 }}>{t}</Text>
-          </View>
-        ))
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 5,
+                  borderWidth: 1,
+                  borderColor: isChecked ? '#6D28D9' : '#D1D5DB',
+                  backgroundColor: isChecked ? '#6D28D9' : 'transparent',
+                  marginRight: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isChecked && (
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                )}
+              </View>
+              <Text style={{ flex: 1, textDecorationLine: isChecked ? 'line-through' : 'none', opacity: isChecked ? 0.6 : 1 }}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })
       )}
     </View>
   );
