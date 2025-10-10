@@ -428,13 +428,20 @@ export async function updateProjectProgress(
 }
 
 // AR Measurement
-export type MeasureStart = { ok: true; scan_id: string; job_id: string };
+import { MEASURE_API_ENABLED } from './config';
+
+export type MeasureStart = { ok: true; scan_id: string; job_id: string } | { ok: false; reason: string };
 export type MeasureStatus =
   | { ok: true; ready: false }
   | { ok: true; ready: true; overlay_url: string; image_url?: string }
-  | { ok: false; error: string };
+  | { ok: false; status: string };
 
 export async function requestScanMeasurement(projectId: string, scanId: string): Promise<MeasureStart> {
+  if (!MEASURE_API_ENABLED) {
+    console.log('[measure] skipped (feature disabled)');
+    return { ok: false, reason: 'disabled' };
+  }
+  
   const url = `/api/projects/${projectId}/scans/${scanId}/measure`;
   const res = await api(url, { method: 'POST' });
   if (!res.ok) throw new Error(`[measure] start failed ${res.status}`);
@@ -442,11 +449,16 @@ export async function requestScanMeasurement(projectId: string, scanId: string):
 }
 
 export async function pollScanMeasurement(projectId: string, scanId: string, { tries = 30, intervalMs = 2000 } = {}) {
+  if (!MEASURE_API_ENABLED) {
+    console.log('[measure] skipped (feature disabled)');
+    return { ok: false, status: 'disabled' };
+  }
+  
   const url = `/api/projects/${projectId}/scans/${scanId}/measure/status`;
   for (let i = 0; i < tries; i++) {
     const res = await api(url, { method: 'GET' });
     const body = res.data as MeasureStatus;
-    if (!body.ok) throw new Error(`[measure] status error: ${'error' in body ? body.error : 'unknown'}`);
+    if (!body.ok) throw new Error(`[measure] status error: ${'status' in body ? body.status : 'unknown'}`);
     if (body.ready) return body; // {overlay_url, image_url?}
     await new Promise(r => setTimeout(r, intervalMs));
   }
