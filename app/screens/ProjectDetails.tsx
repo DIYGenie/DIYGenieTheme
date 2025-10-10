@@ -123,7 +123,7 @@ export default function ProjectDetails() {
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 64 }}>
       {loading ? (
         <View style={{ paddingTop: 40 }}>
           <ActivityIndicator />
@@ -155,8 +155,8 @@ export default function ProjectDetails() {
 
           {/* Plan status card */}
           <View style={{ marginBottom: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Plan</Text>
-            <Text style={{ color: '#4B5563' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', lineHeight: 24, marginBottom: 8 }}>Plan</Text>
+            <Text style={{ color: '#4B5563', fontSize: 15 }}>
               {isBuilding 
                 ? 'Plan is building…' 
                 : planObj 
@@ -178,7 +178,7 @@ export default function ProjectDetails() {
                   {planObj.materials?.length ? (
                     <View style={{ gap: 6 }}>
                       {planObj.materials.slice(0, 50).map((m: any, i: number) => (
-                        <Text key={i} style={{ lineHeight: 20 }}>
+                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>
                           • {m.name}
                           {m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}
                           {m.note ? ` • ${m.note}` : ''}
@@ -186,7 +186,7 @@ export default function ProjectDetails() {
                       ))}
                     </View>
                   ) : (
-                    <Text style={{ color: '#6B7280' }}>No materials listed.</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No materials listed.</Text>
                   )}
                 </AccordionCard>
 
@@ -198,13 +198,13 @@ export default function ProjectDetails() {
                   {planObj.cuts?.length ? (
                     <View style={{ gap: 6 }}>
                       {planObj.cuts.map((c: any, i: number) => (
-                        <Text key={i} style={{ lineHeight: 20 }}>
+                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>
                           • {c.part} — {c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×{c.qty ?? 1}
                         </Text>
                       ))}
                     </View>
                   ) : (
-                    <Text style={{ color: '#6B7280' }}>No cut list.</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No cut list.</Text>
                   )}
                 </AccordionCard>
 
@@ -216,11 +216,11 @@ export default function ProjectDetails() {
                   {planObj.tools?.length ? (
                     <View style={{ gap: 6 }}>
                       {planObj.tools.map((t: string, i: number) => (
-                        <Text key={i} style={{ lineHeight: 20 }}>• {t}</Text>
+                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>• {t}</Text>
                       ))}
                     </View>
                   ) : (
-                    <Text style={{ color: '#6B7280' }}>No tools listed.</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No tools listed.</Text>
                   )}
                 </AccordionCard>
 
@@ -230,14 +230,14 @@ export default function ProjectDetails() {
                   subtitle={countLabel(planObj.steps?.length, 'step')}
                 >
                   {planObj.steps?.length ? (
-                    <View style={{ gap: 10 }}>
+                    <View style={{ gap: 8 }}>
                       {planObj.steps.map((s: any, i: number) => (
                         <View key={i}>
-                          <Text style={{ fontWeight: '700', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '700', lineHeight: 22, marginBottom: 2 }}>
                             {i + 1}. {s.title ?? 'Step'}
                           </Text>
                           {s.body && (
-                            <Text style={{ color: '#4B5563', lineHeight: 20 }}>
+                            <Text style={{ fontSize: 15, color: '#4B5563', lineHeight: 22 }}>
                               {s.body.slice(0, 100)}{s.body.length > 100 ? '...' : ''}
                             </Text>
                           )}
@@ -245,7 +245,7 @@ export default function ProjectDetails() {
                       ))}
                     </View>
                   ) : (
-                    <Text style={{ color: '#6B7280' }}>No steps yet.</Text>
+                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No steps yet.</Text>
                   )}
                 </AccordionCard>
 
@@ -254,10 +254,10 @@ export default function ProjectDetails() {
                   title="Time & Cost"
                   subtitle={stepsTimeCost(planObj)}
                 >
-                  <Text style={{ lineHeight: 20, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 15, lineHeight: 22, marginBottom: 4 }}>
                     Estimated time: {planObj.time_estimate_hours ?? '—'} hrs
                   </Text>
-                  <Text style={{ lineHeight: 20 }}>
+                  <Text style={{ fontSize: 15, lineHeight: 22 }}>
                     Estimated cost: {planObj.cost_estimate_usd ? `$${planObj.cost_estimate_usd}` : '—'}
                   </Text>
                 </AccordionCard>
@@ -265,9 +265,15 @@ export default function ProjectDetails() {
 
               <Pressable
                 onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-                style={{ backgroundColor: '#6D28D9', padding: 14, borderRadius: 14, alignItems: 'center' }}
+                style={{ 
+                  backgroundColor: '#7C3AED', 
+                  height: 52, 
+                  borderRadius: 16, 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}
               >
-                <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
+                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Get detailed instructions</Text>
               </Pressable>
             </>
           )}
