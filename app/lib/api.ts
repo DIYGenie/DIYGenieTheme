@@ -228,8 +228,25 @@ export async function fetchProjectPlanMarkdown(
     console.log('[plan fetch error]', res.status, text);
     throw new Error(`PLAN_FETCH_FAILED:${res.status}`);
   }
-  const md = await res.text();
-  return md || '';
+  
+  const text = await res.text();
+  
+  // Handle JSON response format: { ok: true, plan_text: "..." }
+  try {
+    const json = JSON.parse(text);
+    if (json.plan_text) {
+      console.log('[plan fetch] extracted from JSON wrapper');
+      return json.plan_text;
+    }
+    if (json.ok === true && typeof json === 'object') {
+      console.log('[plan fetch] JSON object without plan_text, returning as string');
+      return JSON.stringify(json);
+    }
+  } catch (e) {
+    // Not JSON, treat as plain markdown
+  }
+  
+  return text || '';
 }
 
 export async function buildPlanWithoutPreview(projectId: string): Promise<boolean> {

@@ -156,31 +156,56 @@ export default function DetailedInstructions() {
       </View>
 
       <View ref={refs.steps}>
-        <Section title="Step-by-step">
+        <Section title="Step-by-step Instructions">
           {plan.steps?.length ? (
             plan.steps.map((s: any, i: number) => (
               <Step key={i} n={i + 1} title={s.title}>
+                {s.time_minutes && (
+                  <View style={{ backgroundColor: '#F3F4F6', padding: 8, borderRadius: 6, marginBottom: 8 }}>
+                    <Text style={{ fontSize: 13, color: '#6B7280' }}>
+                      ⏱️ Estimated time: {s.time_minutes} minutes
+                    </Text>
+                  </View>
+                )}
+                
                 {s.purpose && (
                   <Paragraph>
-                    <Text style={{ fontWeight: '700' }}>Why:</Text> {s.purpose}
+                    <Text style={{ fontWeight: '700', color: '#7C3AED' }}>Why this step:</Text> {s.purpose}
                   </Paragraph>
                 )}
+                
+                {s.materials_needed?.length > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={{ fontWeight: '600', fontSize: 14, marginBottom: 4 }}>📦 Materials for this step:</Text>
+                    <Bullets items={s.materials_needed} />
+                  </View>
+                )}
+                
+                {s.tools_needed?.length > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={{ fontWeight: '600', fontSize: 14, marginBottom: 4 }}>🔧 Tools for this step:</Text>
+                    <Bullets items={s.tools_needed} />
+                  </View>
+                )}
+                
                 {s.inputs?.length ? <Bullets items={s.inputs} /> : null}
                 {s.instructions?.map((line: string, idx: number) => (
                   <Paragraph key={idx}>{line}</Paragraph>
                 ))}
                 {s.body && <Paragraph>{s.body}</Paragraph>}
+                
                 {s.checks?.length && (
-                  <>
-                    <Subtle>Before you move on, check:</Subtle>
+                  <View style={{ marginTop: 12, backgroundColor: '#ECFDF5', padding: 10, borderRadius: 6, borderLeftWidth: 3, borderLeftColor: '#10B981' }}>
+                    <Text style={{ fontWeight: '600', color: '#065F46', marginBottom: 6 }}>✓ Quality checks:</Text>
                     <Bullets items={s.checks} />
-                  </>
+                  </View>
                 )}
+                
                 {s.pitfalls?.length && (
-                  <>
-                    <Subtle>Common mistakes:</Subtle>
+                  <View style={{ marginTop: 12, backgroundColor: '#FEF2F2', padding: 10, borderRadius: 6, borderLeftWidth: 3, borderLeftColor: '#EF4444' }}>
+                    <Text style={{ fontWeight: '600', color: '#991B1B', marginBottom: 6 }}>⚠️ Avoid these mistakes:</Text>
                     <Bullets items={s.pitfalls} />
-                  </>
+                  </View>
                 )}
               </Step>
             ))
