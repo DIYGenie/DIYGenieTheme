@@ -20,9 +20,17 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Image Upload**: Supports server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking.
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
-- **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save image" overlay button), gradient CTA button "Open Detailed Build Plan", and rich expandable sections (Overview, Steps, Materials, Tools, Cuts, Time & Cost) using the `SectionCard` component. Features depth with shadows (shadowOpacity: 0.12, shadowRadius: 12), animated chevron rotation, #F8F7FF card backgrounds on #F5F3FF surface, and detailed content (numbered steps with tips, bulleted materials with quantities, safety warnings for tools, table-style cuts with monospace measurements, time/cost chips). Each section has two tap areas: header navigates to DetailedInstructions with section anchor, chevron toggles expand/collapse. Includes copy-to-clipboard actions, data caching, AI preview generation, and save-to-photos functionality.
-- **Plan Viewing**: `ProjectDetails` provides an at-a-glance expandable summary list, while `DetailedInstructionsScreen` offers a full document-style linear guide using DocAtoms components with save-to-photos functionality.
-- **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans.
+- **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save image" overlay button), gradient CTA button "Open Detailed Build Plan", and 5 focused expandable sections using the `SectionCard` component:
+  1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
+  2. **Materials + Tools**: Combined shopping list with definite material prices and tool rental pricing ("if needed" notes)
+  3. **Cut List**: Exact dimensions with copy-to-clipboard functionality (only shown if cuts exist)
+  4. **Build Steps**: Interactive checkboxes for progress tracking, visual progress bar showing % complete, time estimates per step, strikethrough on completed items, auto-save to backend
+  5. **Finishing**: Final touches section (only shown if finishing steps exist)
+  
+  Features depth with shadows, animated chevron rotation, #F8F7FF card backgrounds on #F5F3FF surface. Each section header navigates to DetailedInstructions with section anchor, chevron toggles expand/collapse. Includes offline mode indicator (green "OFFLINE ✓" badge when plan is cached), copy-to-clipboard actions for all sections, and progress persistence.
+- **Plan Viewing**: `ProjectDetails` provides an at-a-glance expandable summary with interactive progress tracking, while `DetailedInstructionsScreen` offers a full document-style linear guide using DocAtoms components with save-to-photos functionality. Both screens handle enhanced plan data including skill level, step timing, material costs, and tool categorization.
+- **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans. Offline mode indicator shows when plan is available without internet connection.
+- **Progress Tracking**: Database-backed progress tracking with `completed_steps` (array of completed step indices) and `current_step_index` fields. API endpoints at `/api/projects/:id/progress` (GET/POST) allow fetching and updating build progress. Frontend displays interactive checkboxes, visual progress bar, and "Start Building" / "Continue Building" CTAs.
 - **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality.
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
 
@@ -45,7 +53,11 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 
 ### Data and Backend Integration
 - **Supabase (@supabase/supabase-js, @supabase/functions-js)**: Database, authentication, and storage.
-- **Node.js/Express**: Backend API server.
+- **Node.js/Express**: Backend API server with progress tracking endpoints.
+
+### Database Schema (Supabase)
+- **projects table**: Includes `completed_steps` (integer array) and `current_step_index` (integer) for progress tracking
+- **Progress tracking**: Step completion state persists across sessions, allowing users to resume builds where they left off
 
 ### Platform Support
 - **iOS, Android, Web**: Cross-platform deployment via Expo.
