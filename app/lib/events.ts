@@ -8,7 +8,9 @@ class Bus extends EventEmitter {
   }
   onBuildCompleted(fn: (p: BuildCompletedPayload) => void) {
     this.on('build:completed', fn);
-    return () => this.off('build:completed', fn);
+    return () => {
+      this.off('build:completed', fn);
+    };
   }
 }
 

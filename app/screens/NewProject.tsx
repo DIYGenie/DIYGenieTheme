@@ -230,15 +230,17 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   // Event listener for build completion
   useEffect(() => {
-    const off = bus.onBuildCompleted(async ({ projectId }) => {
+    const off = bus.onBuildCompleted(({ projectId }) => {
       console.log('[build] completed -> clearing draft & AR card for projectId=', projectId);
-      try {
-        await clearNewProjectDraft();
-      } catch (e) {
-        console.log('[build] clear draft error', e);
-      } finally {
-        setSavedScan(null);
-      }
+      (async () => {
+        try {
+          await clearNewProjectDraft();
+        } catch (e) {
+          console.log('[build] clear draft error', e);
+        } finally {
+          setSavedScan(null);
+        }
+      })();
     });
     return off;
   }, []);
