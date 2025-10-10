@@ -51,6 +51,22 @@ function nameLooksValid(name: string) {
   return s.length >= 3 && s.length <= 60 && /[A-Za-z0-9]/.test(s);
 }
 
+function generateDefaultName(description?: string) {
+  const ts = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const stamp = `${ts.getFullYear()}-${pad(ts.getMonth()+1)}-${pad(ts.getDate())} ${pad(ts.getHours())}:${pad(ts.getMinutes())}:${pad(ts.getSeconds())}`;
+  let base = 'DIY Project';
+  const desc = collapseSpaces(description || '');
+  if (desc.length >= 6) {
+    // Take first 3 words from description to make a human-ish default
+    const words = desc.split(' ').slice(0, 3).join(' ');
+    base = collapseSpaces(words).replace(/[^A-Za-z0-9 _.\-']/g, '');
+    // Ensure after cleanup we still have something usable
+    if (!nameLooksValid(base)) base = 'DIY Project';
+  }
+  return `${base} ${stamp}`.slice(0, 60);
+}
+
 // ---------- NEW: strong validation + project create ----------
 function validateDraftForCreate(d: NewProjectDraft) {
   const errs: string[] = [];
@@ -81,8 +97,13 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
     throw e;
   }
 
-  // Build payload (with sanitized name)
+  // Build payload (with sanitized name; fallback if empty/invalid)
   let cleanName = sanitizeProjectName(v.name);
+  if (!nameLooksValid(cleanName)) {
+    const fallback = generateDefaultName(v.description);
+    console.log('[project create] name sanitized to empty/invalid; using fallback', { fallback });
+    cleanName = fallback;
+  }
   const payload = {
     name: cleanName,
     description: v.description.trim(),
@@ -108,9 +129,10 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
 
   // If invalid_name, try one automatic repair and post again
   if (res.status === 422 && (body?.error === 'invalid_name' || /invalid[_\s-]?name/i.test(String(body)))) {
-    const repaired = sanitizeProjectName(cleanName);
+    // Always generate a fresh fallback name when server rejects
+    const repaired = generateDefaultName(v.description);
     if (repaired !== cleanName && nameLooksValid(repaired)) {
-      console.log('[project create] retry with sanitized name', { repaired });
+      console.log('[project create] retry with repaired name', { repaired });
       ({ res, body } = await postOnce({ ...payload, name: repaired }));
       cleanName = repaired;
     }
