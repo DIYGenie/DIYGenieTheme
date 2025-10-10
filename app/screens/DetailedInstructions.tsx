@@ -106,7 +106,7 @@ export default function DetailedInstructions() {
         <Section title="Materials">
           {plan.materials?.length ? (
             <Bullets items={plan.materials.map((m: any) => 
-              `${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}${m.note ? ` • ${m.note}` : ''}`
+              `${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}${m.price ? ` ($${m.price})` : ''}${m.note ? ` • ${m.note}` : ''}`
             )} />
           ) : (
             <DimText>No materials listed.</DimText>
@@ -129,7 +129,14 @@ export default function DetailedInstructions() {
       <View ref={refs.tools}>
         <Section title="Tools">
           <DimText style={{ marginBottom: 8 }}>Wear eye & hearing protection.</DimText>
-          {plan.tools?.length ? <Bullets items={plan.tools} /> : <DimText>No tools listed.</DimText>}
+          {plan.tools?.length ? (
+            <Bullets items={plan.tools.map((t: any) => {
+              const tool = typeof t === 'string' ? { name: t } : t;
+              return tool.name + (tool.rentalPrice ? ` (rental ~$${tool.rentalPrice})` : '');
+            })} />
+          ) : (
+            <DimText>No tools listed.</DimText>
+          )}
         </Section>
       </View>
 
