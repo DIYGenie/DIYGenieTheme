@@ -99,6 +99,15 @@ export default function ProjectDetails() {
     setPreviewLoading(true);
     const r = await requestProjectPreview(projectId);
     setPreviewLoading(false);
+    
+    // Handle 409 preview already used
+    if (r.status === 409 && r.body?.error === 'preview_already_used') {
+      console.log('[preview] already generated');
+      Alert.alert('Preview already generated', 'Your project preview is ready to view.');
+      load(); // Refresh to show preview
+      return;
+    }
+    
     if (r.ok) {
       setToast({ visible: true, message: 'Preview requested. This may take a moment.', type: 'success' });
       // Refresh project to reflect "preview requested/plan requested" state
@@ -233,8 +242,8 @@ export default function ProjectDetails() {
             </Text>
           </View>
 
-          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready */}
-          {!!projectId && !statusReady && !isBuilding && (
+          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview_url */}
+          {!!projectId && !statusReady && !isBuilding && !project?.preview_url && (
             <View style={{ marginBottom: 16 }}>
               <Pressable
                 onPress={onGeneratePreview}
