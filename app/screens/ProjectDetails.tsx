@@ -241,43 +241,32 @@ export default function ProjectDetails() {
         </View>
       )}
 
-      <View style={{ marginTop: 16, backgroundColor: '#F6F7FB', borderRadius: 12, padding: 12 }}>
+      <View style={{ backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16, marginTop: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontWeight: '700' }}>Plan</Text>
-
-          {isBuilding ? (
-            <Pressable onPress={load} style={{ padding: 6 }}>
-              <Text style={{ color: '#6D28D9', fontWeight: '600' }}>Refresh</Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => {
-                const parent = (navigation as any).getParent?.(ROOT_TABS_ID) ?? (navigation as any).getParent?.();
-                if (parent) {
-                  parent.navigate(PROJECTS_TAB, { screen: PROJECTS_LIST_SCREEN });
-                  InteractionManager.runAfterInteractions(() => {
-                    parent.navigate(PROJECTS_TAB, { screen: PLAN_SCREEN, params: { id: projectId } });
-                  });
-                  return;
-                }
-                (navigation as any).navigate(PLAN_SCREEN, { id: projectId });
-              }}
-              style={{ backgroundColor: '#6D28D9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
-            >
-              <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
-            </Pressable>
-          )}
+          <Text style={{ fontSize: 18, fontWeight: '700' }}>Plan</Text>
+          <Pressable
+            onPress={() => {
+              const parent = (navigation as any).getParent?.(ROOT_TABS_ID) ?? (navigation as any).getParent?.();
+              if (parent) {
+                parent.navigate(PROJECTS_TAB, { screen: PROJECTS_LIST_SCREEN });
+                InteractionManager.runAfterInteractions(() => {
+                  parent.navigate(PROJECTS_TAB, { screen: PLAN_SCREEN, params: { id: projectId } });
+                });
+                return;
+              }
+              (navigation as any).navigate(PLAN_SCREEN, { id: projectId });
+            }}
+            style={{ backgroundColor: '#6D28D9', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12 }}
+          >
+            <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
+          </Pressable>
         </View>
 
-        {isBuilding ? (
-          <Text style={{ color: '#6B7280', marginTop: 6 }}>
-            Your plan is building. This screen will update automatically; you can also tap Refresh.
-          </Text>
-        ) : (
-          <Text style={{ color: '#6B7280', marginTop: 6 }}>
-            Plan is ready. Tap "Get detailed instructions" to see materials, tools, cuts, steps, time & cost.
-          </Text>
-        )}
+        <Text style={{ marginTop: 8, color: '#4B5563' }}>
+          {project?.status === 'ready'
+            ? 'Plan is ready. Tap to see materials, tools, cuts, steps, time & cost.'
+            : 'Your plan is building. This screen will update automatically; you can also tap the button anytime.'}
+        </Text>
       </View>
     </ScrollView>
   );
