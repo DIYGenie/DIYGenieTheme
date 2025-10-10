@@ -338,6 +338,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function getOrCreateProjectId() {
     try {
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session?.user) {
+        Alert.alert('Sign in required', 'Please sign in to create a project.');
+        (navigation as any).navigate('Auth', { screen: 'SignIn' });
+        throw new Error('AUTH_REQUIRED');
+      }
+
       const currentDraft = {
         projectId: draftId ?? null,
         name: title,
@@ -351,6 +358,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       await saveNewProjectDraft({ ...currentDraft, projectId: id });
       return id;
     } catch (e: any) {
+      if (e?.message === 'AUTH_REQUIRED') {
+        throw e;
+      }
       const msg =
         e?.userMessage ||
         (typeof e?.message === 'string' ? e.message : 'Could not create project. Please check your inputs and try again.');
