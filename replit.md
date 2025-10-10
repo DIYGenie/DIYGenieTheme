@@ -1,7 +1,7 @@
 # DIY Genie
 
 ## Overview
-DIY Genie is a React Native mobile application built with Expo, designed to assist users with DIY projects. Following the tagline "Wish. See. Build.", it offers a gradient-based interface with a welcome screen and three core sections: Home, Projects, and Profile. The application targets cross-platform deployment (iOS, Android, and Web) leveraging modern React Native development practices and aims to provide an intuitive and engaging user experience for DIY enthusiasts. The business vision is to empower users to visualize and execute their DIY projects efficiently.
+DIY Genie is a React Native mobile application built with Expo, designed to assist users with DIY projects. Its purpose is to empower users to visualize and execute their DIY projects efficiently, following the tagline "Wish. See. Build.". The application offers a gradient-based interface with a welcome screen and three core sections: Home, Projects, and Profile, targeting cross-platform deployment (iOS, Android, and Web).
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -9,61 +9,49 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-The application utilizes a component-based React Native architecture with React Navigation v7 for navigation, featuring a hybrid stack and tab navigation. It is built on Expo SDK 54, employs a centralized theme system for consistent styling, and primarily uses React's built-in state management.
+The application uses a component-based React Native architecture with React Navigation v7 for navigation (hybrid stack and tab navigation), built on Expo SDK 54. It features a centralized theme system, React's built-in state management, and typed navigation for type-safe routing. A `useSafeBack` hook provides intelligent back navigation.
 
-**Navigation Structure:**
-- **AppNavigator** (root stack): Manages top-level screens including Welcome, Auth, Scan modals, and the main tab container
-- **RootTabs** (`app/navigation/RootTabs.tsx`): Bottom tab navigator with typed navigation for Home, NewProject, Projects (nested stack), and Profile
-- **ProjectsNavigator** (`app/navigation/ProjectsNavigator.tsx`): Nested stack within Projects tab containing ProjectsList, ProjectDetails, and OpenPlan screens
-- **Canonical Route Names** (`app/navigation/routeNames.ts`): Centralized route constants ensure stable V1 navigation behavior. Exports `ROOT_TABS_ID`, `PROJECTS_TAB`, `PROJECTS_LIST_SCREEN`, and `PLAN_SCREEN` ('OpenPlan') for consistent routing across the app.
-- **Typed Navigation**: Uses TypeScript composite navigation types to enable type-safe navigation from tab screens to nested stack screens (e.g., NewProject → Projects → ProjectDetails)
-- **Smart Back Navigation** (`app/lib/useSafeBack.ts`): Intelligent back navigation hook using CommonActions and TabActions. First attempts goBack() if stack history exists, then navigates to Projects tab with ProjectsList as the only route (ensuring clean stack state), with fallback to tab jump and final fallback to navigation reset. Guarantees users always return to a valid state, eliminating orphaned navigation states.
+### Visual Design
+The design is modern and clean, utilizing white backgrounds, dark text, and a **purple brand primary color (#7C3AED / purple-600)** for CTAs and gradients. A centralized UI kit (`app/ui/`) provides reusable components, theme tokens, and a unified button system. Layouts use `SafeAreaView` and consistent spacing with `Ionicons` for iconography.
 
-### Visual Design Architecture
-The design features a clean, modern aesthetic with white backgrounds, dark text, and a **purple brand primary color (#7C3AED / purple-600)** for CTAs, using a gradient for accents. A centralized UI kit in `app/ui/` provides reusable components and theme tokens, including a unified button system. Layouts use `SafeAreaView` and consistent spacing tokens, with `Ionicons` for iconography.
-
-### Component Architecture
-Key components include:
-- **AccordionCard**: A reusable collapsible card for displaying lists, used in `ProjectDetailsScreen`.
-- **SuggestionsBox**: A simple component for displaying AI-generated tips.
-- **PromptCoach**: A modern chip-based UI for smart project suggestions, dynamically updating based on user input.
-
-### Technical Implementations
-- **Backend API Integration**: Uses an Express.js backend server (`server.js`) for managing projects and entitlements, with direct fetch calls for API operations. The `fetchMyProjects()` helper in `app/lib/api.ts` provides a unified, session-aware project loader that queries the Webhooks API with both `userId` and `user_id` parameters, merges results, sorts items newest-first, and is used by both Projects and Home screens as a single source of truth.
-- **Auto-Refresh on Focus**: Projects tab and Home screen Recent Projects automatically refetch data when screens gain focus using `useFocusEffect` hook, ensuring users always see the latest projects after creating or updating them. **Pull-to-Refresh**: Both ProjectsScreen and HomeScreen include native pull-to-refresh functionality using `RefreshControl`, allowing users to manually trigger data refresh by pulling down on the screen.
-- **Image Upload**: Dual upload system: Server-side via multer for project images, and direct client-side upload to Supabase Storage for room scans. Client-side scans use `saveRoomScan` utility (`app/features/scans/saveRoomScan.ts`) to upload to `room-scans` bucket at `${userId}/<timestamp>-<rand>.jpg`, create 7-day signed URLs via `createSignedUrl()`, and track in `public.room_scans` table with metadata (source, device, flow). Upload flow includes loading states (semi-transparent overlay spinner), disabled button states, and "Scan uploaded & saved" toast notification on success. Includes permission-free photo picker using `ImagePicker.launchImageLibraryAsync()` and expo-file-system for base64 conversion. Supabase client (`app/lib/supabase.ts`) configured with AsyncStorage for session persistence, auto token refresh, and cross-platform URL polyfill support.
-- **New Project Screen (`NewProject.tsx`)**: Guides users through project creation with form validation and reset logic. Supports deep-linking from HomeScreen chips to focus/scroll to specific sections (desc, media, plan). **Draft Persistence**: Form fields (description, budget, skill level) are automatically saved to AsyncStorage (`app/lib/draft.ts`) on every change, and restored on mount. This ensures fields persist across sign-in flows - when users are prompted to authenticate and navigate to Auth screen, they're returned to NewProject with all fields intact. Draft is cleared after successful project creation or when form is manually reset. **Smart Navigation to ProjectDetails**: Uses `goToProjectDetailsSeeded()` helper with `InteractionManager` to first navigate to ProjectsList, then push ProjectDetails on top. This ensures the Back button on ProjectDetails always returns to the Projects list, not Home, preventing orphaned navigation states. Applies to all project creation flows: preview generation, build without preview, and upload success. **Guided Field Validation**: When users try to proceed with missing fields, the app: (1) shakes the field with a subtle animation using `useShake` hook, (2) shows a red outline around the field for 1.4s, (3) scrolls to the first missing field, and (4) shows an "Almost there" alert with field-specific guidance. Tracks Y positions via `onLayout` and wraps each field in `Animated.View` for shake effects. **Smooth Scrolling**: Single ScrollView wrapper with `keyboardShouldPersistTaps="handled"` and `keyboardDismissMode="on-drag"` for optimal keyboard behavior. **Suggestions feature removed for V1** - SuggestionsBox component stubbed to return null.
-- **Project Details Screen**: Displays real-time project information including name, status, and latest scan image. Uses `fetchProjectById()` and `fetchLatestScanForProject()` API helpers to load data, with automatic refresh on focus via `useFocusEffect`. Shows project overview, materials, and steps when available. Falls back to "No scan image yet" placeholder when no room scans exist for the project. **Dynamic Header**: Uses `useLayoutEffect` to show project name and status badge in header, updating dynamically when project data changes. **Auto-Polling Plan Status**: Automatic 8-second polling using `useInterval` hook (`app/hooks/useInterval.ts`) when project status is building (`requested`, `building`, `queued`, `pending`). Polling stops when status becomes ready. Detects building state via regex pattern matching on `plan_status` or `status` fields. **Smart Plan UI**: Shows "Refresh" link while building with auto-update message. Swaps to purple "View Plan" CTA button when ready, navigating to canonical OpenPlan screen using `PLAN_SCREEN` route constant with stack seeding pattern. Plan card uses light background (#F6F7FB) with clean styling.
-- **OpenPlan Screen** (`app/screens/OpenPlanScreen.tsx`): Canonical plan viewing screen for V1. Features tabbed interface with Overview, Materials, Steps, and Shopping tabs using button-based navigation. Shows stub content for each tab with purple accent for active state. Accessed via `PLAN_SCREEN` route constant from ProjectDetails.
-- **Authentication**: Implements Supabase email/password authentication with single up-front sign-in enforcement. **AuthGate Provider** (`app/providers/AuthGate.tsx`) wraps AppNavigator in `app/navigation/AppNavigator.js`, blocking access to the entire app until a Supabase session exists. Shows AuthScreen for unauthenticated users, loading spinner during initial session check, and renders app content only when signed in. Auth flow includes sign-in, sign-up with email confirmation handling, and sign-out with toast notifications. ProfileScreen conditionally renders: sign-in card when logged out, or user email + sign-out button when authenticated. AuthScreen (`app/screens/AuthScreen.tsx`) provides simple email/password form with purple brand styling. All tabs (Home, NewProject, Projects, Profile) are visible only after authentication. Supabase client configured with AsyncStorage for session persistence across app restarts.
-- **Error Handling**: Comprehensive API and storage error handling, including specific messages for quota and permission errors.
-- **ProfileScreen & Billing Integration**: Manages user entitlements, current plans (Free, Casual, Pro), and integrates with Stripe for subscription management, including visual feedback for syncing.
-- **UX Enhancements**: Includes custom toast notifications, debounce hook for CTAs, haptic feedback, detailed loading states, and a health ping system for backend availability. Features `PressableScale` component (`app/components/ui/PressableScale.js`) for lightweight micro-interactions with configurable haptic feedback (light/medium/none), scale animation (120ms), and Android ripple effect. Used on: How it works tiles (light haptic), primary CTA (medium haptic, 0.97 scale), and project cards (light haptic). Includes skeleton loading states (`Skeleton.js`, `ProjectCardSkeleton.js`) with 1400ms shimmer animation and empty state component (`EmptyState.js`) for zero-projects view. Camera permission flow with pre-permission bottom sheet (`PrePermissionSheet.js`) explaining camera access before requesting, with fallback to Settings if denied.
-- **Room Scanning Flow**: Reliable camera scanning using expo-camera's CameraView and useCameraPermissions hooks. `ScanScreen.tsx` handles permission requests, live camera preview (native only), photo capture, and review within a single screen. Includes web fallback with friendly "Camera not available" message. Integrated with NewProject via event bridge (`scanEvents.js`) - captured photos automatically populate the room photo field with "Room photo added" toast notification. **ROI Region Persistence** (`app/lib/regions.ts`): ScanScreen accepts projectId as route param and saves normalized rectangle coordinates (0-1 range) to `room_scan_regions` table. `saveFocusRegion()` helper ensures a scan exists for the project (creates one if needed), then persists ROI as `{x,y,w,h}` with `kind: 'roi'` and `normalized: true`. NewProject's "Scan room" button calls `ensureProjectForDraft()` to guarantee a project exists before navigation, passing projectId to ScanScreen. DraggableRect component centers rectangle on first render with 120px minimum size, provides resizable corners (28px handles), and emits normalized coordinates on changes.
-- **New Project Photo Section (`NewProjectMedia.js`)**: Simple upload-only interface for V1. Displays two buttons: "Scan room" (shows coming soon message) and "Upload Photo" (gallery picker). Uploaded photos display as "Saved photo" with conditional help text: "AR tools appear after Scan room (coming soon)." for uploads or "Tools appear when you use Scan room." for scans. No tool buttons rendered for V1 uploads - AR tools will be added later to scan path only. Uses Alert for user feedback.
-- **HomeScreen "How it works"**: Reusable tile component (`HowItWorksTile.js`) with `PressableScale` wrapper in 2×2 grid layout. Tiles feature micro-interactions: light haptic feedback, scale animation (0.98), icon opacity animation (70%→100% on press). Each tile: 48% width, 72px min height, 16px border radius, 14px padding. Colors: background (#F6F3FF), border (#E7DFFF), pressed state (#EEE6FF). Icons (size 22, Ionicons outline): Describe (create-outline), Scan (scan-outline), Preview (sparkles-outline), Build (hammer-outline). Text: 15px, 600 weight, #1F1F1F color. Deep-linking: Describe → desc input focus, Scan → photo picker, Build → action buttons scroll. Spacing: 8px gap from subtitle to title, 10px gap below title, 12px row gap in grid, 20px gap to CTA. Accessibility: Step-based labels ("step 1 of 4", etc.) with button role.
+### Core Features & Technical Implementations
+- **Navigation**: Structured with `AppNavigator` (root stack), `RootTabs` (bottom tab navigator), and `ProjectsNavigator` (nested stack). Canonical route names are centralized for consistency.
+- **Component Reusability**: Key components include `AccordionCard`, `SuggestionsBox`, `PromptCoach`, and `PlanTabs` (for displaying project plan data).
+- **Backend Integration**: Uses an Express.js backend for project and entitlement management, with direct fetch calls. `fetchMyProjects()` provides a unified, session-aware project loader.
+- **Data Refresh**: Automatic refetching on screen focus (`useFocusEffect`) and native pull-to-refresh (`RefreshControl`) ensure data currency.
+- **Image Upload**: Dual system with server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking. Features loading states, permission-free photo picker, and Supabase client configured for session persistence.
+- **New Project Workflow**: Guides users through project creation with form validation, draft persistence to AsyncStorage, and smart navigation to `ProjectDetails`. Features guided field validation with shake animations and scrolling.
+- **Project Details Display**: Shows real-time project info, latest scan, and a dynamic header. `PlanTabs` component renders plan data (Overview, Materials, Cuts, Tools, Steps, Time & Cost).
+- **Plan Viewing**: `OpenPlanScreen` offers a comprehensive single-page scrollable plan view with "Save to Photos" functionality. `DetailedInstructionsScreen` provides a linear, saveable guide with section-by-section capture.
+- **Authentication**: Supabase email/password authentication enforced by `AuthGate Provider`, blocking app access until a session exists. Includes sign-in, sign-up with email confirmation, and sign-out.
+- **Error Handling**: Comprehensive API and storage error handling.
+- **Profile & Billing**: Manages user entitlements and integrates with Stripe for subscription management.
+- **UX Enhancements**: Custom toast notifications, debounce hook, haptic feedback (`PressableScale` component), detailed loading states (skeletons), and an empty state component. Includes a pre-permission bottom sheet for camera access and a health ping system.
+- **Room Scanning**: Uses `expo-camera` for live preview, photo capture, and review. Integrates with NewProject via an event bridge. ROI region persistence saves normalized rectangle coordinates to the database using a `DraggableRect` component.
+- **New Project Photo Section**: Simple upload-only interface for V1, displaying "Scan room" and "Upload Photo" options.
+- **Home Screen "How it works"**: Features a 2x2 grid of reusable `HowItWorksTile` components with micro-interactions and accessibility features, deep-linking to relevant sections.
 
 ## External Dependencies
 
 ### Core Framework Dependencies
-- **Expo SDK 54**: Primary development framework.
-- **React Navigation v7**: For application navigation.
-- **React Native 0.80**: Core mobile framework.
+- **Expo SDK 54**
+- **React Navigation v7**
+- **React Native 0.80**
 
 ### UI and Design Dependencies
-- **Expo Linear Gradient**: For gradient backgrounds.
-- **Expo Google Fonts**: For custom typography (Manrope, Inter).
-- **Expo Vector Icons**: For iconography (Ionicons).
-- **React Native Safe Area Context**: For safe area handling.
-- **Expo Haptics**: For tactile feedback.
+- **Expo Linear Gradient**
+- **Expo Google Fonts**
+- **Expo Vector Icons (Ionicons)**
+- **React Native Safe Area Context**
+- **Expo Haptics**
 
 ### Data and Backend Integration
-- **Supabase (via @supabase/supabase-js and @supabase/functions-js)**: For database, authentication, and storage services.
-- **Node.js/Express**: For the backend API server.
+- **Supabase (@supabase/supabase-js, @supabase/functions-js)**: Database, authentication, and storage.
+- **Node.js/Express**: Backend API server.
 
 ### Development and Performance Dependencies
-- **React Native Screens**: For optimized navigation performance.
-- **Expo Status Bar**: For status bar control.
+- **React Native Screens**
+- **Expo Status Bar**
 
 ### Platform Support
 - **iOS, Android, Web**: Cross-platform deployment via Expo.

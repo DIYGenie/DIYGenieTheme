@@ -13,6 +13,7 @@ import Markdown from '../components/Markdown';
 import StatusBadge from '../components/StatusBadge';
 import { useInterval } from '../hooks/useInterval';
 import { ROOT_TABS_ID, PROJECTS_TAB, PROJECTS_LIST_SCREEN, PLAN_SCREEN } from '../navigation/routeNames';
+import PlanTabs from '../components/PlanTabs';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -241,33 +242,23 @@ export default function ProjectDetails() {
         </View>
       )}
 
-      <View style={{ backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16, marginTop: 16 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: 18, fontWeight: '700' }}>Plan</Text>
+      {!project?.plan ? (
+        <View style={{ backgroundColor: '#F6F7FF', borderRadius: 16, padding: 14, marginTop: 16 }}>
+          <Text style={{ fontWeight: '700', marginBottom: 8 }}>Plan</Text>
+          <Text>Your plan is building. This screen will update automatically; you can also pull to refresh.</Text>
+        </View>
+      ) : (
+        <>
+          <PlanTabs plan={project.plan} />
+
           <Pressable
-            onPress={() => {
-              const parent = (navigation as any).getParent?.(ROOT_TABS_ID) ?? (navigation as any).getParent?.();
-              if (parent) {
-                parent.navigate(PROJECTS_TAB, { screen: PROJECTS_LIST_SCREEN });
-                InteractionManager.runAfterInteractions(() => {
-                  parent.navigate(PROJECTS_TAB, { screen: PLAN_SCREEN, params: { id: projectId } });
-                });
-                return;
-              }
-              (navigation as any).navigate(PLAN_SCREEN, { id: projectId });
-            }}
-            style={{ backgroundColor: '#6D28D9', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12 }}
+            onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+            style={{ marginTop: 16, backgroundColor: '#6D28D9', borderRadius: 16, padding: 14, alignItems: 'center' }}
           >
             <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
           </Pressable>
-        </View>
-
-        <Text style={{ marginTop: 8, color: '#4B5563' }}>
-          {project?.status === 'ready'
-            ? 'Plan is ready. Tap to see materials, tools, cuts, steps, time & cost.'
-            : 'Your plan is building. This screen will update automatically; you can also tap the button anytime.'}
-        </Text>
-      </View>
+        </>
+      )}
     </ScrollView>
   );
 }
