@@ -28,7 +28,18 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   5. **Finishing**: Final touches section (only shown if finishing steps exist)
   
   Features depth with shadows, animated chevron rotation, #F8F7FF card backgrounds on #F5F3FF surface. Each section header navigates to DetailedInstructions with section anchor, chevron toggles expand/collapse. Includes offline mode indicator (green "OFFLINE ✓" badge when plan is cached), copy-to-clipboard actions for all sections, and progress persistence.
-- **Plan Viewing**: `ProjectDetails` provides an at-a-glance expandable summary with interactive progress tracking, while `DetailedInstructionsScreen` offers a full document-style linear guide using DocAtoms components with save-to-photos functionality. Both screens handle enhanced plan data including skill level, step timing, material costs, and tool categorization.
+- **Plan Viewing**: 
+  - `ProjectDetails`: At-a-glance expandable summary with interactive progress tracking. Features 3-4 main sections (Overview combines project info + time/cost/skill; Materials + Tools; Cut List; Build Steps) with checkboxes, progress bar, and copy-to-clipboard actions.
+  - `DetailedInstructions`: Comprehensive visual builder's guide with rich formatting. Features purple header with stats, white card sections (Overview, Materials, Tools, Cut List), and visual step cards with:
+    - Step numbers in purple circles with time estimates
+    - Photo placeholders (200px) for visual guides
+    - "What you're building" context in blue callouts
+    - Per-step materials/tools callouts with icons
+    - Pro tips in blue highlighted boxes
+    - Quality checks in green highlighted boxes
+    - Common mistakes/pitfalls in red highlighted boxes
+    - Progress indicators (arrows) between steps
+    - Save-to-photos functionality (captures each section individually)
 - **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans. Offline mode indicator shows when plan is available without internet connection.
 - **Progress Tracking**: Database-backed progress tracking with `completed_steps` (array of completed step indices) and `current_step_index` fields. API endpoints at `/api/projects/:id/progress` (GET/POST) allow fetching and updating build progress. Frontend displays interactive checkboxes, visual progress bar, and "Start Building" / "Continue Building" CTAs.
 - **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality.
