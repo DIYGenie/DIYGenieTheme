@@ -18,6 +18,7 @@ import { api, apiRaw, requestProjectPreview, pollProjectReady } from '../lib/api
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
+import { bus } from '../lib/events';
 import { uploadRoomScan } from '../lib/uploadRoomScan';
 import { supabase } from '../lib/supabase';
 import RoiModal from '../components/RoiModal';
@@ -88,6 +89,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl?: string; source?: 'ar' | 'upload' } | null>(null);
+  const [savedScan, setSavedScan] = useState<null | { scanId: string; source: 'ar' }>(null);
   const [roiOpen, setRoiOpen] = useState(false);
   const [lastRegionId, setLastRegionId] = useState<string | null>(null);
   const [measureOpen, setMeasureOpen] = useState(false);
@@ -224,6 +226,21 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     });
     
     return () => subscription.remove();
+  }, []);
+
+  // Event listener for build completion
+  useEffect(() => {
+    const off = bus.onBuildCompleted(async ({ projectId }) => {
+      console.log('[build] completed -> clearing draft & AR card for projectId=', projectId);
+      try {
+        await clearNewProjectDraft();
+      } catch (e) {
+        console.log('[build] clear draft error', e);
+      } finally {
+        setSavedScan(null);
+      }
+    });
+    return off;
   }, []);
 
   // 1) Hydrate once on mount - do NOT overwrite if we already have local edits
@@ -579,10 +596,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setIsBuilding(true);
       
       // Poll for ready status
-      const pollRes = await pollProjectReady(id, { tries: 40, interval: 2000 });
-      setIsBuilding(false);
-      
-      if (pollRes.ok) {
+      try {
+        const markdown = await pollProjectReady(id);
+        setIsBuilding(false);
+        
         // SUCCESS: Clear form and navigate
         try {
           clearingRef.current = true;
@@ -628,8 +645,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             ],
           })
         );
-      } else {
-        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
+      } catch (pollErr) {
+        setIsBuilding(false);
+        Alert.alert('Timeout', 'Build is taking longer than expected. Check Projects tab for updates.');
       }
     } catch (e) {
       // Error already shown by getOrCreateProjectId
@@ -731,10 +749,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setIsBuilding(true);
       
       // 3) Poll for ready status
-      const pollRes = await pollProjectReady(projectId, { tries: 40, interval: 2000 });
-      setIsBuilding(false);
-      
-      if (pollRes.ok) {
+      try {
+        const markdown = await pollProjectReady(projectId);
+        setIsBuilding(false);
+        
         // SUCCESS: Clear form and navigate
         try {
           clearingRef.current = true;
@@ -780,8 +798,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             ],
           })
         );
-      } else {
-        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
+      } catch (pollErr) {
+        setIsBuilding(false);
+        Alert.alert('Timeout', 'Build is taking longer than expected. Check Projects tab for updates.');
       }
     } catch (e) {
       setIsPreviewing(false);

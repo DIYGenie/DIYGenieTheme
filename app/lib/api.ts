@@ -185,14 +185,31 @@ export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
   }
 }
 
-export async function pollProjectReady(projectId: string, opts = { tries: 40, interval: 2000 }) {
-  for (let i = 0; i < opts.tries; i++) {
-    const item = await fetchProjectById(projectId).catch(() => null);
-    const ready = item?.status === 'ready' || !!item?.plan;
-    if (ready) return { ok: true, item };
-    await new Promise(r => setTimeout(r, opts.interval));
+export async function pollProjectReady(projectId: string) {
+  const start = Date.now();
+  console.log('[build] polling start projectId=', projectId);
+
+  while (Date.now() - start < POLL_TIMEOUT_MS) {
+    try {
+      const res = await fetch(`${BASE}/api/projects/${projectId}/plan`);
+      if (res.status === 200) {
+        console.log('[build] ready 200 projectId=', projectId);
+        bus.emitBuildCompleted({ projectId });
+        return await res.text(); // markdown
+      }
+      if (res.status === 409) {
+        // still building
+        await new Promise(r => setTimeout(r, POLL_MS));
+        continue;
+      }
+      console.log('[build] unexpected status', res.status);
+      await new Promise(r => setTimeout(r, POLL_MS));
+    } catch (e) {
+      console.log('[build] poll error', e);
+      await new Promise(r => setTimeout(r, POLL_MS));
+    }
   }
-  return { ok: false };
+  throw new Error('Timeout waiting for plan');
 }
 
 export async function fetchLatestScanForProject(projectId: string) {
@@ -384,31 +401,4 @@ export async function createProjectAndReturnId(payload: {
   }
 
   return String(id);
-}
-
-export async function pollProjectReady(projectId: string) {
-  const start = Date.now();
-  console.log('[build] polling start projectId=', projectId);
-
-  while (Date.now() - start < POLL_TIMEOUT_MS) {
-    try {
-      const res = await fetch(`${BASE}/api/projects/${projectId}/plan`);
-      if (res.status === 200) {
-        console.log('[build] ready 200 projectId=', projectId);
-        bus.emitBuildCompleted({ projectId });
-        return await res.text(); // markdown
-      }
-      if (res.status === 409) {
-        // still building
-        await new Promise(r => setTimeout(r, POLL_MS));
-        continue;
-      }
-      console.log('[build] unexpected status', res.status);
-      await new Promise(r => setTimeout(r, POLL_MS));
-    } catch (e) {
-      console.log('[build] poll error', e);
-      await new Promise(r => setTimeout(r, POLL_MS));
-    }
-  }
-  throw new Error('Timeout waiting for plan');
 }
