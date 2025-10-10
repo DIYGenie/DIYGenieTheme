@@ -56,6 +56,7 @@ export default function DraggableRect({
       clamped.w = Math.min(clamped.w, container.w - clamped.x);
       clamped.h = Math.min(clamped.h, container.h - clamped.y);
 
+      console.log('[roi bounds] clamping to container:', { container, next, clamped });
       setRect(clamped);
       const norm = toNorm(clamped);
       console.log('[scan overlay] region selected', norm);
@@ -123,11 +124,13 @@ export default function DraggableRect({
 
   return (
     <View
-      style={[{ width: '100%', aspectRatio: 4 / 3, overflow: 'hidden' }, style]}
+      style={[{ width: '100%', aspectRatio: 4 / 3, overflow: 'visible' }, style]}
+      pointerEvents="box-none"
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
         const sz = { w: width, h: height };
         setContainer(sz);
+        console.log('[roi bounds] container measured:', sz);
         if (!ready.current && width > 0 && height > 0) {
           ready.current = true;
           // Start centered with a reasonable minimum size
@@ -138,6 +141,7 @@ export default function DraggableRect({
           const y0 = Math.max((sz.h - h0) / 2, 0);
           const px = { x: x0, y: y0, w: Math.min(w0, sz.w), h: Math.min(h0, sz.h) };
           setRect(px);
+          console.log('[roi bounds] initial box:', px);
           onChange?.(toNorm(px));
         }
       }}
@@ -145,6 +149,7 @@ export default function DraggableRect({
       {/* Rect */}
       <View
         {...dragResponder.panHandlers}
+        pointerEvents="auto"
         style={[
           styles.rect,
           {
@@ -156,10 +161,10 @@ export default function DraggableRect({
         ]}
       >
         {/* Handles */}
-        <View {...handleHandleDrag('tl').panHandlers} style={[styles.handle, styles.tl]} />
-        <View {...handleHandleDrag('tr').panHandlers} style={[styles.handle, styles.tr]} />
-        <View {...handleHandleDrag('bl').panHandlers} style={[styles.handle, styles.bl]} />
-        <View {...handleHandleDrag('br').panHandlers} style={[styles.handle, styles.br]} />
+        <View {...handleHandleDrag('tl').panHandlers} pointerEvents="auto" style={[styles.handle, styles.tl]} />
+        <View {...handleHandleDrag('tr').panHandlers} pointerEvents="auto" style={[styles.handle, styles.tr]} />
+        <View {...handleHandleDrag('bl').panHandlers} pointerEvents="auto" style={[styles.handle, styles.bl]} />
+        <View {...handleHandleDrag('br').panHandlers} pointerEvents="auto" style={[styles.handle, styles.br]} />
       </View>
     </View>
   );
