@@ -189,7 +189,7 @@ export default function ProjectDetails() {
     }, [load])
   );
 
-  // Load most recent scan & poll overlay
+  // Load most recent scan & poll overlay (disabled for now)
   useEffect(() => {
     if (!project?.id) return;
     
@@ -209,7 +209,9 @@ export default function ProjectDetails() {
         setMeasuring(true);
         const status = await pollScanMeasurement(project.id, data.id, { tries: 30, intervalMs: 2000 });
         if (!alive) return;
-        if (status.ready) {
+        
+        // Type guard to check if status has ready property
+        if (status.ok && 'ready' in status && status.ready) {
           setOverlayUrl(status.overlay_url);
           if (status.image_url) setBaseImgUrl(status.image_url);
         }
