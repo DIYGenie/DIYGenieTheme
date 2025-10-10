@@ -1164,7 +1164,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 Saved scan {lastScan.source === 'ar' ? '(AR)' : ''}
               </Text>
               <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                {lastScan.scanId.slice(0, 8)}…
+                {lastScan.source === 'ar' 
+                  ? 'Measurement processing coming soon. You can still build your plan now.'
+                  : `${lastScan.scanId.slice(0, 8)}…`}
               </Text>
             </View>
             {/* V1: hide tool buttons for uploads */}
