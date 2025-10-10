@@ -340,33 +340,27 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return () => clearTimeout(t);
   }, [section]);
 
-  async function ensureDraft() {
-    if (draftId) return draftId;
-
-    const name = description.trim();
-    if (name.length < 10 || !budget || !skillLevel) {
-      showToast('Please complete all fields (10+ char description, budget, skill)', 'error');
-      return null;
+  async function getOrCreateProjectId() {
+    try {
+      const currentDraft = {
+        projectId: draftId ?? null,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      };
+      const id = await ensureProjectForDraft(currentDraft);
+      setDraftId(id);
+      // keep storage in sync (optional, ensureProjectForDraft already saved)
+      await saveNewProjectDraft({ ...currentDraft, projectId: id });
+      return id;
+    } catch (e: any) {
+      const msg =
+        e?.userMessage ||
+        (typeof e?.message === 'string' ? e.message : 'Could not create project. Please check your inputs and try again.');
+      Alert.alert('Fix required', msg);
+      throw e;
     }
-
-    const r = await api('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify({ user_id: USER_ID, name, budget, skill: skillLevel }),
-    });
-
-    if (!r.ok) {
-      const msg = r?.data?.error || r?.data?.message || 'Failed to create project';
-      showToast(msg, 'error');
-      return null;
-    }
-
-    const id = r.data?.item?.id || r.data?.id;
-    if (!id) { 
-      showToast('Project not created', 'error'); 
-      return null; 
-    }
-    setDraftId(id);
-    return id;
   }
 
   function pickPhotoWeb(): Promise<string> {
@@ -457,35 +451,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     try {
       Keyboard.dismiss();
-      // persist current form immediately (avoid race / blank overwrite)
-      await saveNewProjectDraft({
-        projectId: draftId ?? null,
-        name: title,
-        description,
-        budget,
-        skill_level: skillLevel,
-      });
-      const projectId = await ensureProjectForDraft({
-        projectId: draftId ?? null,
-        name: title,
-        description,
-        budget,
-        skill_level: skillLevel,
-      });
-      if (!draftId) setDraftId(projectId);
+      const projectId = await getOrCreateProjectId(); // throws + shows Alert on failure
       (navigation as any).navigate('Scan', { projectId });
-    } catch (e: any) {
-      const msg = String(e?.message || e);
-      if (msg === 'AUTH_REQUIRED') return;
-      if (msg === 'VALIDATION_FAILED') {
-        Alert.alert('Almost there', e.userMessage || 'Please check your inputs.');
-        return;
-      }
-      if (msg.startsWith('PROJECT_CREATE_FAILED')) {
-        Alert.alert('Could not create project', e.userMessage || 'Server error. Please try again.');
-        return;
-      }
-      Alert.alert('Oops', 'Could not start scan. Try again.');
+    } catch (e) {
+      // Error already shown by getOrCreateProjectId
     }
   };
 
@@ -502,37 +471,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
     
     try {
-      // persist + ensure project
-      await saveNewProjectDraft({
-        projectId: draftId ?? null,
-        name: title,
-        description,
-        budget,
-        skill_level: skillLevel,
-      });
-      const projectId = await ensureProjectForDraft({
-        projectId: draftId ?? null,
-        name: title,
-        description,
-        budget,
-        skill_level: skillLevel,
-      });
-      if (!draftId) setDraftId(projectId);
+      const projectId = await getOrCreateProjectId(); // throws + shows Alert on failure
       
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
       await uploadPhotoToSupabase(uri, 'upload');
     } catch (err: any) {
-      const msg = String(err?.message || err);
-      if (msg === 'AUTH_REQUIRED') return;
-      if (msg === 'VALIDATION_FAILED') {
-        Alert.alert('Almost there', err.userMessage || 'Please check your inputs.');
-        return;
-      }
-      if (msg.startsWith('PROJECT_CREATE_FAILED')) {
-        Alert.alert('Could not create project', err.userMessage || 'Server error. Please try again.');
-        return;
-      }
+      // Skip alert if error came from getOrCreateProjectId (it already showed one)
+      if (err?.userMessage) return;
+      if (err?.message === 'Selection canceled' || err?.message === 'No file selected') return;
       Alert.alert('Photo picker', err?.message || 'Could not select photo');
     }
   };
@@ -545,8 +492,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     setBusy(true);
     try {
-      const id = await ensureDraft();
-      if (!id) return;
+      const id = await getOrCreateProjectId(); // throws + shows Alert on failure
       
       const r = await api(`/api/projects/${id}/preview`, { 
         method: 'POST', 
@@ -561,8 +507,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       Alert.alert('Success', 'Preview requested');
       goToProjectDetailsSeeded(id);
     } catch (err: any) {
-      Alert.alert('Preview failed', err?.message || 'Could not generate preview');
-      triggerHaptic('error');
+      // Error already shown by getOrCreateProjectId or is from API call
+      if (!err?.userMessage) {
+        Alert.alert('Preview failed', err?.message || 'Could not generate preview');
+        triggerHaptic('error');
+      }
     } finally {
       setBusy(false);
     }
@@ -615,8 +564,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         return;
       }
 
-      const id = await ensureDraft();
-      if (!id) return;
+      const id = await getOrCreateProjectId(); // throws + shows Alert on failure
 
       // Upload image if needed before build
       if (photoUri) {
@@ -649,6 +597,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       showToast('Plan requested', 'success');
       // Navigate to PlanWaiting to poll for plan
       goToProjectDetailsSeeded(id, { imageUrl: ls?.imageUrl ?? null });
+    } catch (e) {
+      // Error already shown by getOrCreateProjectId
     } finally {
       setBusyBuild(false);
     }
