@@ -396,7 +396,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const onScanRoom = async () => {
     if (!canProceed) {
-      showToast('Please complete all required fields first.', 'error');
+      Alert.alert('Almost there', 'Please fill in title and description first.');
+      const missing = firstMissing();
+      if (missing === 'title' && posRef.current.title !== undefined) {
+        scrollRef.current?.scrollTo({ y: posRef.current.title - 100, animated: true });
+      } else if (missing === 'description' && posRef.current.description !== undefined) {
+        scrollRef.current?.scrollTo({ y: posRef.current.description - 100, animated: true });
+      }
       return;
     }
     
@@ -420,7 +426,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   const onUploadPhoto = async () => {
     if (!canProceed) {
-      showToast('Please complete all required fields first.', 'error');
+      Alert.alert('Almost there', 'Please fill in title and description first.');
+      const missing = firstMissing();
+      if (missing === 'title' && posRef.current.title !== undefined) {
+        scrollRef.current?.scrollTo({ y: posRef.current.title - 100, animated: true });
+      } else if (missing === 'description' && posRef.current.description !== undefined) {
+        scrollRef.current?.scrollTo({ y: posRef.current.description - 100, animated: true });
+      }
       return;
     }
     
