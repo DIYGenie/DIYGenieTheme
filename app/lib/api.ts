@@ -238,6 +238,23 @@ export async function buildPlanWithoutPreview(projectId: string): Promise<boolea
   return true;
 }
 
+export async function requestProjectPreview(projectId: string) {
+  const base =
+    (global as any).__API_BASE_URL__ ??
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
+    process.env.EXPO_PUBLIC_BASE_URL ??
+    process.env.API_BASE ??
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+  const url = `${base}/api/projects/${projectId}/preview`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    const body = await res.json().catch(() => ({}));
+    return { ok: !!body?.ok, status: res.status, body };
+  } catch (e: any) {
+    return { ok: false, status: 0, body: { error: String(e?.message || e) } };
+  }
+}
+
 // Poll plan endpoint until it is available (or time out). Uses gentle backoff.
 export async function waitForPlanReady(
   projectId: string,
