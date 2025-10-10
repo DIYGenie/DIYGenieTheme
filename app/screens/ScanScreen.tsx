@@ -45,9 +45,10 @@ export default function ScanScreen() {
       
       Alert.alert('Success', 'Scan saved');
       
-      (navigation as any).navigate('Main', {
-        screen: 'NewProject',
-        params: { savedScan: result },
+      (navigation as any).navigate({
+        name: 'Main',
+        params: { screen: 'NewProject', params: { savedScan: result } },
+        merge: true,
       });
     } catch (e: any) {
       console.log('[scan] save failed', String(e?.message || e));
