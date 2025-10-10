@@ -55,6 +55,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const clearingRef = useRef(false);
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyBuild, setBusyBuild] = useState(false);
@@ -245,6 +246,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   // 2) Persist on any field change (debounced)
   useEffect(() => {
     if (!hydratedRef.current) return; // avoid saving empty default before hydration
+    if (clearingRef.current) return; // don't persist while clearing
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveNewProjectDraft({
