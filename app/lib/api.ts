@@ -1,7 +1,11 @@
 import { supabase } from './supabase';
+import { bus } from './events';
 
 export const BASE =
   (process.env.EXPO_PUBLIC_BASE_URL as string) || 'http://localhost:5000';
+
+const POLL_MS = 2000;
+const POLL_TIMEOUT_MS = 60000;
 
 export async function api(path: string, init: RequestInit = {}) {
   const url = `${BASE}${path}`;
@@ -380,4 +384,31 @@ export async function createProjectAndReturnId(payload: {
   }
 
   return String(id);
+}
+
+export async function pollProjectReady(projectId: string) {
+  const start = Date.now();
+  console.log('[build] polling start projectId=', projectId);
+
+  while (Date.now() - start < POLL_TIMEOUT_MS) {
+    try {
+      const res = await fetch(`${BASE}/api/projects/${projectId}/plan`);
+      if (res.status === 200) {
+        console.log('[build] ready 200 projectId=', projectId);
+        bus.emitBuildCompleted({ projectId });
+        return await res.text(); // markdown
+      }
+      if (res.status === 409) {
+        // still building
+        await new Promise(r => setTimeout(r, POLL_MS));
+        continue;
+      }
+      console.log('[build] unexpected status', res.status);
+      await new Promise(r => setTimeout(r, POLL_MS));
+    } catch (e) {
+      console.log('[build] poll error', e);
+      await new Promise(r => setTimeout(r, POLL_MS));
+    }
+  }
+  throw new Error('Timeout waiting for plan');
 }
