@@ -154,7 +154,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       lastScanRef.current = null;
       setLastScanEphemeral(null);
       clearDraft();
-      clearNewProjectDraft(); // also wipe persisted draft
+      clearNewProjectDraft(); // wipe persisted draft too
+      console.log('[draft] cleared');
     } catch {}
   }
 
@@ -216,10 +217,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       const stored = await loadNewProjectDraft();
       if (!alive) return;
       if (stored && Object.keys(stored).length > 0) {
+        console.log('[draft] mount→hydrate', stored);
         // Merge: restore stored values
         if (stored.name) setTitle(stored.name);
         if (stored.description) setDescription(stored.description);
-        if (stored.budget) setBudget(stored.budget);
+        if (stored.budget) setBudget(String(stored.budget));
         if (stored.skill_level) setSkillLevel(stored.skill_level);
         if (stored.projectId) setDraftId(stored.projectId);
       }
@@ -246,9 +248,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         projectId: draftId,
         name: title,
         description,
-        budget,
+        budget: budget,
         skill_level: skillLevel,
       });
+      console.log('[draft] autosave', { name: title, hasDesc: !!description, budget, skill_level: skillLevel, projectId: draftId });
     }, 250);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -286,7 +289,23 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setLastScan(paramScan);
         lastScanRef.current = paramScan;
         setLastScanEphemeral(paramScan);
-        // IMPORTANT: do NOT reset draft here; just keep the values user entered
+        // Force a single-shot re-hydrate of draft fields from AsyncStorage in case the screen remounted blank
+        (async () => {
+          try {
+            const stored = await loadNewProjectDraft();
+            console.log('[draft] focus→rehydrate after scan', stored);
+            if (stored) {
+              if (stored.name) setTitle(stored.name);
+              if (stored.description) setDescription(stored.description);
+              if (stored.budget != null) setBudget(String(stored.budget));
+              if (stored.skill_level) setSkillLevel(stored.skill_level);
+              if (stored.projectId) setDraftId(stored.projectId);
+            }
+          } catch (e) {
+            console.log('[draft] rehydrate error', e);
+          }
+        })();
+        // IMPORTANT: clear param so revisits don't re-run
         navigation.setParams({ savedScan: undefined } as any);
       }
       return () => {};
