@@ -20,9 +20,8 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Image Upload**: Supports server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking.
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
-- **Project Details Display**: Shows real-time project info with hero image and dynamic header. Utilizes card-based UI for detailed information (Overview, Materials, Cuts, Tools, Steps, Time & Cost) with data caching, AI preview generation, and detailed sheets with interactive elements (checkboxes, copy to clipboard, save to photos).
-- **Build Mode**: A sticky "Start Build Mode" bar initiates a full-screen step-by-step navigation modal.
-- **Plan Viewing**: `ProjectDetails` provides an at-a-glance card grid, while `DetailedInstructionsScreen` offers a deep, linear guide using DocAtoms components.
+- **Project Details Display**: Shows real-time project info with hero image, dynamic header, and a clean 6-card summary grid (Overview, Steps, Materials, Tools, Cuts, Time & Cost) using the `PlanSummaryCards` component. All cards navigate to `DetailedInstructionsScreen` for detailed viewing. Includes data caching, AI preview generation, and save-to-photos functionality.
+- **Plan Viewing**: `ProjectDetails` provides an at-a-glance 6-card summary grid with purple-themed cards, while `DetailedInstructionsScreen` offers a deep, linear guide using DocAtoms components with interactive elements (checkboxes, copy-to-clipboard, save-to-photos).
 - **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans.
 - **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality.
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
