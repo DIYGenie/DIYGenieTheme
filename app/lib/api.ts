@@ -310,3 +310,47 @@ export async function fetchMyProjects(): Promise<any[]> {
   );
   return items;
 }
+
+/**
+ * Create a project and ALWAYS return a project ID, regardless of server response shape.
+ * Throws with actionable error message on failure.
+ */
+export async function createProjectAndReturnId(payload: {
+  name: string;
+  description: string;
+  budget: string;
+  skill_level: string;
+}): Promise<string> {
+  const base = BASE;
+  const res = await fetch(`${base}/api/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {}
+
+  console.log('[createProject] status', res.status, 'body', body);
+
+  // Accept common response shapes
+  const id =
+    body?.id ??
+    body?.project_id ??
+    body?.project?.id ??
+    body?.data?.id ??
+    body?.data?.project_id;
+
+  if (!res.ok) {
+    const errorMsg = body?.error ?? body?.message ?? body?.detail ?? `HTTP ${res.status}`;
+    throw new Error(`[createProject] ${res.status} ${errorMsg}`);
+  }
+
+  if (!id) {
+    throw new Error(`[createProject] server returned ok but no id in body: ${JSON.stringify(body)}`);
+  }
+
+  return String(id);
+}
