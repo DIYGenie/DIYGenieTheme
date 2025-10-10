@@ -335,21 +335,21 @@ export async function createProjectAndReturnId(payload: {
 
   console.log('[createProject] status', res.status, 'body', body);
 
-  // Accept common response shapes
+  // Accept all common shapes
   const id =
     body?.id ??
+    body?.item?.id ??
     body?.project_id ??
     body?.project?.id ??
     body?.data?.id ??
     body?.data?.project_id;
 
-  if (!res.ok) {
-    const errorMsg = body?.error ?? body?.message ?? body?.detail ?? `HTTP ${res.status}`;
-    throw new Error(`[createProject] ${res.status} ${errorMsg}`);
+  if (!res.ok || body?.ok === false) {
+    throw new Error(`[createProject] ${res.status} ${body?.error ?? 'unknown_error'}`);
   }
 
   if (!id) {
-    throw new Error(`[createProject] server returned ok but no id in body: ${JSON.stringify(body)}`);
+    throw new Error(`[createProject] ok but no id in body: ${JSON.stringify(body)}`);
   }
 
   return String(id);
