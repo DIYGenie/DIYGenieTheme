@@ -1,15 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
-
-type Plan = {
-  overview?: string;
-  materials?: { name: string; qty?: string | number; unit?: string }[];
-  tools?: string[];
-  cuts?: { part: string; size: string; qty?: number }[];
-  steps?: { title?: string; body?: string }[];
-  time_estimate_hours?: number;
-  cost_estimate_usd?: number;
-};
+import { Plan } from '../lib/plan';
 
 const pill = (active: boolean) => ({
   paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16,

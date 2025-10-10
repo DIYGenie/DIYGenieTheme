@@ -3,7 +3,8 @@ import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
-import { fetchProjectById } from '../lib/api';
+import { fetchProjectById, fetchProjectPlanMarkdown } from '../lib/api';
+import { parsePlanMarkdown } from '../lib/plan';
 
 type R = RouteProp<Record<'DetailedInstructions', { id: string }>, 'DetailedInstructions'>;
 
@@ -23,7 +24,23 @@ export default function DetailedInstructions() {
 
   React.useEffect(() => {
     (async () => {
-      try { setProject(await fetchProjectById(params.id)); } catch {}
+      try { 
+        const p = await fetchProjectById(params.id);
+        setProject(p);
+        
+        if (!p?.plan) {
+          try {
+            const md = await fetchProjectPlanMarkdown(params.id);
+            if (md) {
+              setProject((prev: any) => ({ ...(prev || {}), plan: parsePlanMarkdown(md) }));
+            }
+          } catch (e) {
+            console.log('[detailed instructions fetch error]', e);
+          }
+        }
+      } catch (e) {
+        console.log('[project fetch error]', e);
+      }
     })();
   }, [params.id]);
 

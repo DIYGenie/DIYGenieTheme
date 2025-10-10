@@ -14,6 +14,7 @@ import StatusBadge from '../components/StatusBadge';
 import { useInterval } from '../hooks/useInterval';
 import { ROOT_TABS_ID, PROJECTS_TAB, PROJECTS_LIST_SCREEN, PLAN_SCREEN } from '../navigation/routeNames';
 import PlanTabs from '../components/PlanTabs';
+import { parsePlanMarkdown, Plan } from '../lib/plan';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -28,6 +29,7 @@ export default function ProjectDetails() {
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   const [planMd, setPlanMd] = useState<string | null>(null);
+  const [planObj, setPlanObj] = useState<Plan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [autoPolled, setAutoPolled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,18 +81,20 @@ export default function ProjectDetails() {
           }, 5000); // 5s cadence
         }
         
-        if (p?.status === 'ready') {
+        const ready = /ready/.test(String(p?.plan_status || p?.status || '').toLowerCase()) && !/requested|building|queued|pending/.test(String(p?.plan_status || p?.status || '').toLowerCase());
+        if (ready && !planMd) {
           setPlanLoading(true);
           try {
             const md = await fetchProjectPlanMarkdown(projectId, { signal: controller.signal, timeoutMs: 10000 });
-            if (!controller.signal.aborted) setPlanMd(md);
+            if (md && !controller.signal.aborted) {
+              setPlanMd(md);
+              setPlanObj(parsePlanMarkdown(md));
+            }
           } catch (e) {
             if ((e as any)?.name !== 'AbortError') console.log('[plan fetch error]', String(e));
           } finally {
             if (!controller.signal.aborted) setPlanLoading(false);
           }
-        } else {
-          setPlanMd(null);
         }
       }
     } catch (e: any) {
@@ -242,14 +246,14 @@ export default function ProjectDetails() {
         </View>
       )}
 
-      {!project?.plan ? (
+      {!planObj ? (
         <View style={{ backgroundColor: '#F6F7FF', borderRadius: 16, padding: 14, marginTop: 16 }}>
           <Text style={{ fontWeight: '700', marginBottom: 8 }}>Plan</Text>
           <Text>Your plan is building. This screen will update automatically; you can also pull to refresh.</Text>
         </View>
       ) : (
         <>
-          <PlanTabs plan={project.plan} />
+          <PlanTabs plan={planObj} />
 
           <Pressable
             onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}

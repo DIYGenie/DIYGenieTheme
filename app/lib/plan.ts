@@ -1,3 +1,92 @@
+export type Plan = {
+  overview?: string;
+  materials?: { name: string; qty?: string; unit?: string }[];
+  tools?: string[];
+  cuts?: { part: string; size: string; qty?: number }[];
+  steps?: { title?: string; body?: string }[];
+  time_estimate_hours?: number;
+  cost_estimate_usd?: number;
+};
+
+function getSection(md: string, title: string): string {
+  const re = new RegExp(`^#{1,3}\\s*${title}\\s*$([\\s\\S]*?)(?=^#{1,3}\\s*\\w|\\Z)`, 'gim');
+  const m = re.exec(md);
+  return m ? m[1].trim() : '';
+}
+
+function bulletsToArray(block: string): string[] {
+  return block
+    .split('\n')
+    .map((l) => l.trim().replace(/^[-*]\s+/, ''))
+    .filter((l) => !!l);
+}
+
+export function parsePlanMarkdown(md: string): Plan {
+  const plan: Plan = {};
+
+  const overviewBlock = getSection(md, 'Overview') || md.split('\n\n')[0] || '';
+  plan.overview = overviewBlock.replace(/^#+\s.*$/gm, '').trim();
+
+  const matsBlock = getSection(md, 'Materials');
+  if (matsBlock) {
+    const list = bulletsToArray(matsBlock).map((line) => {
+      const m = line.match(/^(.+?)[—-]\s*(.+)$/) || line.match(/^(.+?)\s{2,}(.+)$/);
+      if (m) return { name: m[1].trim(), qty: m[2].trim() };
+      return { name: line.trim() };
+    });
+    plan.materials = list;
+  }
+
+  const toolsBlock = getSection(md, 'Tools');
+  if (toolsBlock) {
+    plan.tools = bulletsToArray(toolsBlock);
+  }
+
+  const cutsBlock = getSection(md, 'Cut List') || getSection(md, 'Cuts');
+  if (cutsBlock) {
+    plan.cuts = bulletsToArray(cutsBlock).map((line) => {
+      const qtyMatch = line.match(/×\s*(\d+)/) || line.match(/\(x\s*(\d+)\)/i);
+      const qty = qtyMatch ? Number(qtyMatch[1]) : undefined;
+      const partMatch = line.split(':');
+      if (partMatch.length > 1) {
+        return { part: partMatch[0].trim(), size: partMatch.slice(1).join(':').replace(/×\s*\d+|\(x\s*\d+\)/gi, '').trim(), qty };
+      }
+      return { part: 'Cut', size: line.replace(/×\s*\d+|\(x\s*\d+\)/gi, '').trim(), qty };
+    });
+  }
+
+  const stepsBlock = getSection(md, 'Steps') || getSection(md, 'Instructions');
+  if (stepsBlock) {
+    const lines = stepsBlock.split('\n').filter(Boolean);
+    const steps: { title?: string; body?: string }[] = [];
+    let cur: { title?: string; body?: string } | null = null;
+    for (const ln of lines) {
+      const n = ln.match(/^(\d+)\.\s*(.+)$/);
+      if (n) {
+        if (cur) steps.push(cur);
+        cur = { title: n[2].trim() };
+      } else if (/^[-*]\s+/.test(ln)) {
+        if (cur) { steps.push(cur); cur = null; }
+        steps.push({ title: ln.replace(/^[-*]\s+/, '').trim() });
+      } else if (cur) {
+        cur.body = ((cur.body || '') + '\n' + ln).trim();
+      }
+    }
+    if (cur) steps.push(cur);
+    plan.steps = steps.length ? steps : undefined;
+  }
+
+  const tcBlock = getSection(md, 'Time & Cost') || getSection(md, 'Estimates');
+  if (tcBlock) {
+    const time = tcBlock.match(/(\d+(\.\d+)?)\s*(hours|hrs|h)/i);
+    const cost = tcBlock.match(/\$?\s*(\d+(\.\d+)?)/);
+    if (time) plan.time_estimate_hours = Number(time[1]);
+    if (cost) plan.cost_estimate_usd = Number(cost[1]);
+  }
+
+  return plan;
+}
+
 const PRICE_BOOK: Record<string, number> = {
   '2x4 lumber': 4.0,
   '2x6 lumber': 6.5,
