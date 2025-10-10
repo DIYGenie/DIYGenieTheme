@@ -1,39 +1,35 @@
-import { supabase } from './supabase';
+// app/lib/scanEvents.ts
+import { supabase } from '../lib/supabase';
+
+export type Roi = { x: number; y: number; w: number; h: number };
 
 export async function saveArScan(opts: {
   projectId: string;
-  imageUrl?: string;
-  roi?: { x: number; y: number; w: number; h: number };
+  roi?: Roi | null;
 }): Promise<{ scanId: string; imageUrl?: string; source: 'ar' }> {
-  if (!opts.projectId) throw new Error('PROJECT_ID_REQUIRED');
-  
-  const { projectId, imageUrl, roi } = opts;
-  
+  const { projectId, roi } = opts;
+  if (!projectId) throw new Error('PROJECT_ID_REQUIRED');
+
   console.log('[scan] saveArScan start', { projectId, roi, source: 'ar' });
 
   const { data, error } = await supabase
     .from('room_scans')
-    .insert([
-      {
-        project_id: projectId,
-        source: 'ar',
-        roi: roi || null,
-        image_url: imageUrl || null,
-      }
-    ])
-    .select('id, project_id, source, image_url, roi, created_at')
+    .insert([{
+      project_id: projectId,
+      source: 'ar',
+      roi: roi ?? null,     // JSONB column
+      image_url: null       // no image from AR
+      // user_id is DB default (auth.uid())
+    }])
+    .select('id, image_url')
     .single();
 
   if (error) {
-    console.log('[scan] save failed', error.message || error);
+    console.log('[scan] save failed', error.message);
     throw error;
   }
-  
-  return { 
-    scanId: data.id, 
-    imageUrl: data.image_url ?? undefined, 
-    source: 'ar' as const 
-  };
+
+  return { scanId: data.id, imageUrl: data.image_url, source: 'ar' };
 }
 
 export async function requestPreviewIfEligible(projectId: string): Promise<void> {
