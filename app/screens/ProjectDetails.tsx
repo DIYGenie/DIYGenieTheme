@@ -277,9 +277,10 @@ export default function ProjectDetails() {
             <>
               {/* Overview */}
               <SectionCard
-                icon={<Ionicons name="information-circle" size={26} color="#6D28D9" />}
+                icon={<Ionicons name="information-circle-outline" size={22} color="#6D28D9" />}
                 title="Overview"
                 summary="What you'll build"
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' })}
               >
                 <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
                   {planObj.overview || 'No overview yet.'}
@@ -304,10 +305,12 @@ export default function ProjectDetails() {
 
               {/* Steps */}
               <SectionCard
-                icon={<Ionicons name="list" size={26} color="#6D28D9" />}
+                icon={<Feather name="list" size={22} color="#6D28D9" />}
                 title="Steps"
                 countBadge={planObj.steps?.length || 0}
-                summary={`${planObj.steps?.length || 0} steps to complete`}
+                summary={`${planObj.steps?.length || 0} steps`}
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' })}
+                defaultOpen
               >
                 {planObj.steps?.length ? (
                   <>
@@ -346,7 +349,7 @@ export default function ProjectDetails() {
                           const text = planObj.steps.map((s: any, i: number) => 
                             `${i + 1}. ${typeof s === 'string' ? s : s.title}`
                           ).join('\n');
-                          copyToClipboard(text, 'Steps');
+                          copyText(text);
                         }}
                         style={{ flex: 1, backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
                       >
@@ -361,10 +364,11 @@ export default function ProjectDetails() {
 
               {/* Materials */}
               <SectionCard
-                icon={<Ionicons name="cube" size={26} color="#6D28D9" />}
+                icon={<MaterialCommunityIcons name="cube-outline" size={22} color="#6D28D9" />}
                 title="Materials"
                 countBadge={planObj.materials?.length || 0}
-                summary={`${planObj.materials?.length || 0} items needed`}
+                summary={`${planObj.materials?.length || 0} items`}
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'materials' })}
               >
                 {planObj.materials?.length ? (
                   <>
@@ -384,7 +388,7 @@ export default function ProjectDetails() {
                         const text = planObj.materials.map((m: any) => 
                           `• ${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}`
                         ).join('\n');
-                        copyToClipboard(text, 'Materials');
+                        copyText(text);
                       }}
                       style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
                     >
@@ -398,10 +402,11 @@ export default function ProjectDetails() {
 
               {/* Tools */}
               <SectionCard
-                icon={<Ionicons name="hammer" size={26} color="#6D28D9" />}
+                icon={<MaterialCommunityIcons name="hammer-wrench" size={22} color="#6D28D9" />}
                 title="Tools"
                 countBadge={planObj.tools?.length || 0}
-                summary={`${planObj.tools?.length || 0} tools required`}
+                summary={`${planObj.tools?.length || 0} tools`}
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'tools' })}
               >
                 {planObj.tools?.length ? (
                   <>
@@ -426,10 +431,11 @@ export default function ProjectDetails() {
 
               {/* Cuts */}
               <SectionCard
-                icon={<Ionicons name="cut" size={26} color="#6D28D9" />}
+                icon={<MaterialCommunityIcons name="content-cut" size={22} color="#6D28D9" />}
                 title="Cuts"
                 countBadge={planObj.cuts?.length || 0}
-                summary={`${planObj.cuts?.length || 0} pieces to cut`}
+                summary={`${planObj.cuts?.length || 0} cuts`}
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' })}
               >
                 {planObj.cuts?.length ? (
                   <View>
@@ -455,9 +461,9 @@ export default function ProjectDetails() {
 
               {/* Time & Cost */}
               <SectionCard
-                icon={<Ionicons name="time" size={26} color="#6D28D9" />}
+                icon={<Ionicons name="time-outline" size={22} color="#6D28D9" />}
                 title="Time & Cost"
-                summary="Estimates"
+                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'time' })}
               >
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ 
