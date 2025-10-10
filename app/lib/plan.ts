@@ -91,7 +91,36 @@ export function parsePlanMarkdown(md: string): Plan {
       const n = ln.match(/^(\d+)\.\s*(.+)$/);
       if (n) {
         if (cur) steps.push(cur);
-        cur = { title: n[2].trim() };
+        const fullText = n[2].trim();
+        
+        // Extract short title from markdown (e.g., "**Apply finish** - rest of text" -> "Apply finish")
+        let title = fullText;
+        let body = '';
+        
+        // Try to extract bold text as title
+        const boldMatch = fullText.match(/^\*\*(.+?)\*\*\s*[-—]\s*(.+)$/);
+        if (boldMatch) {
+          title = boldMatch[1].trim();
+          body = boldMatch[2].trim();
+        } else {
+          // Try to split on first dash/em-dash
+          const dashMatch = fullText.match(/^(.+?)\s*[-—]\s*(.+)$/);
+          if (dashMatch) {
+            title = dashMatch[1].replace(/\*\*/g, '').trim();
+            body = dashMatch[2].trim();
+          } else {
+            // Use first sentence as title if no dash
+            const sentenceMatch = fullText.match(/^([^.!?]+[.!?])\s*(.*)$/);
+            if (sentenceMatch && sentenceMatch[1].length < 80) {
+              title = sentenceMatch[1].replace(/\*\*/g, '').trim();
+              body = sentenceMatch[2].trim();
+            } else {
+              title = fullText.replace(/\*\*/g, '').trim();
+            }
+          }
+        }
+        
+        cur = { title, body: body || undefined };
       } else if (/^[-*]\s+/.test(ln)) {
         if (cur) { steps.push(cur); cur = null; }
         steps.push({ title: ln.replace(/^[-*]\s+/, '').trim() });

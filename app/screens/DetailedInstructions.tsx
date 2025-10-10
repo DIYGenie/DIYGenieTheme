@@ -381,6 +381,15 @@ export default function DetailedInstructions() {
                     </View>
                   )}
 
+                  {/* Main instruction body */}
+                  {step.body && (
+                    <View style={{ marginBottom: 16 }}>
+                      <Text style={{ fontSize: 16, color: '#111827', lineHeight: 24, fontWeight: '500' }}>
+                        {step.body}
+                      </Text>
+                    </View>
+                  )}
+
                   {/* Instructions */}
                   {step.instructions && step.instructions.length > 0 && (
                     <View style={{ marginBottom: 12 }}>
