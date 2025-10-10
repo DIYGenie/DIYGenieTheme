@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import AccordionCard from '../components/ui/AccordionCard';
 import { countLabel, stepsTimeCost } from '../lib/planLabels';
+import Toast from '../components/Toast';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -21,6 +22,8 @@ export default function ProjectDetails() {
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   const [planObj, setPlanObj] = useState<Plan | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -77,6 +80,21 @@ export default function ProjectDetails() {
       }
     }
   }, [projectId]);
+
+  const onGeneratePreview = async () => {
+    if (!projectId) return;
+    setPreviewLoading(true);
+    const r = await requestProjectPreview(projectId);
+    setPreviewLoading(false);
+    if (r.ok) {
+      setToast({ visible: true, message: 'Preview requested. This may take a moment.', type: 'success' });
+      // Refresh project to reflect "preview requested/plan requested" state
+      load();
+    } else {
+      setToast({ visible: true, message: 'Could not request preview. Try again.', type: 'error' });
+      console.log('[preview error]', r.status, r.body);
+    }
+  };
 
   const isPlanReady = !!planObj;
   
@@ -164,6 +182,27 @@ export default function ProjectDetails() {
                   : 'Plan is ready — loading details…'}
             </Text>
           </View>
+
+          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready */}
+          {!!projectId && !statusReady && !isBuilding && (
+            <View style={{ marginBottom: 16 }}>
+              <Pressable
+                onPress={onGeneratePreview}
+                disabled={previewLoading}
+                style={{
+                  backgroundColor: '#7C3AED',
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  opacity: previewLoading ? 0.7 : 1,
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: '700' }}>
+                  {previewLoading ? 'Requesting…' : 'Generate AI Preview'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* Accordion cards (only if plan is ready) */}
           {planObj && (
@@ -279,6 +318,12 @@ export default function ProjectDetails() {
           )}
         </>
       )}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
     </ScrollView>
   );
 }
