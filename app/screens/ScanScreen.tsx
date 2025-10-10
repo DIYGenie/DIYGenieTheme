@@ -20,22 +20,31 @@ export default function ScanScreen() {
 
     setSaving(true);
     try {
+      console.log('[scan] saveArScan start', { projectId, source: 'ar', roi: norm });
+      
       const { scanId } = await saveArScan({
         projectId,
         roi: norm,
       });
       
-      console.log('[ar scan] saved', { scanId, projectId, roi: norm });
+      console.log('[scan] saved', { scanId });
       
       await requestPreviewIfEligible(projectId);
       
-      navigation.goBack();
+      const result = { 
+        scanId, 
+        imageUrl: undefined, 
+        source: 'ar' as const 
+      };
       
-      setTimeout(() => {
-        Alert.alert('Success', 'Scan saved');
-      }, 300);
+      Alert.alert('Success', 'Scan saved');
+      
+      (navigation as any).navigate('Main', {
+        screen: 'NewProject',
+        params: { savedScan: result },
+      });
     } catch (e: any) {
-      console.log('[ar scan] save failed', String(e?.message || e));
+      console.log('[scan] save failed', String(e?.message || e));
       Alert.alert('Could not save scan', 'Please try again.');
     } finally {
       setSaving(false);

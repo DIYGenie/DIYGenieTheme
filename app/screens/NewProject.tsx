@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, InteractionManager, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
-import { useNavigation, useRoute, CompositeNavigationProp } from '@react-navigation/native';
+import { useNavigation, useRoute, CompositeNavigationProp, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,7 +59,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
+  const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl?: string; source?: 'ar' | 'upload' } | null>(null);
   const [roiOpen, setRoiOpen] = useState(false);
   const [lastRegionId, setLastRegionId] = useState<string | null>(null);
   const [measureOpen, setMeasureOpen] = useState(false);
@@ -70,7 +70,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const scrollRef = React.useRef<ScrollView>(null);
   const descRef = React.useRef<TextInput>(null);
   const ctaRef = React.useRef<View>(null);
-  const lastScanRef = useRef<{ scanId: string; imageUrl: string | null } | null>(null);
+  const lastScanRef = useRef<{ scanId: string; imageUrl?: string; source?: 'ar' | 'upload' } | null>(null);
   
   type MissingKey = 'title' | 'description' | 'budget' | 'skill' | null;
   const [missing, setMissing] = useState<MissingKey>(null);
@@ -249,6 +249,21 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       navigation.setParams({ photoUri: undefined, fromScan: undefined } as any);
     }
   }, [route.params?.photoUri, route.params?.fromScan]);
+
+  // Handle savedScan param from scan screen
+  useFocusEffect(
+    React.useCallback(() => {
+      const paramScan = route.params?.savedScan;
+      if (paramScan) {
+        console.log('[newProject] param savedScan detected', paramScan);
+        setLastScan(paramScan);
+        lastScanRef.current = paramScan;
+        setLastScanEphemeral(paramScan);
+        // Clear it so revisits don't re-run
+        navigation.setParams({ savedScan: undefined } as any);
+      }
+    }, [route.params?.savedScan, navigation])
+  );
 
   // Handle section deep-link parameter
   const section = route.params?.section as 'desc' | 'media' | 'preview' | 'plan' | undefined;
@@ -889,18 +904,31 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             alignItems: 'center',
             gap: 12,
           }}>
-            <Image 
-              source={{ uri: lastScan.imageUrl }} 
-              style={{
+            {lastScan.imageUrl ? (
+              <Image 
+                source={{ uri: lastScan.imageUrl }} 
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 8,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={{
                 width: 60,
                 height: 60,
                 borderRadius: 8,
-              }}
-              resizeMode="cover"
-            />
+                backgroundColor: '#E5E7EB',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Ionicons name="cube-outline" size={28} color="#9CA3AF" />
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
-                Saved scan
+                Saved scan {lastScan.source === 'ar' ? '(AR)' : ''}
               </Text>
               <Text style={{ fontSize: 12, color: '#6B7280' }}>
                 {lastScan.scanId.slice(0, 8)}…
