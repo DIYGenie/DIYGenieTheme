@@ -365,35 +365,46 @@ export async function createProjectAndReturnId(payload: {
   budget: string;
   skill_level: string;
 }): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  const user_id = data?.session?.user?.id;
+  
+  if (!user_id) {
+    throw new Error('AUTH_REQUIRED');
+  }
+
+  const body = { ...payload, user_id };
+  
+  console.log('[project create] payload', body);
+  
   const base = BASE;
   const res = await fetch(`${base}/api/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 
-  let body: any = null;
+  let responseBody: any = null;
   try {
-    body = await res.json();
+    responseBody = await res.json();
   } catch {}
 
-  console.log('[createProject] status', res.status, 'body', body);
+  console.log('[createProject] status', res.status, 'body', responseBody);
 
   // Accept all common shapes
   const id =
-    body?.id ??
-    body?.item?.id ??
-    body?.project_id ??
-    body?.project?.id ??
-    body?.data?.id ??
-    body?.data?.project_id;
+    responseBody?.id ??
+    responseBody?.item?.id ??
+    responseBody?.project_id ??
+    responseBody?.project?.id ??
+    responseBody?.data?.id ??
+    responseBody?.data?.project_id;
 
-  if (!res.ok || body?.ok === false) {
-    throw new Error(`[createProject] ${res.status} ${body?.error ?? 'unknown_error'}`);
+  if (!res.ok || responseBody?.ok === false) {
+    throw new Error(`[createProject] ${res.status} ${responseBody?.error ?? 'unknown_error'}`);
   }
 
   if (!id) {
-    throw new Error(`[createProject] ok but no id in body: ${JSON.stringify(body)}`);
+    throw new Error(`[createProject] ok but no id in body: ${JSON.stringify(responseBody)}`);
   }
 
   return String(id);
