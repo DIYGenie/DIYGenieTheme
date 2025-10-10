@@ -7,20 +7,22 @@ import { fetchProjectById, fetchProjectPlanMarkdown } from '../lib/api';
 import { parsePlanMarkdown } from '../lib/plan';
 import { Section, Bullets, Paragraph, DimText, Subtle, Step } from '../components/ui/DocAtoms';
 
-type R = RouteProp<Record<'DetailedInstructions', { id: string; initialTab?: string }>, 'DetailedInstructions'>;
+type SectionType = 'overview' | 'steps' | 'materials' | 'tools' | 'cuts' | 'time';
+type R = RouteProp<Record<'DetailedInstructions', { id: string; section?: SectionType; initialTab?: string }>, 'DetailedInstructions'>;
 
 export default function DetailedInstructions() {
   const { params } = useRoute<R>();
   const [project, setProject] = React.useState<any>(null);
   const [saving, setSaving] = React.useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const refs = {
-    cover: useRef<View>(null),
+    overview: useRef<View>(null),
     materials: useRef<View>(null),
     cuts: useRef<View>(null),
     tools: useRef<View>(null),
     steps: useRef<View>(null),
-    summary: useRef<View>(null),
+    time: useRef<View>(null),
   };
 
   React.useEffect(() => {
@@ -45,6 +47,24 @@ export default function DetailedInstructions() {
     })();
   }, [params.id]);
 
+  // Scroll to section when specified
+  React.useEffect(() => {
+    if (params.section && project) {
+      setTimeout(() => {
+        const targetRef = refs[params.section as SectionType];
+        if (targetRef?.current) {
+          targetRef.current.measureLayout(
+            scrollViewRef.current as any,
+            (x, y) => {
+              scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+            },
+            () => {}
+          );
+        }
+      }, 300);
+    }
+  }, [params.section, project]);
+
   const plan = project?.plan ?? {};
 
   async function saveSection(ref: React.RefObject<View>, name: string) {
@@ -64,12 +84,12 @@ export default function DetailedInstructions() {
 
   async function saveAll() {
     const order: [React.RefObject<View>, string][] = [
-      [refs.cover, 'Cover'],
+      [refs.overview, 'Overview'],
       [refs.materials, 'Materials'],
       [refs.cuts, 'Cut list'],
       [refs.tools, 'Tools'],
       [refs.steps, 'Steps'],
-      [refs.summary, 'Summary'],
+      [refs.time, 'Time & Cost'],
     ];
     for (const [r, n] of order) {
       await saveSection(r, n);
@@ -77,74 +97,87 @@ export default function DetailedInstructions() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-      {/* Title block */}
-      <Section title={project?.name || 'Project'}>
-        <Paragraph>Detailed, step-by-step instructions.</Paragraph>
-      </Section>
+    <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      {/* Title block / Overview */}
+      <View ref={refs.overview}>
+        <Section title={project?.name || 'Project'}>
+          <Paragraph>Detailed, step-by-step instructions.</Paragraph>
+          {plan.overview && <Paragraph>{plan.overview}</Paragraph>}
+        </Section>
+      </View>
 
-      <Section title="Materials">
-        {plan.materials?.length ? (
-          <Bullets items={plan.materials.map((m: any) => 
-            `${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}${m.note ? ` • ${m.note}` : ''}`
-          )} />
-        ) : (
-          <DimText>No materials listed.</DimText>
-        )}
-      </Section>
+      <View ref={refs.materials}>
+        <Section title="Materials">
+          {plan.materials?.length ? (
+            <Bullets items={plan.materials.map((m: any) => 
+              `${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}${m.note ? ` • ${m.note}` : ''}`
+            )} />
+          ) : (
+            <DimText>No materials listed.</DimText>
+          )}
+        </Section>
+      </View>
 
-      <Section title="Cut list">
-        {plan.cuts?.length ? (
-          <Bullets items={plan.cuts.map((c: any) => 
-            `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×${c.qty ?? 1}`
-          )} />
-        ) : (
-          <DimText>No cut list.</DimText>
-        )}
-      </Section>
+      <View ref={refs.cuts}>
+        <Section title="Cut list">
+          {plan.cuts?.length ? (
+            <Bullets items={plan.cuts.map((c: any) => 
+              `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×${c.qty ?? 1}`
+            )} />
+          ) : (
+            <DimText>No cut list.</DimText>
+          )}
+        </Section>
+      </View>
 
-      <Section title="Tools">
-        <DimText style={{ marginBottom: 8 }}>Wear eye & hearing protection.</DimText>
-        {plan.tools?.length ? <Bullets items={plan.tools} /> : <DimText>No tools listed.</DimText>}
-      </Section>
+      <View ref={refs.tools}>
+        <Section title="Tools">
+          <DimText style={{ marginBottom: 8 }}>Wear eye & hearing protection.</DimText>
+          {plan.tools?.length ? <Bullets items={plan.tools} /> : <DimText>No tools listed.</DimText>}
+        </Section>
+      </View>
 
-      <Section title="Step-by-step">
-        {plan.steps?.length ? (
-          plan.steps.map((s: any, i: number) => (
-            <Step key={i} n={i + 1} title={s.title}>
-              {s.purpose && (
-                <Paragraph>
-                  <Text style={{ fontWeight: '700' }}>Why:</Text> {s.purpose}
-                </Paragraph>
-              )}
-              {s.inputs?.length ? <Bullets items={s.inputs} /> : null}
-              {s.instructions?.map((line: string, idx: number) => (
-                <Paragraph key={idx}>{line}</Paragraph>
-              ))}
-              {s.body && <Paragraph>{s.body}</Paragraph>}
-              {s.checks?.length && (
-                <>
-                  <Subtle>Before you move on, check:</Subtle>
-                  <Bullets items={s.checks} />
-                </>
-              )}
-              {s.pitfalls?.length && (
-                <>
-                  <Subtle>Common mistakes:</Subtle>
-                  <Bullets items={s.pitfalls} />
-                </>
-              )}
-            </Step>
-          ))
-        ) : (
-          <DimText>No steps yet.</DimText>
-        )}
-      </Section>
+      <View ref={refs.steps}>
+        <Section title="Step-by-step">
+          {plan.steps?.length ? (
+            plan.steps.map((s: any, i: number) => (
+              <Step key={i} n={i + 1} title={s.title}>
+                {s.purpose && (
+                  <Paragraph>
+                    <Text style={{ fontWeight: '700' }}>Why:</Text> {s.purpose}
+                  </Paragraph>
+                )}
+                {s.inputs?.length ? <Bullets items={s.inputs} /> : null}
+                {s.instructions?.map((line: string, idx: number) => (
+                  <Paragraph key={idx}>{line}</Paragraph>
+                ))}
+                {s.body && <Paragraph>{s.body}</Paragraph>}
+                {s.checks?.length && (
+                  <>
+                    <Subtle>Before you move on, check:</Subtle>
+                    <Bullets items={s.checks} />
+                  </>
+                )}
+                {s.pitfalls?.length && (
+                  <>
+                    <Subtle>Common mistakes:</Subtle>
+                    <Bullets items={s.pitfalls} />
+                  </>
+                )}
+              </Step>
+            ))
+          ) : (
+            <DimText>No steps yet.</DimText>
+          )}
+        </Section>
+      </View>
 
-      <Section title="Time & Cost">
-        <Paragraph>Estimated time: {plan.time_estimate_hours ?? '—'} hrs</Paragraph>
-        <Paragraph>Estimated cost: {plan.cost_estimate_usd ? `$${plan.cost_estimate_usd}` : '—'}</Paragraph>
-      </Section>
+      <View ref={refs.time}>
+        <Section title="Time & Cost">
+          <Paragraph>Estimated time: {plan.time_estimate_hours ?? '—'} hrs</Paragraph>
+          <Paragraph>Estimated cost: {plan.cost_estimate_usd ? `$${plan.cost_estimate_usd}` : '—'}</Paragraph>
+        </Section>
+      </View>
 
       {/* Save buttons */}
       <Pressable

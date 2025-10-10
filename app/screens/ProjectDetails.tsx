@@ -182,55 +182,43 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Hero image - prefers plan.preview_url, falls back to latest scan */}
+          {/* 16:9 Preview block */}
           <View style={{ marginBottom: 16 }}>
             {previewUrl ? (
               <>
-                <View style={{ position: 'relative' }}>
+                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE' }}>
                   <Image
                     source={{ uri: previewUrl }}
-                    style={{ width: '100%', height: 240, borderRadius: 16, backgroundColor: '#EEE' }}
+                    style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                   />
-                  <View style={{ 
-                    position: 'absolute', 
-                    top: 12, 
-                    right: 12, 
-                    backgroundColor: '#7C3AED', 
-                    paddingHorizontal: 10, 
-                    paddingVertical: 4, 
-                    borderRadius: 8 
-                  }}>
-                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Preview</Text>
-                  </View>
+                  <TouchableOpacity 
+                    onPress={handleSavePreview}
+                    style={{ 
+                      position: 'absolute', 
+                      top: 12, 
+                      right: 12, 
+                      backgroundColor: 'rgba(0,0,0,0.6)', 
+                      paddingHorizontal: 12, 
+                      paddingVertical: 6, 
+                      borderRadius: 8,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Ionicons name="download-outline" size={16} color="white" />
+                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save image</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                  onPress={handleSavePreview}
-                  style={{ 
-                    marginTop: 12, 
-                    flexDirection: 'row', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    backgroundColor: '#F3F4F6',
-                    paddingVertical: 10,
-                    borderRadius: 10
-                  }}
-                >
-                  <Ionicons name="download-outline" size={18} color="#6B7280" />
-                  <Text style={{ color: '#374151', fontWeight: '600', marginLeft: 6 }}>Save to Photos</Text>
-                </TouchableOpacity>
+                <Text style={{ marginTop: 8, fontSize: 13, color: '#6B7280', textAlign: 'center' }}>
+                  Visual mockup generated from your scan
+                </Text>
               </>
-            ) : scan?.imageUrl ? (
-              <Image
-                source={{ uri: scan.imageUrl }}
-                style={{ width: '100%', height: 240, borderRadius: 16, backgroundColor: '#EEE' }}
-                resizeMode="cover"
-              />
             ) : (
               <View
                 style={{
-                  width: '100%',
-                  height: 240,
+                  aspectRatio: 16/9,
                   borderRadius: 16,
                   backgroundColor: '#F2F2F2',
                   alignItems: 'center',
@@ -279,7 +267,7 @@ export default function ProjectDetails() {
           {!!planObj && (
             <PlanSummaryCards
               plan={planObj}
-              onOpenDetails={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+              onOpenDetails={(section) => (navigation as any).navigate('DetailedInstructions', { id: projectId, section })}
             />
           )}
         </>
