@@ -24,7 +24,7 @@ import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
-import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearNewProjectDraft, type NewProjectDraft } from '../lib/draft';
+import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearNewProjectDraft, ensureProjectIdAndPersist, type NewProjectDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 import { useShake } from '../hooks/useShake';
@@ -458,19 +458,35 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     
     try {
       Keyboard.dismiss();
-      const draft = { 
-        projectId: draftId, 
-        title, 
-        name: title, 
-        budget, 
-        skill_level: skillLevel 
-      };
-      const pid = draftId ?? (await ensureProjectForDraft(draft));
-      if (!draftId) setDraftId(pid);
-      (navigation as any).navigate('Scan', { projectId: pid });
-    } catch (e) {
-      console.log('[scan nav failed]', String((e as any)?.message || e));
-      showToast('Could not start scan. Please try again.', 'error');
+      // persist current form immediately (avoid race / blank overwrite)
+      await saveNewProjectDraft({
+        projectId: draftId ?? null,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      const projectId = await ensureProjectIdAndPersist({
+        projectId: draftId ?? null,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      if (!draftId) setDraftId(projectId);
+      (navigation as any).navigate('Scan', { projectId });
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg === 'AUTH_REQUIRED') return;
+      if (msg.startsWith('VALIDATION_FAILED')) {
+        Alert.alert('Almost there', 'Please fill Title (≥3), Description (≥10), Budget and Skill level.');
+        return;
+      }
+      if (msg.startsWith('PROJECT_CREATE_FAILED') || e?.status === 422) {
+        Alert.alert('Could not create project', 'Please adjust your inputs and try again.');
+        return;
+      }
+      Alert.alert('Oops', 'Could not start scan. Try again.');
     }
   };
 
@@ -487,10 +503,37 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
     
     try {
+      // persist + ensure project
+      await saveNewProjectDraft({
+        projectId: draftId ?? null,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      const projectId = await ensureProjectIdAndPersist({
+        projectId: draftId ?? null,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+      if (!draftId) setDraftId(projectId);
+      
       const uri = Platform.OS === 'web' ? await pickPhotoWeb() : await pickPhotoNative();
       setPhotoUri(uri);
       await uploadPhotoToSupabase(uri, 'upload');
     } catch (err: any) {
+      const msg = String(err?.message || err);
+      if (msg === 'AUTH_REQUIRED') return;
+      if (msg.startsWith('VALIDATION_FAILED')) {
+        Alert.alert('Almost there', 'Please fill Title (≥3), Description (≥10), Budget and Skill level.');
+        return;
+      }
+      if (msg.startsWith('PROJECT_CREATE_FAILED') || err?.status === 422) {
+        Alert.alert('Could not create project', 'Please adjust your inputs and try again.');
+        return;
+      }
       Alert.alert('Photo picker', err?.message || 'Could not select photo');
     }
   };

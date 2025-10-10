@@ -12,7 +12,7 @@ export type NewProjectDraft = {
   projectId?: string | null;
   name?: string;
   description?: string;
-  budget?: string | null;
+  budget?: any; // can be "$$", number, etc — normalize when posting
   skill_level?: string | null;
 };
 
@@ -60,29 +60,70 @@ export async function clearNewProjectDraft(): Promise<void> {
   }
 }
 
-export async function ensureProjectForDraft(draft: DraftLike): Promise<string> {
-  if (draft.projectId) return draft.projectId;
+function normalizeBudget(b: any) {
+  // Accept "$", "$$", "$$$", numbers, strings — send as-is if truthy
+  if (b == null) return null;
+  if (typeof b === 'number') return b;
+  const s = String(b).trim();
+  return s.length ? s : null;
+}
 
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  const uid = data?.session?.user?.id;
-  if (!uid) throw new Error('AUTH_REQUIRED');
+export async function ensureProjectForDraft(draft: DraftLike | NewProjectDraft): Promise<string> {
+  // 1) reuse if present
+  if (draft?.projectId) return draft.projectId;
 
-  const body = {
-    user_id: uid,
-    name: draft?.name ?? draft?.title ?? 'Untitled project',
-    budget: draft?.budget ?? '',
-    skill_level: draft?.skill_level ?? '',
-  };
+  // 2) session required
+  const { data: sess } = await supabase.auth.getSession();
+  const userId = sess?.session?.user?.id;
+  if (!userId) throw new Error('AUTH_REQUIRED');
 
-  const res = await fetch(`${API_BASE}/api/projects`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`PROJECT_CREATE_FAILED:${res.status}`);
-  const json = await res.json();
-  const id = json?.item?.id || json?.project?.id || json?.id;
-  if (!id) throw new Error('PROJECT_ID_MISSING');
-  return String(id);
+  // 3) validate inputs (tight but user-friendly)
+  const name = (draft?.name ?? (draft as any)?.title ?? '').trim();
+  const skill = (draft?.skill_level ?? '').trim();
+  const budget = normalizeBudget(draft?.budget);
+  if (name.length < 3 || !skill || !budget) {
+    const e: any = new Error('VALIDATION_FAILED');
+    e.details = { nameLen: name.length, hasSkill: !!skill, hasBudget: !!budget };
+    throw e;
+  }
+
+  // 4) create via Webhooks with small retry (handles transient 5xx)
+  const payload = { user_id: userId, name, budget, skill_level: skill };
+  async function postOnce() {
+    const res = await fetch(`${API_BASE}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok || !json?.item?.id) {
+      const err: any = new Error(json?.error || `PROJECT_CREATE_FAILED:${res.status}`);
+      err.status = res.status;
+      err.body = json;
+      throw err;
+    }
+    return json.item.id as string;
+  }
+
+  try {
+    const id = await postOnce();
+    // persist projectId into draft storage (best effort)
+    await saveNewProjectDraft({ ...(draft || {}), projectId: id });
+    return id;
+  } catch (e: any) {
+    // single retry for transient issues only
+    if (String(e?.status || '').startsWith('5')) {
+      const id = await postOnce();
+      await saveNewProjectDraft({ ...(draft || {}), projectId: id });
+      return id;
+    }
+    throw e;
+  }
+}
+
+export async function ensureProjectIdAndPersist(draft: NewProjectDraft): Promise<string> {
+  const id = await ensureProjectForDraft(draft);
+  // double-save to be safe
+  await saveNewProjectDraft({ ...(draft || {}), projectId: id });
+  return id;
 }
