@@ -14,7 +14,7 @@ import * as Linking from 'expo-linking';
 import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { api, apiRaw } from '../lib/api';
+import { api, apiRaw, requestProjectPreview } from '../lib/api';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
@@ -59,6 +59,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [busy, setBusy] = useState(false);
   const [busyBuild, setBusyBuild] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -141,6 +142,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
   }
+
+  const canSubmit = (title?.trim()?.length ?? 0) >= 3 && (description?.trim()?.length ?? 0) >= 10 && !!budget && !!skillLevel;
 
   function resetForm() {
     try {
@@ -602,6 +605,46 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
+  async function handleBuildWithPreview() {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session?.user) {
+        Alert.alert('Sign in required', 'Please sign in to build a preview.');
+        return;
+      }
+      if (!canSubmit) {
+        Alert.alert('Almost there', 'Please complete Title (≥3), Description (≥10), Budget and Skill level.');
+        return;
+      }
+      setIsPreviewing(true);
+      // 1) Ensure a project exists for this draft (creates if needed)
+      const projectId = await ensureProjectForDraft({
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+        projectId: draftId,
+      });
+      // 2) Request preview build
+      const r = await requestProjectPreview(projectId);
+      if (!r.ok) {
+        console.log('[preview request failed]', r.status, r.body);
+        Alert.alert('Preview failed', 'Could not request AI preview. Please try again.');
+        return;
+      }
+      // 3) Feedback + navigate to details so user can watch status
+      showToast('Preview requested. Check ProjectDetails for status.', 'success');
+      // Seed Projects stack and push details
+      const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
+      if (parent) {
+        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
+        return;
+      }
+      navigation.navigate('ProjectDetails' as any, { id: projectId } as any);
+    } finally {
+      setIsPreviewing(false);
+    }
+  }
 
   const handleBudgetSelect = (option: string) => {
     setBudget(option);
@@ -1045,6 +1088,30 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                     loading={busyBuild}
                     style={{ marginTop: 12 }}
                   />
+
+                  {/* Build with AI Preview CTA */}
+                  <View style={{ marginTop: 12 }}>
+                    <Pressable
+                      onPress={handleBuildWithPreview}
+                      disabled={!canSubmit || isPreviewing}
+                      style={{
+                        backgroundColor: canSubmit ? '#7C3AED' : '#C7C7C7',
+                        paddingVertical: 14,
+                        borderRadius: 14,
+                        alignItems: 'center',
+                        opacity: isPreviewing ? 0.7 : 1,
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontWeight: '700' }}>
+                        {isPreviewing ? 'Requesting…' : 'Build with AI Preview'}
+                      </Text>
+                    </Pressable>
+                    {!canSubmit && (
+                      <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 12, textAlign: 'center' }}>
+                        Fill in Title, Description, Budget, and Skill level to enable preview.
+                      </Text>
+                    )}
+                  </View>
                   
                   <TouchableOpacity
                     onPress={resetForm}
