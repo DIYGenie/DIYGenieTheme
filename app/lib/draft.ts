@@ -2,16 +2,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 
 const KEY = 'new_project_draft_v1';
+const DRAFT_KEY = 'newProjectDraft:v1';
 
 const API_BASE =
   process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
   'https://diy-genie-webhooks-tyekowalski.replit.app';
 
 export type NewProjectDraft = {
-  title?: string;
+  projectId?: string | null;
+  name?: string;
   description?: string;
-  budget?: string;
-  skill?: string;
+  budget?: string | null;
+  skill_level?: string | null;
 };
 
 export type DraftLike = {
@@ -31,6 +33,32 @@ export async function loadDraft(): Promise<NewProjectDraft> {
 }
 
 export async function clearDraft() { try { await AsyncStorage.removeItem(KEY); } catch {} }
+
+export async function loadNewProjectDraft(): Promise<NewProjectDraft | null> {
+  try {
+    const raw = await AsyncStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveNewProjectDraft(draft: NewProjectDraft): Promise<void> {
+  try {
+    await AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft ?? {}));
+  } catch {
+    // ignore
+  }
+}
+
+export async function clearNewProjectDraft(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 export async function ensureProjectForDraft(draft: DraftLike): Promise<string> {
   if (draft.projectId) return draft.projectId;

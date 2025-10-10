@@ -24,7 +24,7 @@ import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
-import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft } from '../lib/draft';
+import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearNewProjectDraft, type NewProjectDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 import { useShake } from '../hooks/useShake';
@@ -52,6 +52,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  
+  const hydratedRef = useRef(false);
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [ents, setEnts] = useState<{ previewAllowed: boolean; remaining?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyBuild, setBusyBuild] = useState(false);
@@ -151,6 +154,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       lastScanRef.current = null;
       setLastScanEphemeral(null);
       clearDraft();
+      clearNewProjectDraft(); // also wipe persisted draft
     } catch {}
   }
 
@@ -204,14 +208,22 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return () => subscription.remove();
   }, []);
 
-  // Load draft and last scan on mount
+  // 1) Hydrate once on mount - do NOT overwrite if we already have local edits
   useEffect(() => {
+    let alive = true;
     (async () => {
-      const draft = await loadDraft();
-      if (draft.title) setTitle(draft.title);
-      if (draft.description) setDescription(draft.description);
-      if (draft.budget) setBudget(draft.budget);
-      if (draft.skill) setSkillLevel(draft.skill);
+      if (hydratedRef.current) return;
+      const stored = await loadNewProjectDraft();
+      if (!alive) return;
+      if (stored && Object.keys(stored).length > 0) {
+        // Merge: restore stored values
+        if (stored.name) setTitle(stored.name);
+        if (stored.description) setDescription(stored.description);
+        if (stored.budget) setBudget(stored.budget);
+        if (stored.skill_level) setSkillLevel(stored.skill_level);
+        if (stored.projectId) setDraftId(stored.projectId);
+      }
+      hydratedRef.current = true;
     })();
     
     // Restore last scan from ephemeral store
@@ -221,12 +233,27 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setLastScan(cached);
       lastScanRef.current = cached;
     }
+    
+    return () => { alive = false; };
   }, []);
 
-  // Save draft when fields change
+  // 2) Persist on any field change (debounced)
   useEffect(() => {
-    saveDraft({ title, description, budget, skill: skillLevel });
-  }, [title, description, budget, skillLevel]);
+    if (!hydratedRef.current) return; // avoid saving empty default before hydration
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveNewProjectDraft({
+        projectId: draftId,
+        name: title,
+        description,
+        budget,
+        skill_level: skillLevel,
+      });
+    }, 250);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [title, description, budget, skillLevel, draftId]);
 
   // Clear form when navigating away from tab
   useEffect(() => {
@@ -259,9 +286,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setLastScan(paramScan);
         lastScanRef.current = paramScan;
         setLastScanEphemeral(paramScan);
-        // Clear it so revisits don't re-run
+        // IMPORTANT: do NOT reset draft here; just keep the values user entered
         navigation.setParams({ savedScan: undefined } as any);
       }
+      return () => {};
     }, [route.params?.savedScan, navigation])
   );
 
