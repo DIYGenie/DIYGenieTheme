@@ -543,28 +543,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         console.warn('[link scan]', e);
       }
       
-      // Pre-seed local plan for instant display
-      const { saveLocalPlanMarkdown, generateLocalPlanMarkdown } = await import('../lib/localPlan');
-      const localPlan = generateLocalPlanMarkdown({
-        title: title || description,
-        description: description,
-        budget: budget,
-        skill_level: skillLevel,
-      });
-      await saveLocalPlanMarkdown(id, localPlan);
-      console.log('[build] local plan pre-seeded');
-      
       showToast('Plan requested', 'success');
-      // Navigate directly to ProjectDetails with pre-seeded plan
-      const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
-      if (parent) {
-        parent.navigate('Projects', { screen: 'ProjectsList' });
-        InteractionManager.runAfterInteractions(() => {
-          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-        });
-      } else {
-        navigation.navigate('ProjectDetails' as any, { id } as any);
-      }
+      // Navigate to PlanWaiting to poll for plan
+      goToProjectDetailsSeeded(id, { imageUrl: ls?.imageUrl ?? null });
     } finally {
       setBusyBuild(false);
     }

@@ -197,16 +197,8 @@ export async function fetchLatestScanForProject(projectId: string) {
 
 export async function fetchProjectPlanMarkdown(
   projectId: string,
-  opts?: { signal?: AbortSignal; timeoutMs?: number }
+  opts?: { tolerate409?: boolean }
 ): Promise<string | null> {
-  const { getLocalPlanMarkdown } = await import('./localPlan');
-  
-  const local = await getLocalPlanMarkdown(projectId);
-  if (local) {
-    console.log('[plan fetch] using local cached plan');
-    return local;
-  }
-
   const base =
     (global as any).__API_BASE_URL__ ??
     process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
@@ -215,27 +207,13 @@ export async function fetchProjectPlanMarkdown(
     'https://diy-genie-webhooks-tyekowalski.replit.app';
 
   const url = `${base}/api/projects/${projectId}/plan`;
-  const controller = new AbortController();
-  const signal = opts?.signal ?? controller.signal;
-  const timeout = setTimeout(() => controller.abort(), opts?.timeoutMs ?? 10000);
-  try {
-    const res = await fetch(url, { method: 'GET', signal });
-    console.log('[plan fetch] GET /api/projects/:id/plan status', res.status);
-    if (res.status === 409) {
-      const err: any = new Error(`plan fetch failed: ${res.status}`);
-      err.status = 409;
-      throw err;
-    }
-    if (!res.ok) {
-      const err: any = new Error(`plan fetch failed: ${res.status}`);
-      err.status = res.status;
-      throw err;
-    }
-    const md = await res.text();
-    return md ?? '';
-  } finally {
-    clearTimeout(timeout);
-  }
+  const res = await fetch(url);
+  console.log('[plan fetch] GET /api/projects/:id/plan status', res.status);
+  
+  if (res.ok) return await res.text();
+  if (opts?.tolerate409 && res.status === 409) return null;
+  
+  throw new Error(`plan fetch failed: ${res.status}`);
 }
 
 export async function buildPlanWithoutPreview(projectId: string): Promise<boolean> {

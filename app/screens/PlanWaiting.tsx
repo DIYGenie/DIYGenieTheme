@@ -22,36 +22,22 @@ export default function PlanWaiting() {
       tries += 1;
       console.log('[wait] poll try', tries);
 
-      try {
-        const md = await fetchProjectPlanMarkdown(id);
-        if (!cancelled && md) {
-          const parent = navigation.getParent?.();
-          parent?.navigate('Projects', { screen: 'ProjectsList' });
-          InteractionManager.runAfterInteractions(() => {
-            parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-          });
-          return;
-        }
-      } catch (e: any) {
-        if (e?.status === 409 && tries >= 10) {
-          console.log('[wait] max tries reached, generating local plan');
-          const p = await fetchProjectById(id).catch(() => ({} as any));
-          const md = generateLocalPlanMarkdown({
-            title: p?.name || p?.title,
-            description: p?.description,
-            budget: p?.budget,
-            skill_level: p?.skill_level || p?.skill,
-          });
-          await saveLocalPlanMarkdown(id, md);
-          
-          const parent = navigation.getParent?.();
-          parent?.navigate('Projects', { screen: 'ProjectsList' });
-          InteractionManager.runAfterInteractions(() => {
-            parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-          });
-          return;
-        }
-        if (e?.status !== 409) console.log('[wait] poll error', e);
+      let md = await fetchProjectPlanMarkdown(id, { tolerate409: true });
+      
+      if (!md && tries >= 10) {
+        console.log('[wait] max tries reached, generating local plan');
+        const p = await fetchProjectById(id).catch(() => ({}));
+        md = generateLocalPlanMarkdown(p);
+        await saveLocalPlanMarkdown(id, md);
+      }
+
+      if (!cancelled && md) {
+        const parent = navigation.getParent?.();
+        parent?.navigate('Projects', { screen: 'ProjectsList' });
+        InteractionManager.runAfterInteractions(() => {
+          parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+        });
+        return;
       }
 
       if (!cancelled && tries < 10) setTimeout(poll, 2000);

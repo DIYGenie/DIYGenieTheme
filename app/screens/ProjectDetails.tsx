@@ -58,7 +58,10 @@ export default function ProjectDetails() {
       tries += 1;
       try {
         console.log('[plan] poll try', tries);
-        const md = await fetchProjectPlanMarkdown(projectId);
+        const { getLocalPlanMarkdown } = await import('../lib/localPlan');
+        const local = await getLocalPlanMarkdown(projectId);
+        let md = local;
+        if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
         if (!cancelled && md) {
           setPlanMd(md);
           setPlanObj(parsePlanMarkdown(md));
@@ -118,7 +121,10 @@ export default function ProjectDetails() {
         if (ready && !planMd) {
           setPlanLoading(true);
           try {
-            const md = await fetchProjectPlanMarkdown(projectId, { signal: controller.signal, timeoutMs: 10000 });
+            const { getLocalPlanMarkdown } = await import('../lib/localPlan');
+            const local = await getLocalPlanMarkdown(projectId);
+            let md = local;
+            if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
             if (md && !controller.signal.aborted) {
               setPlanMd(md);
               setPlanObj(parsePlanMarkdown(md));
