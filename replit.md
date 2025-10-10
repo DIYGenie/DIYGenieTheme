@@ -49,13 +49,15 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - All project creation entry points (Scan room, Upload photo, Build with AI) are protected by these guards
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
 - **AR Session Scaffolding**: iOS AR preparation with ARKit permissions in app.json, lightweight AR session facade (`app/lib/ar/ArSession.ts`) with platform checks, and ScanScreen integration with Expo Go banner. Shows "AR requires iOS dev build" banner in Expo Go while maintaining ROI overlay and Save Scan functionality. No native modules added yet - safe and reversible.
-- **AR Measurement Integration**: Server-side measurement job system (currently disabled via feature flag). Features:
-  - API helpers (`requestScanMeasurement`, `pollScanMeasurement`) for triggering and polling measurement status
-  - Feature flag `MEASURE_API_ENABLED` in `app/lib/config.ts` controls network calls (currently `false`)
-  - Non-blocking measurement job triggered via `startMeasurementJob()` in `app/lib/scanEvents.ts` after scan save (when enabled)
-  - ProjectDetails overlay display that fetches latest scan, polls for measurement completion, and shows overlay image with dimensions/lines
-  - Graceful fallback to base scan image while measuring, shows "Measuring…" state during processing
-  - When disabled: Shows "coming soon" messaging in NewProject, skips measurement API network calls
+- **AR Measurement Flow (FEATURE_MEASURE)**: End-to-end measurement system that processes AR scans and displays dimensions. Features:
+  - **Feature flag**: `FEATURE_MEASURE = true` in `app/lib/config.ts` enables full measurement flow
+  - **API helpers**: `startMeasurement()` (POST with ROI), `getMeasurementStatus()` (GET), and `pollMeasurementReady()` with 60s timeout
+  - **Scan flow**: After AR scan save in ScanScreen, passes `{ scanId, source: 'ar', projectId, roi }` to NewProject
+  - **Auto-trigger**: NewProject kicks off measurement via `kickOffMeasurement()` when AR scan arrives
+  - **UI states**: Shows "Measuring…" spinner during processing, then purple badge "Measurements • 48" × 30"" when complete
+  - **Type-safe**: Extended `LastScan` type includes `measure?: { width_in, height_in, px_per_in }` and `measuring?: boolean`
+  - **Resilience**: Swallows errors gracefully, treats 409 "not_ready" as pending, logs all steps (`[measure] start`, `[measure] poll`, `[measure] done`)
+  - **Legacy flag**: `MEASURE_API_ENABLED = false` preserves old overlay-based system (disabled)
 - **AR ROI Gesture System**: Enhanced touch handling for draggable ROI overlay in ScanScreen:
   - Proper bounds measurement via `onLayout` to constrain gestures to image area
   - `pointerEvents` attributes: `box-none` on containers (touch pass-through), `auto` on interactive elements
