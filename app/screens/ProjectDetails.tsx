@@ -7,11 +7,11 @@ import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
 import { saveImageToPhotos } from '../lib/media';
-import { Ionicons } from '@expo/vector-icons';
 import { getCachedPlan, setCachedPlan } from '../lib/planCache';
 import SectionCard from '../components/SectionCard';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -175,10 +175,15 @@ export default function ProjectDetails() {
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
-  const copyToClipboard = async (text: string, label: string) => {
-    await Clipboard.setStringAsync(text);
-    setToast({ visible: true, message: `${label} copied to clipboard`, type: 'success' });
-    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 2000);
+  const copyText = async (txt: string) => {
+    if (!txt) return;
+    await Clipboard.setStringAsync(txt);
+    console.log('[copy] ok');
+  };
+
+  const fmtQty = (q?: number | string, u?: string) => {
+    if (q == null || q === '') return '';
+    return u ? `${q} ${u}` : String(q);
   };
 
   return (
@@ -236,35 +241,26 @@ export default function ProjectDetails() {
             )}
           </View>
 
-          {/* Single Gradient CTA button */}
-          {!!planObj ? (
-            <Pressable
+          {/* Top CTA */}
+          {!!planObj && (
+            <TouchableOpacity
+              activeOpacity={0.9}
               onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-              style={({ pressed }) => ({
-                marginBottom: 24,
-                borderRadius: 16,
-                overflow: 'hidden',
-                shadowColor: '#6D28D9',
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                shadowOffset: { height: 8, width: 0 },
-                elevation: 8,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
+              style={{
+                borderRadius: 16, overflow: 'hidden', marginBottom: 16,
+                shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6
+              }}
             >
-              <LinearGradient
-                colors={['#7C3AED', '#6D28D9']}
-                style={{ paddingVertical: 20, alignItems: 'center' }}
-              >
-                <Text style={{ color: 'white', fontWeight: '800', fontSize: 18, marginBottom: 4 }}>
+              <LinearGradient colors={['#7C3AED','#6D28D9']} start={{x:0,y:0}} end={{x:1,y:1}} style={{ padding: 18 }}>
+                <Text style={{ color: 'white', fontSize: 20, fontWeight: '800', marginBottom: 4 }}>
                   Open Detailed Build Plan
                 </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14 }}>
+                <Text style={{ color: 'white', opacity: 0.85 }}>
                   Document-style guide with every step and detail
                 </Text>
               </LinearGradient>
-            </Pressable>
-          ) : null}
+            </TouchableOpacity>
+          )}
 
           {/* Building status banner */}
           {isBuilding && (

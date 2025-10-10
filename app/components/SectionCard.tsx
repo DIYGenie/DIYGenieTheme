@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -10,37 +10,27 @@ type Props = {
   icon: React.ReactNode;
   title: string;
   summary?: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
   countBadge?: number;
+  defaultOpen?: boolean;
+  onHeaderPress?: () => void;
+  children: React.ReactNode;
 };
 
-export default function SectionCard({ icon, title, summary, children, defaultOpen = false, countBadge }: Props) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const rotateAnim = React.useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
-
+export default function SectionCard({
+  icon, title, summary, countBadge, defaultOpen, onHeaderPress, children,
+}: Props) {
+  const [open, setOpen] = useState(!!defaultOpen);
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const newState = !isOpen;
-    setIsOpen(newState);
-    
-    Animated.timing(rotateAnim, {
-      toValue: newState ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    setOpen(v => !v);
   };
-
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
 
   return (
     <View
       style={{
         backgroundColor: '#F8F7FF',
         borderRadius: 16,
+        padding: 16,
         marginBottom: 14,
         shadowColor: '#000',
         shadowOpacity: 0.12,
@@ -49,46 +39,30 @@ export default function SectionCard({ icon, title, summary, children, defaultOpe
         elevation: 6,
       }}
     >
-      <Pressable
-        onPress={toggle}
-        style={({ pressed }) => ({
-          padding: 18,
-          flexDirection: 'row',
-          alignItems: 'center',
-          opacity: pressed ? 0.9 : 1,
-        })}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onHeaderPress ?? toggle}
+        style={{ flexDirection: 'row', alignItems: 'center' }}
       >
-        <View style={{ marginRight: 14 }}>{icon}</View>
+        <View style={{ marginRight: 12 }}>{icon}</View>
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>{title}</Text>
-            {countBadge !== undefined && countBadge > 0 && (
-              <View
-                style={{
-                  backgroundColor: '#6D28D9',
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 10,
-                }}
-              >
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>{countBadge}</Text>
-              </View>
-            )}
-          </View>
-          {summary && !isOpen && (
-            <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>{summary}</Text>
-          )}
+          <Text style={{ fontSize: 18, fontWeight: '700' }}>{title}</Text>
+          {!!summary && <Text style={{ marginTop: 2, color: '#6B7280' }}>{summary}</Text>}
         </View>
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Ionicons name="chevron-down" size={24} color="#6D28D9" />
-        </Animated.View>
-      </Pressable>
 
-      {isOpen && (
-        <View style={{ paddingHorizontal: 18, paddingBottom: 18, paddingTop: 4 }}>
-          {children}
-        </View>
-      )}
+        {!!countBadge && (
+          <View style={{
+            backgroundColor: '#EDE9FE', paddingHorizontal: 8, paddingVertical: 4,
+            borderRadius: 10, marginRight: 8,
+          }}>
+            <Text style={{ color: '#6D28D9', fontWeight: '700' }}>{countBadge}</Text>
+          </View>
+        )}
+
+        <Ionicons name="chevron-down" size={22} color="#6D28D9" style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} />
+      </TouchableOpacity>
+
+      {open && <View style={{ marginTop: 12 }}>{children}</View>}
     </View>
   );
 }
