@@ -17,7 +17,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "DIY Genie uses the camera to scan your room."
+        "NSCameraUsageDescription": "DIY Genie uses the camera for AR room scans.",
+        "NSPhotoLibraryAddUsageDescription": "DIY Genie saves images of your scans and plans.",
+        "UIRequiredDeviceCapabilities": ["arkit"]
       }
     },
     "android": {
