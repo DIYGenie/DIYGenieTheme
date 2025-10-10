@@ -7,14 +7,12 @@ import { fetchProjectById, fetchProjectPlanMarkdown } from '../lib/api';
 import { parsePlanMarkdown } from '../lib/plan';
 import { Section, Bullets, Paragraph, DimText, Subtle, Step } from '../components/ui/DocAtoms';
 
-type SectionType = 'overview' | 'steps' | 'materials' | 'tools' | 'cuts' | 'time';
-type R = RouteProp<Record<'DetailedInstructions', { id: string; section?: SectionType; initialTab?: string }>, 'DetailedInstructions'>;
+type R = RouteProp<Record<'DetailedInstructions', { id: string }>, 'DetailedInstructions'>;
 
 export default function DetailedInstructions() {
   const { params } = useRoute<R>();
   const [project, setProject] = React.useState<any>(null);
   const [saving, setSaving] = React.useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const refs = {
     overview: useRef<View>(null),
@@ -46,24 +44,6 @@ export default function DetailedInstructions() {
       }
     })();
   }, [params.id]);
-
-  // Scroll to section when specified
-  React.useEffect(() => {
-    if (params.section && project) {
-      setTimeout(() => {
-        const targetRef = refs[params.section as SectionType];
-        if (targetRef?.current) {
-          targetRef.current.measureLayout(
-            scrollViewRef.current as any,
-            (x, y) => {
-              scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
-            },
-            () => {}
-          );
-        }
-      }, 300);
-    }
-  }, [params.section, project]);
 
   const plan = project?.plan ?? {};
 
@@ -97,7 +77,7 @@ export default function DetailedInstructions() {
   }
 
   return (
-    <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
       {/* Title block / Overview */}
       <View ref={refs.overview}>
         <Section title={project?.name || 'Project'}>

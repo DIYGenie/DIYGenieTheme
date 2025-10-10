@@ -9,7 +9,7 @@ import Toast from '../components/Toast';
 import { saveImageToPhotos } from '../lib/media';
 import { Ionicons } from '@expo/vector-icons';
 import { getCachedPlan, setCachedPlan } from '../lib/planCache';
-import PlanSummaryCards from '../components/PlanSummaryCards';
+import PlanSummaryList from '../components/PlanSummaryList';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -230,21 +230,48 @@ export default function ProjectDetails() {
             )}
           </View>
 
-          {/* Plan status card */}
-          <View style={{ marginBottom: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700', lineHeight: 24, marginBottom: 8 }}>Plan</Text>
-            <Text style={{ color: '#4B5563', fontSize: 15 }}>
-              {isBuilding 
-                ? 'Plan is building…' 
-                : planObj 
-                  ? 'Plan is ready. Browse the sections below or open the full guide.'
-                  : 'Plan is ready — loading details…'}
-            </Text>
-          </View>
+          {/* Single CTA button */}
+          {!!planObj ? (
+            <View style={{ marginBottom: 20 }}>
+              <Pressable
+                onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+                style={{
+                  backgroundColor: '#7C3AED',
+                  paddingVertical: 16,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  shadowColor: '#7C3AED',
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                  shadowOffset: { height: 4, width: 0 },
+                  elevation: 4,
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: '700', fontSize: 17, marginBottom: 4 }}>
+                  Open Detailed Build Plan
+                </Text>
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
+                  Document-style guide with every step and detail
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {/* Building status banner */}
+          {isBuilding && (
+            <View style={{ marginBottom: 16, backgroundColor: '#F3E8FF', borderRadius: 16, padding: 16 }}>
+              <Text style={{ color: '#7C3AED', fontSize: 15, textAlign: 'center' }}>
+                Plan is building…
+              </Text>
+            </View>
+          )}
+
+          {/* Expandable summary list when plan is available */}
+          {!!planObj && <PlanSummaryList plan={planObj} />}
 
           {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview */}
           {!!projectId && !statusReady && !isBuilding && !previewUrl && (
-            <View style={{ marginBottom: 16 }}>
+            <View style={{ marginTop: 16 }}>
               <Pressable
                 onPress={onGeneratePreview}
                 disabled={previewLoading}
@@ -261,14 +288,6 @@ export default function ProjectDetails() {
                 </Text>
               </Pressable>
             </View>
-          )}
-
-          {/* Summary grid when plan is available */}
-          {!!planObj && (
-            <PlanSummaryCards
-              plan={planObj}
-              onOpenDetails={(section) => (navigation as any).navigate('DetailedInstructions', { id: projectId, section })}
-            />
           )}
         </>
       )}
