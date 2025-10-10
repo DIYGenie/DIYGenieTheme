@@ -1079,17 +1079,26 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
           {(hasValidForm() || !!photoUri) && (
           <View ref={ctaRef} style={{ marginTop: 20 }}>
+            {/* Loading banner */}
+            {isBuilding && (
+              <View style={{ padding: 14, borderRadius: 12, backgroundColor: '#EFE9FF', marginBottom: 12 }}>
+                <ActivityIndicator color="#7C3AED" />
+                <Text style={{ marginTop: 8, fontWeight: '600', textAlign: 'center' }}>Building your plan…</Text>
+                <Text style={{ color: '#5B5B66', textAlign: 'center', fontSize: 13, marginTop: 4 }}>Hang tight — we'll open the project when it's ready.</Text>
+              </View>
+            )}
+            
             {(() => {
               const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
               const canGenerate = (descriptionOk || !!photoUri) && canPreview;
               
               return (
-                <>
+                <View style={{ pointerEvents: isBuilding ? 'none' : 'auto', opacity: isBuilding ? 0.6 : 1 }}>
                   <PrimaryButton
                     testID="np-generate-preview"
                     title="Generate AI Preview"
                     onPress={generatePreview}
-                    disabled={!canGenerate}
+                    disabled={!canGenerate || isBuilding}
                     loading={busy}
                   />
 
@@ -1109,7 +1118,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                     testID="np-build-without-preview"
                     title="Build Plan Without Preview"
                     onPress={onBuildWithoutPreview}
-                    disabled={busyBuild}
+                    disabled={busyBuild || isBuilding}
                     loading={busyBuild}
                     style={{ marginTop: 12 }}
                   />
@@ -1118,13 +1127,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                   <View style={{ marginTop: 12 }}>
                     <Pressable
                       onPress={handleBuildWithPreview}
-                      disabled={!canSubmit || isPreviewing}
+                      disabled={!canSubmit || isPreviewing || isBuilding}
                       style={{
                         backgroundColor: canSubmit ? '#7C3AED' : '#C7C7C7',
                         paddingVertical: 14,
                         borderRadius: 14,
                         alignItems: 'center',
-                        opacity: isPreviewing ? 0.7 : 1,
+                        opacity: isPreviewing || isBuilding ? 0.7 : 1,
                       }}
                     >
                       <Text style={{ color: 'white', fontWeight: '700' }}>
@@ -1146,7 +1155,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                       Clear Form
                     </Text>
                   </TouchableOpacity>
-                </>
+                </View>
               );
             })()}
           </View>
