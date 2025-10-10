@@ -16,7 +16,6 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { api, apiRaw } from '../lib/api';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
-import { subscribeScanPhoto } from '../lib/scanEvents';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
 import { uploadRoomScan } from '../lib/uploadRoomScan';
@@ -239,17 +238,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     return unsubscribe;
   }, [navigation, draftId]);
 
-  // Subscribe to scan photo events
-  useEffect(() => {
-    const subscription = subscribeScanPhoto(async (uri) => {
-      setPhotoUri(uri);
-      if (route.params?.fromScan) {
-        showToast('Room photo added', 'success');
-      }
-      await uploadPhotoToSupabase(uri, 'scan');
-    });
-    return () => subscription.remove();
-  }, [draftId]);
 
   // Handle photo from scan navigation params
   useEffect(() => {

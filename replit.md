@@ -29,8 +29,9 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a **
 - **Error Handling**: Comprehensive API and storage error handling.
 - **Profile & Billing**: Manages user entitlements and integrates with Stripe for subscription management.
 - **UX Enhancements**: Custom toast notifications, debounce hook, haptic feedback (`PressableScale` component), detailed loading states (skeletons), and an empty state component. Includes a pre-permission bottom sheet for camera access and a health ping system.
-- **Room Scanning**: Uses `expo-camera` for live preview, photo capture, and review. Integrates with NewProject via an event bridge. ROI region persistence saves normalized rectangle coordinates to the database using a `DraggableRect` component.
-- **New Project Photo Section**: Simple upload-only interface for V1, displaying "Scan room" and "Upload Photo" options.
+- **AR Scan Event System**: `app/lib/scanEvents.ts` provides fire-and-forget helpers: `saveArScan()` creates scan with ROI and source:'ar', `requestPreviewIfEligible()` stubs AI preview job trigger (console.log only, subscription check pending).
+- **Room Scanning**: AR scan scaffolding with placeholder ScanScreen (no camera feed yet). Platform-aware: shows alert on web, navigates to ScanScreen on mobile. Uses DraggableRect for ROI adjustment. Saves scan with source:'ar' and ROI to room_scans.meta.roi via `saveArScan()` helper. Stub preview request via `requestPreviewIfEligible()`.
+- **New Project Photo Section**: Dual photo options - "Scan room" (AR placeholder) and "Upload Photo". Scan button checks platform (web shows alert, mobile navigates to ScanScreen with projectId). Upload flow unchanged.
 - **Home Screen "How it works"**: Features a 2x2 grid of reusable `HowItWorksTile` components with micro-interactions and accessibility features, deep-linking to relevant sections.
 
 ## External Dependencies

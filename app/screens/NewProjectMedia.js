@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Pressable, Text, Image, Alert } from 'react-native';
+import { View, Pressable, Text, Image, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { ensureProjectForDraft } from '../lib/draft';
 
@@ -11,6 +12,7 @@ export default function NewProjectMedia(props) {
     onBlocked = () => {},
   } = props;
 
+  const navigation = useNavigation();
   const [savedScan, setSavedScan] = useState(null);
   console.log('[NPMedia] vFINAL (js) render', { hasSavedScan: !!savedScan });
 
@@ -31,7 +33,22 @@ export default function NewProjectMedia(props) {
   }
 
   const handleScan = guard(async () => {
-    Alert.alert('AR Scan', 'AR scan coming soon.');
+    if (Platform.OS === 'web') {
+      Alert.alert('AR camera coming soon', 'AR scan is not available on web yet.');
+      return;
+    }
+
+    try {
+      await authPreflight();
+      const projectId = await ensureProjectForDraft(draft);
+      if (!draft?.projectId) onDraftChange({ ...draft, projectId });
+
+      navigation.navigate('Scan', { projectId });
+    } catch (e) {
+      if (String(e?.message || e).includes('AUTH_REQUIRED')) return;
+      console.log('[scan nav failed]', e);
+      Alert.alert('Error', 'Could not open scan screen.');
+    }
   });
 
   const handleUpload = guard(async () => {

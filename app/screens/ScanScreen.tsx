@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableRect from '../components/DraggableRect';
-import { saveFocusRegion } from '../lib/regions';
+import { saveArScan, requestPreviewIfEligible } from '../lib/scanEvents';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
@@ -10,6 +10,37 @@ export default function ScanScreen() {
   const route = useRoute<RouteProp<Record<'Scan', Params>, 'Scan'>>();
   const projectId = route.params?.projectId;
   const [norm, setNorm] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0.2, y: 0.2, w: 0.5, h: 0.35 });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!projectId) {
+      Alert.alert('Error', 'Please create a project first.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { scanId } = await saveArScan({
+        projectId,
+        roi: norm,
+      });
+      
+      console.log('[ar scan] saved', { scanId, projectId, roi: norm });
+      
+      await requestPreviewIfEligible(projectId);
+      
+      navigation.goBack();
+      
+      setTimeout(() => {
+        Alert.alert('Success', 'Scan saved');
+      }, 300);
+    } catch (e: any) {
+      console.log('[ar scan] save failed', String(e?.message || e));
+      Alert.alert('Could not save scan', 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
@@ -19,7 +50,7 @@ export default function ScanScreen() {
       </Text>
 
       {/* Camera preview placeholder with adjustable ROI */}
-      <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center' }}>
+      <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center', flex: 1 }}>
         <DraggableRect
           initial={norm}
           onChange={(n) => {
@@ -30,20 +61,19 @@ export default function ScanScreen() {
       </View>
 
       <Pressable
-        onPress={async () => {
-          try {
-            if (!projectId) throw new Error('MISSING_PROJECT');
-            const res = await saveFocusRegion(projectId, norm);
-            console.log('[roi] saved', { projectId, ...res });
-            navigation.goBack();
-          } catch (e: any) {
-            console.log('[roi] save failed', String(e?.message || e));
-            Alert.alert('Could not save area', 'Please try again after creating a project.');
-          }
+        onPress={handleSave}
+        disabled={saving}
+        style={{ 
+          backgroundColor: saving ? '#9CA3AF' : '#7C3AED', 
+          paddingVertical: 12, 
+          borderRadius: 12, 
+          marginTop: 16, 
+          alignItems: 'center' 
         }}
-        style={{ backgroundColor: '#7C3AED', paddingVertical: 12, borderRadius: 12, marginTop: 16, alignItems: 'center' }}
       >
-        <Text style={{ color: 'white', fontWeight: '600' }}>Save area & Close</Text>
+        <Text style={{ color: 'white', fontWeight: '600' }}>
+          {saving ? 'Saving...' : 'Save scan & Close'}
+        </Text>
       </Pressable>
     </View>
   );
