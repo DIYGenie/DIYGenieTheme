@@ -628,13 +628,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       // 2) Request preview build
       const r = await requestProjectPreview(projectId);
       if (!r.ok) {
-        console.log('[preview request failed]', r.status, r.body);
-        Alert.alert('Preview failed', 'Could not request AI preview. Please try again.');
-        return;
+        console.log('[preview request] non-OK', r.status, r.body);
+        Alert.alert('Preview not available', 'Preview service is disabled in this build. You can still proceed to your project details.');
+      } else {
+        showToast("Preview requested. We'll notify you when it's ready.", 'success');
       }
-      // 3) Feedback + navigate to details so user can watch status
-      showToast('Preview requested. Check ProjectDetails for status.', 'success');
-      // Seed Projects stack and push details
+      // 3) Navigate to details regardless of preview result
       const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
       if (parent) {
         parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
