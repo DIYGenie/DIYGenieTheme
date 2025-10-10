@@ -30,6 +30,7 @@ export default function ProjectDetails() {
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [offlineAvailable, setOfflineAvailable] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -62,6 +63,7 @@ export default function ProjectDetails() {
             const cached = await getCachedPlan(projectId);
             if (cached?.plan && !controller.signal.aborted) {
               setPlanObj(cached.plan);
+              setOfflineAvailable(true);
               console.log('[details] loaded from cache');
             }
             
@@ -74,6 +76,7 @@ export default function ProjectDetails() {
               const parsed = parsePlanMarkdown(md);
               await setCachedPlan(projectId, parsed);
               setPlanObj(parsed);
+              setOfflineAvailable(true);
               console.log('[details] plan ready', {
                 sections: {
                   materials: parsed.materials?.length ?? 0,
@@ -151,6 +154,11 @@ export default function ProjectDetails() {
               </Text>
             </View>
           )}
+          {offlineAvailable && (
+            <View style={{ backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: 'white' }}>OFFLINE ✓</Text>
+            </View>
+          )}
           {isPlanReady && (
             <View style={{ paddingLeft: 4 }}>
               <StatusBadge status="ready" />
@@ -159,7 +167,7 @@ export default function ProjectDetails() {
         </View>
       ),
     });
-  }, [navigation, safeBack, project?.name, isPlanReady]);
+  }, [navigation, safeBack, project?.name, isPlanReady, offlineAvailable]);
 
   useEffect(() => {
     load();
