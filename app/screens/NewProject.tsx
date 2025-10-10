@@ -14,7 +14,7 @@ import * as Linking from 'expo-linking';
 import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { api, apiRaw, requestProjectPreview } from '../lib/api';
+import { api, apiRaw, requestProjectPreview, pollProjectReady } from '../lib/api';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
@@ -60,6 +60,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [busyBuild, setBusyBuild] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isBuilding, setIsBuilding] = useState(false);
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -555,7 +556,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   }
 
   async function onBuildWithoutPreview() {
-    if (busyBuild) return;
+    if (busyBuild || isBuilding) return;
     setBusyBuild(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -595,17 +596,32 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         console.warn('[link scan]', e);
       }
       
-      showToast('Plan requested', 'success');
-      // Navigate to PlanWaiting to poll for plan
-      goToProjectDetailsSeeded(id, { imageUrl: ls?.imageUrl ?? null });
+      setBusyBuild(false);
+      setIsBuilding(true);
+      
+      // Poll for ready status
+      const pollRes = await pollProjectReady(id, { tries: 40, interval: 2000 });
+      setIsBuilding(false);
+      
+      if (pollRes.ok) {
+        const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
+        if (parent) {
+          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+        } else {
+          navigation.navigate('ProjectDetails' as any, { id } as any);
+        }
+      } else {
+        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
+      }
     } catch (e) {
       // Error already shown by getOrCreateProjectId
-    } finally {
       setBusyBuild(false);
+      setIsBuilding(false);
     }
   }
 
   async function handleBuildWithPreview() {
+    if (isBuilding || isPreviewing) return;
     try {
       const { data } = await supabase.auth.getSession();
       if (!data?.session?.user) {
@@ -630,18 +646,28 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       if (!r.ok) {
         console.log('[preview request] non-OK', r.status, r.body);
         Alert.alert('Preview not available', 'Preview service is disabled in this build. You can still proceed to your project details.');
-      } else {
-        showToast("Preview requested. We'll notify you when it's ready.", 'success');
       }
-      // 3) Navigate to details regardless of preview result
-      const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
-      if (parent) {
-        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
-        return;
-      }
-      navigation.navigate('ProjectDetails' as any, { id: projectId } as any);
-    } finally {
+      
       setIsPreviewing(false);
+      setIsBuilding(true);
+      
+      // 3) Poll for ready status
+      const pollRes = await pollProjectReady(projectId, { tries: 40, interval: 2000 });
+      setIsBuilding(false);
+      
+      if (pollRes.ok) {
+        const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
+        if (parent) {
+          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
+        } else {
+          navigation.navigate('ProjectDetails' as any, { id: projectId } as any);
+        }
+      } else {
+        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
+      }
+    } catch (e) {
+      setIsPreviewing(false);
+      setIsBuilding(false);
     }
   }
 
