@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Pressable, Alert, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableRect from '../components/DraggableRect';
 import { saveArScan } from '../lib/scanEvents';
 import { arSupported, startArSession, stopArSession } from '../lib/ar/ArSession';
+import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
@@ -12,8 +16,12 @@ export default function ScanScreen() {
   const projectId = route.params?.projectId;
   const [norm, setNorm] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0.2, y: 0.2, w: 0.5, h: 0.35 });
   const [saving, setSaving] = useState(false);
+  const [scanSaved, setScanSaved] = useState(false);
+  const [snapshotSaving, setSnapshotSaving] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '' });
   const [arReady, setArReady] = useState(false);
   const usingExpoGo = !(global as any).expo?.modules?.ExpoModules;
+  const viewRef = useRef<View>(null);
 
   useEffect(() => {
     if (!projectId) {
@@ -67,6 +75,7 @@ export default function ScanScreen() {
       });
       
       console.log('[scan] saved', { scanId });
+      setScanSaved(true);
       
       const result = { 
         scanId, 
@@ -88,8 +97,45 @@ export default function ScanScreen() {
     }
   };
 
+  const handleSnapshot = async () => {
+    if (!scanSaved) {
+      Alert.alert('Save scan first', 'Please save the scan before taking a snapshot.');
+      return;
+    }
+
+    setSnapshotSaving(true);
+    try {
+      // Request permissions
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Please allow access to save photos.');
+        setSnapshotSaving(false);
+        return;
+      }
+
+      // Capture screen with ROI overlay
+      const uri = await captureRef(viewRef, {
+        format: 'png',
+        quality: 1,
+      });
+
+      // Save to camera roll
+      await MediaLibrary.saveToLibraryAsync(uri);
+      console.log('[scan snapshot] saved to camera roll');
+
+      // Show success toast
+      setToast({ visible: true, message: 'Snapshot saved to Photos' });
+      setTimeout(() => setToast({ visible: false, message: '' }), 3000);
+    } catch (e: any) {
+      console.log('[scan snapshot] save failed', String(e?.message || e));
+      Alert.alert('Snapshot failed', 'Could not save snapshot to camera roll.');
+    } finally {
+      setSnapshotSaving(false);
+    }
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={{ flex: 1, backgroundColor: '#000' }} ref={viewRef} collapsable={false}>
       {(!arSupported() || usingExpoGo) && (
         <View style={{ backgroundColor: '#F3E8FF', padding: 12 }}>
           <Text style={{ color: '#6D28D9', fontWeight: '700' }}>
@@ -119,7 +165,36 @@ export default function ScanScreen() {
         </View>
       </View>
 
-      <View style={{ padding: 16, paddingTop: 0 }}>
+      <View style={{ padding: 16, paddingTop: 0, gap: 12 }}>
+        {scanSaved && (
+          <TouchableOpacity
+            onPress={handleSnapshot}
+            disabled={snapshotSaving}
+            activeOpacity={0.9}
+            style={{ 
+              borderRadius: 12, 
+              overflow: 'hidden',
+              shadowColor: '#000',
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6
+            }}
+          >
+            <LinearGradient
+              colors={snapshotSaving ? ['#9CA3AF', '#9CA3AF'] : ['#7C3AED', '#6D28D9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <Ionicons name="camera-outline" size={20} color="white" />
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>
+                {snapshotSaving ? 'Saving Snapshot...' : 'Save Snapshot'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
         <Pressable
           onPress={handleSave}
           disabled={saving}
@@ -135,6 +210,31 @@ export default function ScanScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Toast */}
+      {toast.visible && (
+        <View style={{
+          position: 'absolute',
+          top: 100,
+          left: 20,
+          right: 20,
+          backgroundColor: '#10B981',
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          borderRadius: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 8
+        }}>
+          <Ionicons name="checkmark-circle" size={20} color="white" />
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 15, flex: 1 }}>{toast.message}</Text>
+        </View>
+      )}
     </View>
   );
 }
