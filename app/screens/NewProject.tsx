@@ -684,6 +684,67 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       });
       // 2) Request preview build
       const r = await requestProjectPreview(projectId);
+      
+      // Handle 409 preview already used
+      if (r.status === 409 && r.body?.error === 'preview_already_used') {
+        console.log('[preview] already generated');
+        setIsPreviewing(false);
+        Alert.alert('Preview already generated', 'Opening your project now.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Clear form and navigate
+              (async () => {
+                try {
+                  clearingRef.current = true;
+                  await clearNewProjectDraft?.();
+                  setDraftId(null);
+                  setTitle('');
+                  setDescription('');
+                  setBudget('');
+                  setSkillLevel('');
+                  setPhotoUri(null);
+                  setLastScan(null);
+                  setTimeout(() => { clearingRef.current = false; }, 0);
+                } catch {}
+                
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [
+                      {
+                        name: 'Main',
+                        state: {
+                          type: 'tab',
+                          index: 2,
+                          routes: [
+                            { name: 'Home' },
+                            { name: 'NewProject' },
+                            {
+                              name: 'Projects',
+                              state: {
+                                type: 'stack',
+                                index: 1,
+                                routes: [
+                                  { name: 'ProjectsList' },
+                                  { name: 'ProjectDetails', params: { id: projectId } },
+                                ],
+                              },
+                            },
+                            { name: 'Profile' },
+                          ],
+                        },
+                      },
+                    ],
+                  })
+                );
+              })();
+            },
+          },
+        ]);
+        return;
+      }
+      
       if (!r.ok) {
         console.log('[preview request] non-OK', r.status, r.body);
         Alert.alert('Preview not available', 'Preview service is disabled in this build. You can still proceed to your project details.');
