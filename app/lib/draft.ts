@@ -29,6 +29,28 @@ export async function clearNewProjectDraft(): Promise<void> {
   await AsyncStorage.removeItem(DRAFT_KEY);
 }
 
+// --- helpers for name cleanup ---
+function collapseSpaces(s: string) {
+  return (s || '').replace(/\s+/g, ' ').trim();
+}
+export function sanitizeProjectName(raw: string) {
+  // trim + collapse
+  const trimmed = collapseSpaces(raw);
+  // strip emojis / control chars
+  const basic = trimmed.normalize('NFKD').replace(/[^\w\s\-.']/g, '');
+  // whitelist: letters/numbers/space/._-'
+  const whitelisted = basic.replace(/[^A-Za-z0-9 _.\-']/g, '');
+  // collapse again and bound length
+  let safe = collapseSpaces(whitelisted).slice(0, 60);
+  // avoid leading/trailing punctuation
+  safe = safe.replace(/^[\s._'\-]+/, '').replace(/[\s._'\-]+$/, '');
+  return safe;
+}
+function nameLooksValid(name: string) {
+  const s = (name || '').trim();
+  return s.length >= 3 && s.length <= 60 && /[A-Za-z0-9]/.test(s);
+}
+
 // ---------- NEW: strong validation + project create ----------
 function validateDraftForCreate(d: NewProjectDraft) {
   const errs: string[] = [];
@@ -59,31 +81,55 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
     throw e;
   }
 
-  // Build payload that the API expects
+  // Build payload (with sanitized name)
+  let cleanName = sanitizeProjectName(v.name);
   const payload = {
-    name: v.name,
-    description: v.description,
+    name: cleanName,
+    description: v.description.trim(),
     budget: v.budget,
     skill_level: v.skill,
   };
-
   console.log('[project create] payload', payload);
 
-  const res = await fetch(`${base}/api/projects`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  async function postOnce(p: typeof payload) {
+    const res = await fetch(`${base}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    });
+    const text = await res.text().catch(() => '');
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    return { res, body, text };
+  }
 
-  const text = await res.text().catch(() => '');
-  let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  // First attempt
+  let { res, body } = await postOnce(payload);
+
+  // If invalid_name, try one automatic repair and post again
+  if (res.status === 422 && (body?.error === 'invalid_name' || /invalid[_\s-]?name/i.test(String(body)))) {
+    const repaired = sanitizeProjectName(cleanName);
+    if (repaired !== cleanName && nameLooksValid(repaired)) {
+      console.log('[project create] retry with sanitized name', { repaired });
+      ({ res, body } = await postOnce({ ...payload, name: repaired }));
+      cleanName = repaired;
+    }
+  }
 
   if (!res.ok) {
     console.log('[project create] failed', { status: res.status, body });
-    const msg = (body && (body.message || body.error || body.detail)) || String(text || 'Unknown error');
+    const detail =
+      body?.userMessage ||
+      body?.message ||
+      body?.error ||
+      body?.detail ||
+      `HTTP ${res.status}`;
     const e: any = new Error(`PROJECT_CREATE_FAILED:${res.status}`);
-    e.userMessage = msg;
+    if (res.status === 422 && (body?.error === 'invalid_name')) {
+      e.userMessage = 'Project title has characters the server does not accept. Use letters, numbers, spaces, and -_. (3–60 chars).';
+    } else {
+      e.userMessage = String(detail);
+    }
     throw e;
   }
 
@@ -94,10 +140,9 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
     throw e;
   }
 
-  // Persist back into draft storage
-  const nextDraft: NewProjectDraft = { ...(draft ?? {}), projectId: id };
+  // Persist sanitized name + id back into draft
+  const nextDraft: NewProjectDraft = { ...(draft ?? {}), projectId: id, name: cleanName };
   await saveNewProjectDraft(nextDraft);
-  console.log('[project create] success', { id });
-
+  console.log('[project create] success', { id, name: cleanName });
   return id;
 }
