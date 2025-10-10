@@ -5,16 +5,11 @@ import { useSafeBack } from '../lib/useSafeBack';
 import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
-import AccordionCard from '../components/ui/AccordionCard';
-import { countLabel, stepsTimeCost } from '../lib/planLabels';
 import Toast from '../components/Toast';
 import { saveImageToPhotos } from '../lib/media';
 import { Ionicons } from '@expo/vector-icons';
-import DetailCard from '../components/DetailCard';
 import { getCachedPlan, setCachedPlan } from '../lib/planCache';
-import { useKeepAwake } from 'expo-keep-awake';
-import * as Haptics from 'expo-haptics';
-import { SectionListCard } from '../components/SectionListCard';
+import PlanSummaryCards from '../components/PlanSummaryCards';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -31,14 +26,6 @@ export default function ProjectDetails() {
   const [planObj, setPlanObj] = useState<Plan | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
-  const [buildMode, setBuildMode] = useState(false);
-  const [idx, setIdx] = useState(0);
-  const [sheet, setSheet] = useState<'materials' | 'cuts' | 'tools' | 'steps' | 'timeAndCost' | null>(null);
-
-  const closeBuildMode = () => {
-    setBuildMode(false);
-    setIdx(0);
-  };
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -288,55 +275,12 @@ export default function ProjectDetails() {
             </View>
           )}
 
-          {/* Info cards (only if plan is ready) */}
-          {planObj && (
-            <>
-              <View style={{ gap: 12, marginBottom: 16 }}>
-                <DetailCard 
-                  title="Overview" 
-                  subtitle={planObj?.overview ? (planObj.overview.slice(0, 80) + (planObj.overview.length > 80 ? '...' : '')) : 'High-level summary'} 
-                  onPress={() => Alert.alert('Overview', planObj?.overview || 'No overview available')} 
-                />
-                <DetailCard 
-                  title="Materials" 
-                  subtitle={`${planObj?.materials?.length || 0} items`} 
-                  onPress={() => setSheet('materials')} 
-                />
-                <DetailCard 
-                  title="Cuts" 
-                  subtitle={`${planObj?.cuts?.length || 0} parts`} 
-                  onPress={() => setSheet('cuts')} 
-                />
-                <DetailCard 
-                  title="Tools" 
-                  subtitle={`${planObj?.tools?.length || 0} tools`} 
-                  onPress={() => setSheet('tools')} 
-                />
-                <DetailCard 
-                  title="Steps" 
-                  subtitle={`${planObj?.steps?.length || 0} steps`} 
-                  onPress={() => setSheet('steps')} 
-                />
-                <DetailCard 
-                  title="Time & Cost" 
-                  subtitle={`${planObj?.time_estimate_hours || '—'} hrs • $${planObj?.cost_estimate_usd || '—'}`} 
-                  onPress={() => setSheet('timeAndCost')} 
-                />
-              </View>
-
-              <Pressable
-                onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-                style={{ 
-                  backgroundColor: '#7C3AED', 
-                  height: 52, 
-                  borderRadius: 16, 
-                  alignItems: 'center', 
-                  justifyContent: 'center' 
-                }}
-              >
-                <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Get detailed instructions</Text>
-              </Pressable>
-            </>
+          {/* Summary grid when plan is available */}
+          {!!planObj && (
+            <PlanSummaryCards
+              plan={planObj}
+              onOpenDetails={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+            />
           )}
         </>
       )}
@@ -347,168 +291,6 @@ export default function ProjectDetails() {
         onHide={() => setToast({ ...toast, visible: false })}
       />
     </ScrollView>
-
-      {/* Build Mode Bar - sticky bottom */}
-      {planObj && !buildMode && (
-        <View style={{ position: 'absolute', left: 16, right: 16, bottom: 24 }}>
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.selectionAsync();
-              setBuildMode(true);
-            }}
-            style={{
-              backgroundColor: '#6D28D9',
-              borderRadius: 16,
-              paddingVertical: 16,
-              alignItems: 'center',
-              shadowColor: '#6D28D9',
-              shadowOpacity: 0.25,
-              shadowRadius: 10,
-              shadowOffset: { height: 8, width: 0 },
-              elevation: 6,
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 17 }}>Start Build Mode</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.9)', marginTop: 4 }}>Step-by-step, large text, progress</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Build Mode Screen */}
-      {buildMode && planObj && (
-        <BuildModeScreen planObj={planObj} idx={idx} setIdx={setIdx} setBuildMode={closeBuildMode} />
-      )}
-
-      {/* Detail Sheets */}
-      {sheet === 'materials' && planObj && (
-        <DetailSheet title="Materials" onClose={() => setSheet(null)}>
-          <SectionListCard 
-            title="Materials" 
-            items={(planObj?.materials || []).map(m => `${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}`)} 
-            projectId={projectId}
-            sectionKey="materials"
-          />
-        </DetailSheet>
-      )}
-      {sheet === 'cuts' && planObj && (
-        <DetailSheet title="Cuts" onClose={() => setSheet(null)}>
-          <SectionListCard 
-            title="Cuts" 
-            items={(planObj?.cuts || []).map(c => `${c.part} - ${c.size}${c.qty ? ` (${c.qty})` : ''}`)} 
-            projectId={projectId}
-            sectionKey="cuts"
-          />
-        </DetailSheet>
-      )}
-      {sheet === 'tools' && planObj && (
-        <DetailSheet title="Tools" onClose={() => setSheet(null)}>
-          <SectionListCard 
-            title="Tools" 
-            items={planObj?.tools || []} 
-            projectId={projectId}
-            sectionKey="tools"
-          />
-        </DetailSheet>
-      )}
-      {sheet === 'steps' && planObj && (
-        <DetailSheet title="Steps" onClose={() => setSheet(null)}>
-          <SectionListCard 
-            title="Steps" 
-            items={(planObj?.steps || []).map(s => typeof s === 'string' ? s : s.title || 'Step')} 
-            projectId={projectId}
-            sectionKey="steps"
-          />
-        </DetailSheet>
-      )}
-      {sheet === 'timeAndCost' && planObj && (
-        <DetailSheet title="Time & Cost" onClose={() => setSheet(null)}>
-          <View style={{ padding: 16 }}>
-            <Text style={{ fontSize: 16, marginBottom: 8 }}>Estimated Time: {planObj?.time_estimate_hours || '—'} hours</Text>
-            <Text style={{ fontSize: 16 }}>Estimated Cost: ${planObj?.cost_estimate_usd || '—'}</Text>
-          </View>
-        </DetailSheet>
-      )}
-    </View>
-  );
-}
-
-interface BuildModeProps {
-  planObj: Plan;
-  idx: number;
-  setIdx: (i: number) => void;
-  setBuildMode: (b: boolean) => void;
-}
-
-function BuildModeScreen({ planObj, idx, setIdx, setBuildMode }: BuildModeProps) {
-  useKeepAwake();
-  
-  const steps = planObj?.steps || [];
-  const totalSteps = steps.length;
-  
-  if (totalSteps === 0) {
-    return (
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', padding: 20 }}>
-        <Text style={{ fontSize: 24, fontWeight: '800', marginBottom: 8 }}>No steps available</Text>
-        <Text style={{ fontSize: 16, lineHeight: 24, marginBottom: 24 }}>This plan doesn't have step-by-step instructions yet.</Text>
-        <TouchableOpacity onPress={() => setBuildMode(false)} style={{ backgroundColor: '#6D28D9', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  
-  const currentIdx = Math.max(0, Math.min(idx, totalSteps - 1));
-  const currentStep = steps[currentIdx];
-  
-  const stepTitle = typeof currentStep === 'string' ? `Step ${currentIdx + 1}` : (currentStep?.title || `Step ${currentIdx + 1}`);
-  const stepBody = typeof currentStep === 'string' ? currentStep : (currentStep?.body || 'No instructions available');
-  
-  return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', padding: 20 }}>
-      <Text style={{ fontSize: 18, opacity: 0.6, marginBottom: 8 }}>Step {currentIdx + 1} of {totalSteps}</Text>
-      <Text style={{ fontSize: 24, fontWeight: '800', marginBottom: 8 }}>{stepTitle}</Text>
-      <Text style={{ fontSize: 16, lineHeight: 24 }}>{stepBody}</Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
-        <TouchableOpacity 
-          onPress={() => setIdx(Math.max(0, currentIdx - 1))} 
-          disabled={currentIdx === 0}
-          style={{ opacity: currentIdx === 0 ? 0.4 : 1 }}
-        >
-          <Text style={{ color: '#6D28D9', fontSize: 16 }}>Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setBuildMode(false)}>
-          <Text style={{ color: '#111827', fontSize: 16 }}>Close</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          onPress={() => setIdx(Math.min(totalSteps - 1, currentIdx + 1))} 
-          disabled={currentIdx === totalSteps - 1}
-          style={{ opacity: currentIdx === totalSteps - 1 ? 0.4 : 1 }}
-        >
-          <Text style={{ color: '#6D28D9', fontSize: 16 }}>Next</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-interface DetailSheetProps {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}
-
-function DetailSheet({ title, onClose, children }: DetailSheetProps) {
-  return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
-        <Text style={{ fontSize: 20, fontWeight: '700' }}>{title}</Text>
-        <TouchableOpacity onPress={onClose}>
-          <Ionicons name="close" size={28} color="#111827" />
-        </TouchableOpacity>
-      </View>
-      <ScrollView style={{ flex: 1 }}>
-        {children}
-      </ScrollView>
     </View>
   );
 }
