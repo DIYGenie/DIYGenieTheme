@@ -49,6 +49,11 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - All project creation entry points (Scan room, Upload photo, Build with AI) are protected by these guards
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
 - **AR Session Scaffolding**: iOS AR preparation with ARKit permissions in app.json, lightweight AR session facade (`app/lib/ar/ArSession.ts`) with platform checks, and ScanScreen integration with Expo Go banner. Shows "AR requires iOS dev build" banner in Expo Go while maintaining ROI overlay and Save Scan functionality. No native modules added yet - safe and reversible.
+- **AR Measurement Integration**: Server-side measurement job system that runs after AR scan saves. Features:
+  - API helpers (`requestScanMeasurement`, `pollScanMeasurement`) for triggering and polling measurement status
+  - Non-blocking measurement job triggered via `startMeasurementJob()` in `app/lib/scanEvents.ts` after scan save
+  - ProjectDetails overlay display that fetches latest scan, polls for measurement completion, and shows overlay image with dimensions/lines
+  - Graceful fallback to base scan image while measuring, shows "Measuring…" state during processing
 
 ## External Dependencies
 
