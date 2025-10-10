@@ -428,7 +428,7 @@ export async function updateProjectProgress(
 }
 
 // AR Measurement
-import { MEASURE_API_ENABLED } from './config';
+import { MEASURE_API_ENABLED, FEATURE_MEASURE } from './config';
 
 export type MeasureStart = { ok: true; scan_id: string; job_id: string } | { ok: false; reason: string };
 export type MeasureStatus =
@@ -462,5 +462,96 @@ export async function pollScanMeasurement(projectId: string, scanId: string, { t
     if (body.ready) return body; // {overlay_url, image_url?}
     await new Promise(r => setTimeout(r, intervalMs));
   }
+  throw new Error('[measure] timeout');
+}
+
+// New AR Measurement API (for FEATURE_MEASURE flow)
+export type MeasureStartResult = { ok: boolean; status?: 'pending' | 'done' };
+export type MeasureStatusResult = { 
+  ok: boolean; 
+  status: 'pending' | 'done'; 
+  result?: { px_per_in: number; width_in: number; height_in: number } 
+};
+
+export async function startMeasurement(
+  projectId: string,
+  scanId: string,
+  roi?: { x: number; y: number; w: number; h: number }
+): Promise<MeasureStartResult> {
+  if (!FEATURE_MEASURE) {
+    console.log('[measure] skipped (feature disabled)');
+    return { ok: false };
+  }
+
+  try {
+    const url = `/api/projects/${projectId}/scans/${scanId}/measure`;
+    const body = roi ? { roi } : {};
+    const res = await api(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    return res.data || { ok: true, status: 'pending' };
+  } catch (e: any) {
+    console.log('[measure] start failed', e?.message || e);
+    return { ok: false };
+  }
+}
+
+export async function getMeasurementStatus(
+  projectId: string,
+  scanId: string
+): Promise<MeasureStatusResult> {
+  if (!FEATURE_MEASURE) {
+    console.log('[measure] status check skipped (feature disabled)');
+    return { ok: false, status: 'pending' };
+  }
+
+  try {
+    const url = `/api/projects/${projectId}/scans/${scanId}/measure/status`;
+    const res = await api(url, { method: 'GET' });
+    
+    // Handle 409 "not_ready" as pending
+    if (res.status === 409) {
+      return { ok: true, status: 'pending' };
+    }
+    
+    return res.data || { ok: true, status: 'pending' };
+  } catch (e: any) {
+    // Treat errors as pending (non-blocking)
+    console.log('[measure] status check failed', e?.message || e);
+    return { ok: false, status: 'pending' };
+  }
+}
+
+export async function pollMeasurementReady(
+  projectId: string,
+  scanId: string,
+  opts: { intervalMs?: number; timeoutMs?: number } = {}
+): Promise<{ width_in: number; height_in: number; px_per_in: number }> {
+  const intervalMs = opts.intervalMs ?? 2000;
+  const timeoutMs = opts.timeoutMs ?? 60000;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < timeoutMs) {
+    console.log('[measure] poll ...');
+    
+    const status = await getMeasurementStatus(projectId, scanId);
+    
+    if (!status.ok) {
+      // Non-OK response (e.g., feature disabled or error), abort
+      throw new Error('[measure] failed - status check not ok');
+    }
+    
+    if (status.status === 'done' && status.result) {
+      console.log('[measure] done', status.result);
+      return status.result;
+    }
+    
+    // Still pending, wait and retry
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+  
+  // Timeout
+  console.log('[measure] timeout');
   throw new Error('[measure] timeout');
 }
