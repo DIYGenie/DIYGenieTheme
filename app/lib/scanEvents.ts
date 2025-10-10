@@ -1,26 +1,35 @@
 // app/lib/scanEvents.ts
 import { supabase } from '../lib/supabase';
-import { requestScanMeasurement } from './api';
-import { MEASURE_API_ENABLED } from './config';
+import { startMeasurement, pollMeasurementReady } from './api';
+import { FEATURE_MEASURE } from './config';
 
 export type Roi = { x: number; y: number; w: number; h: number };
 
-export async function startMeasurementJob(projectId: string, scanId: string) {
-  if (!MEASURE_API_ENABLED) {
+export async function kickOffMeasurement(
+  projectId: string,
+  scanId: string,
+  roi?: Roi
+): Promise<{ width_in: number; height_in: number; px_per_in: number } | null> {
+  if (!FEATURE_MEASURE) {
     console.log('[measure] skipped (feature disabled)');
-    return;
+    return null;
   }
-  
+
   try {
     console.log('[measure] start', { projectId, scanId });
-    const result = await requestScanMeasurement(projectId, scanId);
-    if (result.ok) {
-      console.log('[measure] started');
-    } else {
-      console.log('[measure] skipped (feature disabled)');
+    
+    const startResult = await startMeasurement(projectId, scanId, roi);
+    if (!startResult.ok) {
+      console.log('[measure] failed to start');
+      return null;
     }
+
+    // Poll for completion
+    const result = await pollMeasurementReady(projectId, scanId);
+    return result;
   } catch (e: any) {
-    console.log('[measure] start failed', e?.message || e);
+    console.log('[measure] failed', e?.message || e);
+    return null;
   }
 }
 
@@ -50,12 +59,7 @@ export async function saveArScan(opts: {
     throw error;
   }
 
-  // Trigger measurement job only if enabled (non-blocking)
-  if (MEASURE_API_ENABLED) {
-    setTimeout(() => startMeasurementJob(projectId, data.id).catch(() => {}), 0);
-  } else {
-    console.log('[measure] skipped (feature disabled)');
-  }
+  console.log('[scan] saved', { scanId: data.id });
 
   return { scanId: data.id, imageUrl: data.image_url, source: 'ar' };
 }
