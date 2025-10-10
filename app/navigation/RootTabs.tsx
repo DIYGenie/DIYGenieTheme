@@ -81,6 +81,7 @@ export default function RootTabs() {
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name="add" size={size} color={color} />
           ),
+          unmountOnBlur: false,
         }}
       />
       <Tab.Screen 
