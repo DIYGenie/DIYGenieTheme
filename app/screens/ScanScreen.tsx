@@ -79,7 +79,9 @@ export default function ScanScreen() {
       
       const result = { 
         scanId, 
-        source: 'ar' as const 
+        source: 'ar' as const,
+        projectId,
+        roi: norm
       };
       
       Alert.alert('Success', 'Scan saved');

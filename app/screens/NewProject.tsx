@@ -92,6 +92,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     scanId: string;
     imageUrl?: string;
     source?: 'ar' | 'upload';
+    projectId?: string;
     roi?: { x: number; y: number; w: number; h: number };
     measure?: { width_in: number; height_in: number; px_per_in: number };
     measuring?: boolean;
@@ -312,6 +313,37 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setLastScanEphemeral(s);
         // Clear param only - do NOT reset form fields
         navigation.setParams({ savedScan: undefined } as any);
+        
+        // Kick off measurement if AR scan
+        if (s.source === 'ar' && s.scanId && s.projectId) {
+          (async () => {
+            try {
+              // Import kickOffMeasurement
+              const { kickOffMeasurement } = await import('../lib/scanEvents');
+              
+              // Set measuring state
+              setLastScan(prev => prev ? { ...prev, measuring: true } : prev);
+              lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: true } : lastScanRef.current;
+              
+              const result = await kickOffMeasurement(s.projectId, s.scanId, s.roi);
+              
+              if (result) {
+                // Update with measurement results
+                setLastScan(prev => prev ? { ...prev, measure: result, measuring: false } : prev);
+                lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measure: result, measuring: false } : lastScanRef.current;
+              } else {
+                // Clear measuring state on failure
+                setLastScan(prev => prev ? { ...prev, measuring: false } : prev);
+                lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: false } : lastScanRef.current;
+              }
+            } catch (e) {
+              console.log('[measure] error', e);
+              // Clear measuring state on error
+              setLastScan(prev => prev ? { ...prev, measuring: false } : prev);
+              lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: false } : lastScanRef.current;
+            }
+          })();
+        }
       }
       return () => {};
     }, [route.params?.savedScan, navigation])
