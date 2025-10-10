@@ -270,9 +270,9 @@ function ProjectCard({ project, navigation }) {
       }
     } catch (e) {
       if (parent?.navigate) {
-        parent.navigate('Projects', { screen: 'PlanWaiting', params: { id } });
+        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
       } else {
-        navigation.navigate('Projects', { screen: 'PlanWaiting', params: { id } });
+        navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
       }
     }
   };

@@ -153,7 +153,7 @@ function ProjectCard({ project, navigation }) {
       });
     } catch (e) {
       const parent = navigation.getParent?.();
-      parent?.navigate('Projects', { screen: 'PlanWaiting', params: { id: project.id } });
+      parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id: project.id } });
     }
   };
   

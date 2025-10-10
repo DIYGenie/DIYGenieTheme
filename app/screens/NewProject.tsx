@@ -167,15 +167,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     setTimeout(() => setMissing(null), 1400);
   };
 
-  // Ensure Projects stack has ProjectsList, then push PlanWaiting
-  const goToProjectDetailsSeeded = (projectId: string, extraParams?: any) => {
-    const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
-    if (parent) {
-      parent.navigate('Projects', { screen: 'PlanWaiting', params: { id: projectId } });
-      return;
-    }
-    navigation.navigate('PlanWaiting' as any, { id: projectId } as any);
-  };
 
   function hasValidForm() {
     return description.trim().length >= 10 && !!budget && !!skillLevel;
@@ -524,42 +515,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   };
 
-  async function generatePreview() {
-    const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
-    const canGenerate = (descriptionOk || !!photoUri) && canPreview;
-    
-    if (!canGenerate || busy) return;
-    
-    setBusy(true);
-    try {
-      const id = await getOrCreateProjectId(); // throws + shows Alert on failure
-      
-      const r = await api(`/api/projects/${id}/preview`, { 
-        method: 'POST', 
-        body: JSON.stringify({ user_id: USER_ID }) 
-      });
-      if (!r.ok) {
-        Alert.alert('Preview failed', r.data?.error || 'Could not generate preview');
-        triggerHaptic('error');
-        return;
-      }
-      triggerHaptic('success');
-      Alert.alert('Success', 'Preview requested');
-      goToProjectDetailsSeeded(id);
-    } catch (err: any) {
-      // Error already shown by getOrCreateProjectId or is from API call
-      if (!err?.userMessage) {
-        Alert.alert('Preview failed', err?.message || 'Could not generate preview');
-        triggerHaptic('error');
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function navigateToProject(id: string) {
-    goToProjectDetailsSeeded(id);
-  }
 
   async function uploadProjectImage(id: string, photoUri?: string | null) {
     if (!photoUri) throw new Error('NO_PHOTO');
