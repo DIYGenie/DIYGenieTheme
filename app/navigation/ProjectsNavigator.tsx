@@ -4,7 +4,6 @@ import ProjectsScreen from '../screens/ProjectsScreen';
 import OpenPlanScreen from '../screens/OpenPlanScreen';
 import ProjectDetailsScreen from '../screens/ProjectDetails';
 import DetailedInstructions from '../screens/DetailedInstructions';
-import PlanWaiting from '../screens/PlanWaiting';
 import { PLAN_SCREEN, PROJECTS_LIST_SCREEN } from './routeNames';
 
 export type ProjectsStackParamList = {
@@ -12,7 +11,6 @@ export type ProjectsStackParamList = {
   OpenPlan: { id: string };
   ProjectDetails: { id: string; imageUrl?: string | null };
   DetailedInstructions: { id: string };
-  PlanWaiting: { id: string };
 };
 
 const Stack = createNativeStackNavigator<ProjectsStackParamList>();
@@ -40,11 +38,6 @@ export default function ProjectsNavigator() {
         name="DetailedInstructions"
         component={DetailedInstructions}
         options={{ headerShown: true, title: 'Project Plan' }}
-      />
-      <Stack.Screen
-        name="PlanWaiting"
-        component={PlanWaiting}
-        options={{ headerShown: true, title: 'Building Plan' }}
       />
     </Stack.Navigator>
   );
