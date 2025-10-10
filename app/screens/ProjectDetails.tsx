@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview, fetchProjectProgress, updateProjectProgress } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
@@ -28,6 +28,8 @@ export default function ProjectDetails() {
   const [planObj, setPlanObj] = useState<Plan | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -39,14 +41,17 @@ export default function ProjectDetails() {
 
     setLoading(true);
     try {
-      const [p, s] = await Promise.all([
+      const [p, s, prog] = await Promise.all([
         fetchProjectById(projectId, { signal: controller.signal, timeoutMs: 8000 }),
         fetchLatestScanForProject(projectId),
+        fetchProjectProgress(projectId).catch(() => ({ completed_steps: [], current_step_index: 0 })),
       ]);
       
       if (!controller.signal.aborted) {
         setProject(p);
         setScan(s);
+        setCompletedSteps(prog.completed_steps || []);
+        setCurrentStepIndex(prog.current_step_index || 0);
         
         const ready = /ready/.test(String(p?.plan_status || p?.status || '').toLowerCase()) && 
                      !/requested|building|queued|pending/.test(String(p?.plan_status || p?.status || '').toLowerCase());
@@ -179,6 +184,33 @@ export default function ProjectDetails() {
     if (!txt) return;
     await Clipboard.setStringAsync(txt);
     console.log('[copy] ok');
+  };
+
+  const toggleStepComplete = async (stepIndex: number) => {
+    if (!projectId) return;
+    
+    const isCompleted = completedSteps.includes(stepIndex);
+    let newCompleted: number[];
+    
+    if (isCompleted) {
+      newCompleted = completedSteps.filter(i => i !== stepIndex);
+    } else {
+      newCompleted = [...completedSteps, stepIndex].sort((a, b) => a - b);
+    }
+    
+    setCompletedSteps(newCompleted);
+    setCurrentStepIndex(stepIndex);
+    
+    try {
+      await updateProjectProgress(projectId, {
+        completed_steps: newCompleted,
+        current_step_index: stepIndex
+      });
+      console.log('[progress] step', stepIndex, isCompleted ? 'unchecked' : 'checked');
+    } catch (e) {
+      console.error('[progress] update failed', e);
+      setCompletedSteps(completedSteps);
+    }
   };
 
   const fmtQty = (q?: number | string, u?: string) => {
@@ -440,12 +472,12 @@ export default function ProjectDetails() {
                 </SectionCard>
               )}
 
-              {/* 4. Build Steps (with checkboxes - will be implemented next) */}
+              {/* 4. Build Steps (with checkboxes and progress) */}
               <SectionCard
                 icon={<Feather name="check-square" size={22} color="#6D28D9" />}
                 title="Build Steps"
                 countBadge={planObj.steps?.length || 0}
-                summary={`${planObj.steps?.length || 0} steps`}
+                summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (planObj.steps?.length || 1)) * 100)}% complete` : `${planObj.steps?.length || 0} steps`}
                 onNavigate={() => {
                   console.log('[details] nav section=steps');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' });
@@ -454,17 +486,62 @@ export default function ProjectDetails() {
               >
                 {planObj.steps?.length ? (
                   <>
+                    {/* Progress bar */}
+                    {completedSteps.length > 0 && (
+                      <View style={{ marginBottom: 16 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={{ fontSize: 13, color: '#6B7280' }}>Progress</Text>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: '#6D28D9' }}>
+                            {completedSteps.length}/{planObj.steps.length} steps
+                          </Text>
+                        </View>
+                        <View style={{ height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
+                          <View style={{ 
+                            height: '100%', 
+                            width: `${(completedSteps.length / planObj.steps.length) * 100}%`, 
+                            backgroundColor: '#6D28D9' 
+                          }} />
+                        </View>
+                      </View>
+                    )}
+
                     <View style={{ marginBottom: 16 }}>
                       {planObj.steps.slice(0, 10).map((step: any, i: number) => {
                         const stepTitle = typeof step === 'string' ? step : (step.title || `Step ${i + 1}`);
                         const stepTime = typeof step === 'object' ? step.estimatedTime || step.time_minutes : null;
+                        const isCompleted = completedSteps.includes(i);
                         
                         return (
-                          <View key={i} style={{ marginBottom: 10 }}>
+                          <Pressable 
+                            key={i} 
+                            onPress={() => toggleStepComplete(i)}
+                            style={{ marginBottom: 12 }}
+                          >
                             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-                              <Text style={{ fontSize: 15, fontWeight: '600', color: '#6D28D9' }}>{i + 1}.</Text>
+                              {/* Checkbox */}
+                              <View style={{ 
+                                width: 24, 
+                                height: 24, 
+                                borderRadius: 6, 
+                                borderWidth: 2, 
+                                borderColor: isCompleted ? '#6D28D9' : '#D1D5DB',
+                                backgroundColor: isCompleted ? '#6D28D9' : 'transparent',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginTop: 2
+                              }}>
+                                {isCompleted && <Ionicons name="checkmark" size={16} color="white" />}
+                              </View>
+                              
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22 }}>{stepTitle}</Text>
+                                <Text style={{ 
+                                  fontSize: 15, 
+                                  color: isCompleted ? '#9CA3AF' : '#374151', 
+                                  lineHeight: 22,
+                                  textDecorationLine: isCompleted ? 'line-through' : 'none'
+                                }}>
+                                  {i + 1}. {stepTitle}
+                                </Text>
                                 {stepTime && (
                                   <Text style={{ fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>
                                     ⏱ {typeof stepTime === 'number' ? `${stepTime} min` : stepTime}
@@ -472,21 +549,24 @@ export default function ProjectDetails() {
                                 )}
                               </View>
                             </View>
-                          </View>
+                          </Pressable>
                         );
                       })}
                     </View>
+                    
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                       <Pressable
                         onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
                         style={{ flex: 1, backgroundColor: '#6D28D9', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
                       >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Start Building</Text>
+                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
+                          {completedSteps.length === 0 ? 'Start Building' : 'Continue Building'}
+                        </Text>
                       </Pressable>
                       <Pressable
                         onPress={() => {
                           const text = planObj.steps.map((s: any, i: number) => 
-                            `${i + 1}. ${typeof s === 'string' ? s : s.title}`
+                            `${completedSteps.includes(i) ? '✓' : '☐'} ${i + 1}. ${typeof s === 'string' ? s : s.title}`
                           ).join('\n');
                           copyText(text);
                         }}
