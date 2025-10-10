@@ -34,6 +34,42 @@ const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-
 // V1: tools are AR-only (hide on Upload flow)
 const __HIDE_MEDIA_TOOLS = true;
 
+// --- CTA button (inline, simple) ---
+function CTAButton({
+  title,
+  subtitle,
+  onPress,
+  variant = 'primary',
+  disabled = false,
+}: {
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
+}) {
+  const base = {
+    height: 60,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'flex-start' as const,
+    justifyContent: 'center' as const,
+    marginTop: 10,
+    opacity: disabled ? 0.6 : 1,
+  };
+  const primary = { backgroundColor: '#6D28D9' };
+  const secondary = { borderWidth: 1, borderColor: '#6D28D9', backgroundColor: 'white' };
+  const titleStyle = { fontSize: 18, fontWeight: '600', color: variant === 'primary' ? 'white' : '#111827' };
+  const subStyle = { fontSize: 12, color: variant === 'primary' ? '#EDE9FE' : '#6B7280', marginTop: 2, maxWidth: '95%' as const };
+  return (
+    <Pressable onPress={disabled ? undefined : onPress} style={[base, variant === 'primary' ? primary : secondary]} disabled={disabled}>
+      <Text style={titleStyle}>{title}</Text>
+      <Text numberOfLines={2} style={subStyle}>{subtitle}</Text>
+    </Pressable>
+  );
+}
+
 type NavProp = CompositeNavigationProp<
   BottomTabNavigationProp<RootTabParamList>,
   NativeStackNavigationProp<ProjectsStackParamList>
@@ -1229,76 +1265,31 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </View>
             )}
             
-            {(() => {
-              const descriptionOk = (description?.trim()?.length ?? 0) >= 10;
-              const canGenerate = (descriptionOk || !!photoUri) && canPreview;
+            <View style={{ pointerEvents: isBuilding ? 'none' : 'auto', opacity: isBuilding ? 0.6 : 1 }}>
+              <CTAButton
+                title="Build with visual mockup"
+                subtitle="Visual mockup of your space + complete build plan"
+                onPress={handleBuildWithPreview}
+                variant="primary"
+                disabled={!canSubmit || isBuilding}
+              />
+              <CTAButton
+                title="Build plan only"
+                subtitle="Full DIY plan—steps, materials, tools, cuts, time & cost"
+                onPress={onBuildWithoutPreview}
+                variant="secondary"
+                disabled={!canSubmit || isBuilding}
+              />
               
-              return (
-                <View style={{ pointerEvents: isBuilding ? 'none' : 'auto', opacity: isBuilding ? 0.6 : 1 }}>
-                  <PrimaryButton
-                    testID="np-generate-preview"
-                    title="Generate AI Preview"
-                    onPress={generatePreview}
-                    disabled={!canGenerate || isBuilding}
-                    loading={busy}
-                  />
-
-                  {!canPreview && (
-                    <Text style={styles.upgradeHint}>
-                      <Text style={{ color: '#6B7280' }}>Need visual previews? </Text>
-                      <Text 
-                        style={{ color: brand.primary, fontWeight: '600' }}
-                        onPress={() => navigation.navigate('Profile')}
-                      >
-                        Upgrade
-                      </Text>
-                    </Text>
-                  )}
-
-                  <SecondaryButton
-                    testID="np-build-without-preview"
-                    title="Build Plan Without Preview"
-                    onPress={onBuildWithoutPreview}
-                    disabled={busyBuild || isBuilding}
-                    loading={busyBuild}
-                    style={{ marginTop: 12 }}
-                  />
-
-                  {/* Build with AI Preview CTA */}
-                  <View style={{ marginTop: 12 }}>
-                    <Pressable
-                      onPress={handleBuildWithPreview}
-                      disabled={!canSubmit || isPreviewing || isBuilding}
-                      style={{
-                        backgroundColor: canSubmit ? '#7C3AED' : '#C7C7C7',
-                        paddingVertical: 14,
-                        borderRadius: 14,
-                        alignItems: 'center',
-                        opacity: isPreviewing || isBuilding ? 0.7 : 1,
-                      }}
-                    >
-                      <Text style={{ color: 'white', fontWeight: '700' }}>
-                        {isPreviewing ? 'Requesting…' : 'Build with AI Preview'}
-                      </Text>
-                    </Pressable>
-                    {!canSubmit && (
-                      <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 12, textAlign: 'center' }}>
-                        Fill in Title, Description, Budget, and Skill level to enable preview.
-                      </Text>
-                    )}
-                  </View>
-                  
-                  <TouchableOpacity
-                    onPress={resetForm}
-                    style={{ marginTop: 16, alignItems: 'center' }}
-                  >
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
-                      Clear Form
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })()}
+              <TouchableOpacity
+                onPress={resetForm}
+                style={{ marginTop: 16, alignItems: 'center' }}
+              >
+                <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
+                  Clear Form
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           )}
         </ScrollView>
