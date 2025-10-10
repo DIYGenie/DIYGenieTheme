@@ -244,8 +244,8 @@ export default function ProjectDetails() {
             </Text>
           </View>
 
-          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview_url */}
-          {!!projectId && !statusReady && !isBuilding && !project?.preview_url && (
+          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview */}
+          {!!projectId && !statusReady && !isBuilding && !previewUrl && (
             <View style={{ marginBottom: 16 }}>
               <Pressable
                 onPress={onGeneratePreview}
