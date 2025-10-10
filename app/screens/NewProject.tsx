@@ -60,7 +60,7 @@ function CTAButton({
   };
   const primary = { backgroundColor: '#6D28D9' };
   const secondary = { borderWidth: 1, borderColor: '#6D28D9', backgroundColor: 'white' };
-  const titleStyle = { fontSize: 18, fontWeight: '600', color: variant === 'primary' ? 'white' : '#111827' };
+  const titleStyle = { fontSize: 18, fontWeight: '600' as const, color: variant === 'primary' ? 'white' : '#111827' };
   const subStyle = { fontSize: 12, color: variant === 'primary' ? '#EDE9FE' : '#6B7280', marginTop: 2, maxWidth: '95%' as const };
   return (
     <Pressable onPress={disabled ? undefined : onPress} style={[base, variant === 'primary' ? primary : secondary]} disabled={disabled}>
