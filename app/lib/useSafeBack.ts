@@ -44,16 +44,32 @@ export function useSafeBack() {
       }
     }
 
-    // 3) Absolute last resort: reset root to Projects → ProjectsList.
+    // 3) Absolute last resort: reset root to Main → Projects → ProjectsList.
     try {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [
             {
-              name: 'Projects',
-              params: { screen: 'ProjectsList' },
-            } as any,
+              name: 'Main',
+              state: {
+                type: 'tab',
+                index: 2, // Projects tab
+                routes: [
+                  { name: 'Home' },
+                  { name: 'NewProject' },
+                  {
+                    name: 'Projects',
+                    state: {
+                      type: 'stack',
+                      index: 0,
+                      routes: [{ name: 'ProjectsList' }],
+                    },
+                  },
+                  { name: 'Profile' },
+                ],
+              },
+            },
           ],
         })
       );
