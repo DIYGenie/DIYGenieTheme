@@ -43,7 +43,10 @@ export default function NewProjectMedia(props) {
       const projectId = await ensureProjectForDraft(draft);
       if (!draft?.projectId) onDraftChange({ ...draft, projectId });
 
-      navigation.navigate('Scan', { projectId });
+      navigation.navigate('Main', {
+        screen: 'Scan',
+        params: { projectId },
+      });
     } catch (e) {
       if (String(e?.message || e).includes('AUTH_REQUIRED')) return;
       console.log('[scan nav failed]', e);

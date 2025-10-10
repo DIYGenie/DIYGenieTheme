@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableRect from '../components/DraggableRect';
@@ -12,8 +12,17 @@ export default function ScanScreen() {
   const [norm, setNorm] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0.2, y: 0.2, w: 0.5, h: 0.35 });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!projectId) {
+      console.log('[scan] missing projectId – bailing');
+      Alert.alert('Missing project', 'Please start the scan from the New Project form.');
+      navigation.goBack();
+    }
+  }, [projectId, navigation]);
+
   const handleSave = async () => {
     if (!projectId) {
+      console.log('[scan] missing projectId in handleSave – should not happen');
       Alert.alert('Error', 'Please create a project first.');
       return;
     }
@@ -29,11 +38,8 @@ export default function ScanScreen() {
       
       console.log('[scan] saved', { scanId });
       
-      await requestPreviewIfEligible(projectId);
-      
       const result = { 
         scanId, 
-        imageUrl: undefined, 
         source: 'ar' as const 
       };
       
