@@ -278,11 +278,11 @@ export default function ProjectDetails() {
           {/* Section Cards */}
           {!!planObj && (
             <>
-              {/* Overview */}
+              {/* 1. Overview */}
               <SectionCard
                 icon={<Ionicons name="information-circle-outline" size={22} color="#6D28D9" />}
                 title="Overview"
-                summary="What you'll build"
+                summary="Project summary"
                 onNavigate={() => {
                   console.log('[details] nav section=overview');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' });
@@ -291,28 +291,159 @@ export default function ProjectDetails() {
                 <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
                   {planObj.overview || 'No overview yet.'}
                 </Text>
-                {(planObj.time_estimate_hours || planObj.cost_estimate_usd) && (
-                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                    {planObj.time_estimate_hours && (
-                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ fontSize: 16 }}>⏱</Text>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>{planObj.time_estimate_hours} hrs</Text>
-                      </View>
-                    )}
-                    {planObj.cost_estimate_usd && (
-                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ fontSize: 16 }}>💵</Text>
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>${planObj.cost_estimate_usd}</Text>
-                      </View>
-                    )}
+                
+                {/* Time & Cost & Skill */}
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                  {planObj.skill_level && (
+                    <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 16 }}>🎯</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9', textTransform: 'capitalize' }}>{planObj.skill_level}</Text>
+                    </View>
+                  )}
+                  {planObj.time_estimate_hours && (
+                    <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 16 }}>⏱</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>{planObj.time_estimate_hours} hrs</Text>
+                    </View>
+                  )}
+                  {planObj.cost_estimate_usd && (
+                    <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 16 }}>💵</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>${planObj.cost_estimate_usd}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Safety Warnings */}
+                {planObj.safety_warnings && planObj.safety_warnings.length > 0 && (
+                  <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginTop: 12 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 6 }}>⚠️ Safety First</Text>
+                    {planObj.safety_warnings.map((warning, i) => (
+                      <Text key={i} style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• {warning}</Text>
+                    ))}
                   </View>
                 )}
               </SectionCard>
 
-              {/* Steps */}
+              {/* 2. Materials + Tools (combined shopping list) */}
               <SectionCard
-                icon={<Feather name="list" size={22} color="#6D28D9" />}
-                title="Steps"
+                icon={<MaterialCommunityIcons name="cart-outline" size={22} color="#6D28D9" />}
+                title="Materials + Tools"
+                countBadge={(planObj.materials?.length || 0) + (planObj.tools?.length || 0)}
+                summary="Shopping list"
+                onNavigate={() => {
+                  console.log('[details] nav section=shopping');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'shopping' });
+                }}
+              >
+                {/* Materials section */}
+                {planObj.materials && planObj.materials.length > 0 && (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#6D28D9', marginBottom: 8 }}>Materials (Required)</Text>
+                    {planObj.materials.map((m: any, i: number) => (
+                      <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                        <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+                          <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
+                          <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>
+                            {m.name} {m.qty && <Text style={{ fontWeight: '600' }}>({m.qty}{m.unit ? ' ' + m.unit : ''})</Text>}
+                          </Text>
+                        </View>
+                        {m.price && <Text style={{ fontSize: 15, fontWeight: '600', color: '#059669' }}>${m.price}</Text>}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Tools section */}
+                {planObj.tools && planObj.tools.length > 0 && (
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#6D28D9', marginBottom: 8 }}>Tools</Text>
+                    {planObj.tools.map((tool: any, i: number) => {
+                      const toolObj = typeof tool === 'string' ? { name: tool } : tool;
+                      const needToBuy = toolObj.have === false;
+                      return (
+                        <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                          <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
+                            <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
+                            <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>{toolObj.name}</Text>
+                          </View>
+                          {needToBuy && toolObj.rentalPrice && (
+                            <Text style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
+                              if needed ~${toolObj.rentalPrice}
+                            </Text>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Copy button */}
+                <Pressable
+                  onPress={() => {
+                    const matText = (planObj.materials || []).map((m: any) => 
+                      `• ${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}${m.price ? ` - $${m.price}` : ''}`
+                    ).join('\n');
+                    const toolText = (planObj.tools || []).map((t: any) => {
+                      const tool = typeof t === 'string' ? { name: t } : t;
+                      return `• ${tool.name}${tool.rentalPrice ? ` (~$${tool.rentalPrice})` : ''}`;
+                    }).join('\n');
+                    const text = `MATERIALS:\n${matText}\n\nTOOLS:\n${toolText}`;
+                    copyText(text);
+                  }}
+                  style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginTop: 12 }}
+                >
+                  <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy Shopping List</Text>
+                </Pressable>
+              </SectionCard>
+
+              {/* 3. Cut List */}
+              {planObj.cuts && planObj.cuts.length > 0 && (
+                <SectionCard
+                  icon={<MaterialCommunityIcons name="content-cut" size={22} color="#6D28D9" />}
+                  title="Cut List"
+                  countBadge={planObj.cuts?.length || 0}
+                  summary="Cutting guide"
+                  onNavigate={() => {
+                    console.log('[details] nav section=cuts');
+                    (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' });
+                  }}
+                >
+                  <View>
+                    {planObj.cuts.map((cut: any, i: number) => (
+                      <View key={i} style={{ 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between', 
+                        paddingVertical: 10, 
+                        borderBottomWidth: i < planObj.cuts.length - 1 ? 1 : 0,
+                        borderBottomColor: '#E5E7EB'
+                      }}>
+                        <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>{cut.part}</Text>
+                        <Text style={{ fontSize: 15, color: '#6B7280', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
+                          {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  
+                  <Pressable
+                    onPress={() => {
+                      const text = planObj.cuts.map((c: any) => 
+                        `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} (×${c.qty ?? 1})`
+                      ).join('\n');
+                      copyText(text);
+                    }}
+                    style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginTop: 12 }}
+                  >
+                    <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy Cut List</Text>
+                  </Pressable>
+                </SectionCard>
+              )}
+
+              {/* 4. Build Steps (with checkboxes - will be implemented next) */}
+              <SectionCard
+                icon={<Feather name="check-square" size={22} color="#6D28D9" />}
+                title="Build Steps"
                 countBadge={planObj.steps?.length || 0}
                 summary={`${planObj.steps?.length || 0} steps`}
                 onNavigate={() => {
@@ -326,22 +457,21 @@ export default function ProjectDetails() {
                     <View style={{ marginBottom: 16 }}>
                       {planObj.steps.slice(0, 10).map((step: any, i: number) => {
                         const stepTitle = typeof step === 'string' ? step : (step.title || `Step ${i + 1}`);
-                        const stepBody = typeof step === 'string' ? '' : (step.body || '');
-                        const hasTip = stepBody.toLowerCase().includes('tip:') || stepBody.toLowerCase().includes('safety:');
+                        const stepTime = typeof step === 'object' ? step.estimatedTime || step.time_minutes : null;
                         
                         return (
                           <View key={i} style={{ marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
                               <Text style={{ fontSize: 15, fontWeight: '600', color: '#6D28D9' }}>{i + 1}.</Text>
-                              <Text style={{ fontSize: 15, color: '#374151', flex: 1, lineHeight: 22 }}>{stepTitle}</Text>
-                            </View>
-                            {hasTip && (
-                              <View style={{ marginLeft: 24, marginTop: 4, paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: '#FCD34D' }}>
-                                <Text style={{ fontSize: 13, color: '#92400E', fontStyle: 'italic' }}>
-                                  {stepBody.split('\n')[0].slice(0, 100)}...
-                                </Text>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22 }}>{stepTitle}</Text>
+                                {stepTime && (
+                                  <Text style={{ fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>
+                                    ⏱ {typeof stepTime === 'number' ? `${stepTime} min` : stepTime}
+                                  </Text>
+                                )}
                               </View>
-                            )}
+                            </View>
                           </View>
                         );
                       })}
@@ -351,7 +481,7 @@ export default function ProjectDetails() {
                         onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
                         style={{ flex: 1, backgroundColor: '#6D28D9', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
                       >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Start Build</Text>
+                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Start Building</Text>
                       </Pressable>
                       <Pressable
                         onPress={() => {
@@ -371,150 +501,35 @@ export default function ProjectDetails() {
                 )}
               </SectionCard>
 
-              {/* Materials */}
-              <SectionCard
-                icon={<MaterialCommunityIcons name="cube-outline" size={22} color="#6D28D9" />}
-                title="Materials"
-                countBadge={planObj.materials?.length || 0}
-                summary={`${planObj.materials?.length || 0} items`}
-                onNavigate={() => {
-                  console.log('[details] nav section=materials');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'materials' });
-                }}
-              >
-                {planObj.materials?.length ? (
-                  <>
-                    <View style={{ marginBottom: 16 }}>
-                      {planObj.materials.map((m: any, i: number) => (
-                        <View key={i} style={{ flexDirection: 'row', marginBottom: 8, gap: 8 }}>
-                          <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
-                          <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>
-                            {m.name}
-                            {m.qty && <Text style={{ fontWeight: '600' }}> — {m.qty}{m.unit ? ' ' + m.unit : ''}</Text>}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                    <Pressable
-                      onPress={() => {
-                        const text = planObj.materials.map((m: any) => 
-                          `• ${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}`
-                        ).join('\n');
-                        copyText(text);
-                      }}
-                      style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
-                    >
-                      <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy List</Text>
-                    </Pressable>
-                  </>
-                ) : (
-                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No materials listed.</Text>
-                )}
-              </SectionCard>
-
-              {/* Tools */}
-              <SectionCard
-                icon={<MaterialCommunityIcons name="hammer-wrench" size={22} color="#6D28D9" />}
-                title="Tools"
-                countBadge={planObj.tools?.length || 0}
-                summary={`${planObj.tools?.length || 0} tools`}
-                onNavigate={() => {
-                  console.log('[details] nav section=tools');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'tools' });
-                }}
-              >
-                {planObj.tools?.length ? (
-                  <>
-                    <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginBottom: 12 }}>
-                      <Text style={{ fontSize: 13, color: '#92400E', fontWeight: '600' }}>
-                        ⚠️ Wear eye & hearing protection
-                      </Text>
-                    </View>
-                    <View>
-                      {planObj.tools.map((tool: any, i: number) => (
-                        <View key={i} style={{ flexDirection: 'row', marginBottom: 6, gap: 8 }}>
-                          <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
-                          <Text style={{ fontSize: 15, color: '#374151' }}>{typeof tool === 'string' ? tool : tool.name}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                ) : (
-                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No tools listed.</Text>
-                )}
-              </SectionCard>
-
-              {/* Cuts */}
-              <SectionCard
-                icon={<MaterialCommunityIcons name="content-cut" size={22} color="#6D28D9" />}
-                title="Cuts"
-                countBadge={planObj.cuts?.length || 0}
-                summary={`${planObj.cuts?.length || 0} cuts`}
-                onNavigate={() => {
-                  console.log('[details] nav section=cuts');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' });
-                }}
-              >
-                {planObj.cuts?.length ? (
+              {/* 5. Finishing (only if applicable) */}
+              {planObj.finishing && planObj.finishing.length > 0 && (
+                <SectionCard
+                  icon={<MaterialCommunityIcons name="shimmer" size={22} color="#6D28D9" />}
+                  title="Finishing"
+                  summary="Final touches"
+                  onNavigate={() => {
+                    console.log('[details] nav section=finishing');
+                    (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'finishing' });
+                  }}
+                >
                   <View>
-                    {planObj.cuts.map((cut: any, i: number) => (
-                      <View key={i} style={{ 
-                        flexDirection: 'row', 
-                        justifyContent: 'space-between', 
-                        paddingVertical: 10, 
-                        borderBottomWidth: i < planObj.cuts.length - 1 ? 1 : 0,
-                        borderBottomColor: '#E5E7EB'
-                      }}>
-                        <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>{cut.part}</Text>
-                        <Text style={{ fontSize: 15, color: '#6B7280', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
-                          {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
-                        </Text>
+                    {planObj.finishing.map((item: any, i: number) => (
+                      <View key={i} style={{ marginBottom: 12 }}>
+                        {item.title && (
+                          <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 4 }}>
+                            {item.title}
+                          </Text>
+                        )}
+                        {item.description && (
+                          <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 20 }}>
+                            {item.description}
+                          </Text>
+                        )}
                       </View>
                     ))}
                   </View>
-                ) : (
-                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No cuts listed.</Text>
-                )}
-              </SectionCard>
-
-              {/* Time & Cost */}
-              <SectionCard
-                icon={<Ionicons name="time-outline" size={22} color="#6D28D9" />}
-                title="Time & Cost"
-                onNavigate={() => {
-                  console.log('[details] nav section=time');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'time' });
-                }}
-              >
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ 
-                    flex: 1, 
-                    backgroundColor: '#EDE9FE', 
-                    padding: 16, 
-                    borderRadius: 12,
-                    alignItems: 'center'
-                  }}>
-                    <Ionicons name="time-outline" size={28} color="#6D28D9" />
-                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#6D28D9', marginTop: 8 }}>
-                      {planObj.time_estimate_hours || '—'}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>hours</Text>
-                  </View>
-                  <View style={{ 
-                    flex: 1, 
-                    backgroundColor: '#EDE9FE', 
-                    padding: 16, 
-                    borderRadius: 12,
-                    alignItems: 'center'
-                  }}>
-                    <Ionicons name="cash-outline" size={28} color="#6D28D9" />
-                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#6D28D9', marginTop: 8 }}>
-                      ${planObj.cost_estimate_usd || '—'}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>estimated cost</Text>
-                  </View>
-                </View>
-              </SectionCard>
+                </SectionCard>
+              )}
             </>
           )}
 
