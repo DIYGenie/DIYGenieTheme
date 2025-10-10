@@ -22,7 +22,11 @@ export default function SectionCard({
   const [open, setOpen] = useState(!!defaultOpen);
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen(v => !v);
+    setOpen(v => {
+      const newState = !v;
+      console.log(`[details] toggle=${title.toLowerCase()} open=${newState}`);
+      return newState;
+    });
   };
 
   return (

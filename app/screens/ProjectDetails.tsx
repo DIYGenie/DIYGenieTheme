@@ -245,7 +245,10 @@ export default function ProjectDetails() {
           {!!planObj && (
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+              onPress={() => {
+                console.log('[details] nav to full');
+                (navigation as any).navigate('DetailedInstructions', { id: projectId });
+              }}
               style={{
                 borderRadius: 16, overflow: 'hidden', marginBottom: 16,
                 shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6
@@ -280,7 +283,10 @@ export default function ProjectDetails() {
                 icon={<Ionicons name="information-circle-outline" size={22} color="#6D28D9" />}
                 title="Overview"
                 summary="What you'll build"
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=overview');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' });
+                }}
               >
                 <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
                   {planObj.overview || 'No overview yet.'}
@@ -309,7 +315,10 @@ export default function ProjectDetails() {
                 title="Steps"
                 countBadge={planObj.steps?.length || 0}
                 summary={`${planObj.steps?.length || 0} steps`}
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=steps');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' });
+                }}
                 defaultOpen
               >
                 {planObj.steps?.length ? (
@@ -368,7 +377,10 @@ export default function ProjectDetails() {
                 title="Materials"
                 countBadge={planObj.materials?.length || 0}
                 summary={`${planObj.materials?.length || 0} items`}
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'materials' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=materials');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'materials' });
+                }}
               >
                 {planObj.materials?.length ? (
                   <>
@@ -406,7 +418,10 @@ export default function ProjectDetails() {
                 title="Tools"
                 countBadge={planObj.tools?.length || 0}
                 summary={`${planObj.tools?.length || 0} tools`}
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'tools' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=tools');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'tools' });
+                }}
               >
                 {planObj.tools?.length ? (
                   <>
@@ -435,7 +450,10 @@ export default function ProjectDetails() {
                 title="Cuts"
                 countBadge={planObj.cuts?.length || 0}
                 summary={`${planObj.cuts?.length || 0} cuts`}
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=cuts');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' });
+                }}
               >
                 {planObj.cuts?.length ? (
                   <View>
@@ -463,7 +481,10 @@ export default function ProjectDetails() {
               <SectionCard
                 icon={<Ionicons name="time-outline" size={22} color="#6D28D9" />}
                 title="Time & Cost"
-                onNavigate={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'time' })}
+                onNavigate={() => {
+                  console.log('[details] nav section=time');
+                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'time' });
+                }}
               >
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ 
