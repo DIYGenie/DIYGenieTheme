@@ -24,7 +24,7 @@ import RoiModal from '../components/RoiModal';
 import { saveRoomScanRegion } from '../lib/regions';
 import MeasureModal from '../components/MeasureModal';
 import { saveLineMeasurement } from '../lib/measure';
-import { saveDraft, loadDraft, clearDraft, ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearNewProjectDraft, ensureProjectIdAndPersist, type NewProjectDraft } from '../lib/draft';
+import { ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearNewProjectDraft, type NewProjectDraft } from '../lib/draft';
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 import { useShake } from '../hooks/useShake';
@@ -153,8 +153,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setLastScan(null);
       lastScanRef.current = null;
       setLastScanEphemeral(null);
-      clearDraft();
-      clearNewProjectDraft(); // wipe persisted draft too
+      clearNewProjectDraft(); // wipe persisted draft
       console.log('[draft] cleared');
     } catch {}
   }
@@ -466,7 +465,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         budget,
         skill_level: skillLevel,
       });
-      const projectId = await ensureProjectIdAndPersist({
+      const projectId = await ensureProjectForDraft({
         projectId: draftId ?? null,
         name: title,
         description,
@@ -478,12 +477,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     } catch (e: any) {
       const msg = String(e?.message || e);
       if (msg === 'AUTH_REQUIRED') return;
-      if (msg.startsWith('VALIDATION_FAILED')) {
-        Alert.alert('Almost there', 'Please fill Title (≥3), Description (≥10), Budget and Skill level.');
+      if (msg === 'VALIDATION_FAILED') {
+        Alert.alert('Almost there', e.userMessage || 'Please check your inputs.');
         return;
       }
-      if (msg.startsWith('PROJECT_CREATE_FAILED') || e?.status === 422) {
-        Alert.alert('Could not create project', 'Please adjust your inputs and try again.');
+      if (msg.startsWith('PROJECT_CREATE_FAILED')) {
+        Alert.alert('Could not create project', e.userMessage || 'Server error. Please try again.');
         return;
       }
       Alert.alert('Oops', 'Could not start scan. Try again.');
@@ -511,7 +510,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         budget,
         skill_level: skillLevel,
       });
-      const projectId = await ensureProjectIdAndPersist({
+      const projectId = await ensureProjectForDraft({
         projectId: draftId ?? null,
         name: title,
         description,
@@ -526,12 +525,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     } catch (err: any) {
       const msg = String(err?.message || err);
       if (msg === 'AUTH_REQUIRED') return;
-      if (msg.startsWith('VALIDATION_FAILED')) {
-        Alert.alert('Almost there', 'Please fill Title (≥3), Description (≥10), Budget and Skill level.');
+      if (msg === 'VALIDATION_FAILED') {
+        Alert.alert('Almost there', err.userMessage || 'Please check your inputs.');
         return;
       }
-      if (msg.startsWith('PROJECT_CREATE_FAILED') || err?.status === 422) {
-        Alert.alert('Could not create project', 'Please adjust your inputs and try again.');
+      if (msg.startsWith('PROJECT_CREATE_FAILED')) {
+        Alert.alert('Could not create project', err.userMessage || 'Server error. Please try again.');
         return;
       }
       Alert.alert('Photo picker', err?.message || 'Could not select photo');
@@ -560,7 +559,6 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       }
       triggerHaptic('success');
       Alert.alert('Success', 'Preview requested');
-      clearDraft();
       goToProjectDetailsSeeded(id);
     } catch (err: any) {
       Alert.alert('Preview failed', err?.message || 'Could not generate preview');

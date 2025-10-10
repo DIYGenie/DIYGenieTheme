@@ -1,6 +1,22 @@
+Fix project creation before AR scan; persist projectId; show real server errors
+
+Goals
+
+When starting AR scan, if the draft has no projectId, create the project with strict validation.
+
+On success, save projectId into both screen state and AsyncStorage draft.
+
+On failure, show the exact server error (no more generic “422”).
+
+Do not clear the draft at any point.
+
+1) Replace ensureProjectForDraft with robust version
+
+Create/overwrite app/lib/draft.ts exports:
+
 // app/lib/draft.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE as base } from './api'; // existing base URL helper
+import { base } from './api'; // existing base URL helper
 
 const DRAFT_KEY = 'newProjectDraft:v1';
 
