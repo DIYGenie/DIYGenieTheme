@@ -42,7 +42,11 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
     - Save-to-photos functionality (captures each section individually)
 - **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans. Offline mode indicator shows when plan is available without internet connection.
 - **Progress Tracking**: Database-backed progress tracking with `completed_steps` (array of completed step indices) and `current_step_index` fields. API endpoints at `/api/projects/:id/progress` (GET/POST) allow fetching and updating build progress. Frontend displays interactive checkboxes, visual progress bar, and "Start Building" / "Continue Building" CTAs.
-- **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality.
+- **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality. Authentication guards in project creation flow:
+  - `getUserId()` helper in `app/lib/auth.ts` retrieves current user session
+  - `createProjectAndReturnId()` in `app/lib/api.ts` always includes `user_id` in payload and throws `AUTH_REQUIRED` if no session
+  - `getOrCreateProjectId()` in `NewProject.tsx` checks auth before creating projects, shows "Sign in required" alert and navigates to SignIn screen if unauthorized
+  - All project creation entry points (Scan room, Upload photo, Build with AI) are protected by these guards
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
 - **AR Session Scaffolding**: iOS AR preparation with ARKit permissions in app.json, lightweight AR session facade (`app/lib/ar/ArSession.ts`) with platform checks, and ScanScreen integration with Expo Go banner. Shows "AR requires iOS dev build" banner in Expo Go while maintaining ROI overlay and Save Scan functionality. No native modules added yet - safe and reversible.
 
