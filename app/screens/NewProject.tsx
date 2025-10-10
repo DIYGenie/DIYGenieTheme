@@ -257,15 +257,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     };
   }, [title, description, budget, skillLevel, draftId]);
 
-  // Clear form when navigating away from tab
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      if (draftId) {
-        resetForm();
-      }
-    });
-    return unsubscribe;
-  }, [navigation, draftId]);
+  // Keep form alive when navigating away - no auto-clear on blur
+  // User must explicitly tap "Clear Form" to reset
 
 
   // Handle photo from scan navigation params
@@ -279,32 +272,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }, [route.params?.photoUri, route.params?.fromScan]);
 
-  // Handle savedScan param from scan screen
+  // Handle savedScan param from scan screen - only update scan, preserve form
   useFocusEffect(
     React.useCallback(() => {
-      const paramScan = route.params?.savedScan;
-      if (paramScan) {
-        console.log('[newProject] param savedScan detected', paramScan);
-        setLastScan(paramScan);
-        lastScanRef.current = paramScan;
-        setLastScanEphemeral(paramScan);
-        // Force a single-shot re-hydrate of draft fields from AsyncStorage in case the screen remounted blank
-        (async () => {
-          try {
-            const stored = await loadNewProjectDraft();
-            console.log('[draft] focus→rehydrate after scan', stored);
-            if (stored) {
-              if (stored.name) setTitle(stored.name);
-              if (stored.description) setDescription(stored.description);
-              if (stored.budget != null) setBudget(String(stored.budget));
-              if (stored.skill_level) setSkillLevel(stored.skill_level);
-              if (stored.projectId) setDraftId(stored.projectId);
-            }
-          } catch (e) {
-            console.log('[draft] rehydrate error', e);
-          }
-        })();
-        // IMPORTANT: clear param so revisits don't re-run
+      const s = route.params?.savedScan;
+      if (s) {
+        console.log('[newProject] savedScan arrived', s);
+        setLastScan(s);
+        lastScanRef.current = s;
+        setLastScanEphemeral(s);
+        // Clear param only - do NOT reset form fields
         navigation.setParams({ savedScan: undefined } as any);
       }
       return () => {};
