@@ -197,7 +197,7 @@ export async function fetchLatestScanForProject(projectId: string) {
 
 export async function fetchProjectPlanMarkdown(
   projectId: string,
-  opts?: { tolerate409?: boolean }
+  opts: { signal?: AbortSignal; tolerate409?: boolean } = {}
 ): Promise<string | null> {
   const base =
     (global as any).__API_BASE_URL__ ??
@@ -207,13 +207,19 @@ export async function fetchProjectPlanMarkdown(
     'https://diy-genie-webhooks-tyekowalski.replit.app';
 
   const url = `${base}/api/projects/${projectId}/plan`;
-  const res = await fetch(url);
-  console.log('[plan fetch] GET /api/projects/:id/plan status', res.status);
+  const res = await fetch(url, { method: 'GET', signal: opts?.signal } as any);
   
-  if (res.ok) return await res.text();
-  if (opts?.tolerate409 && res.status === 409) return null;
-  
-  throw new Error(`plan fetch failed: ${res.status}`);
+  if (res.status === 409) {
+    console.log('[plan fetch] GET /api/projects/:id/plan status', 409);
+    return opts.tolerate409 ? null : Promise.reject(Object.assign(new Error('PLAN_409'), { status: 409 }));
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.log('[plan fetch error]', res.status, text);
+    throw new Error(`PLAN_FETCH_FAILED:${res.status}`);
+  }
+  const md = await res.text();
+  return md || '';
 }
 
 export async function buildPlanWithoutPreview(projectId: string): Promise<boolean> {
