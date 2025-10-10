@@ -87,7 +87,17 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [lastScan, setLastScan] = useState<{ scanId: string; imageUrl?: string; source?: 'ar' | 'upload' } | null>(null);
+  
+  type LastScan = {
+    scanId: string;
+    imageUrl?: string;
+    source?: 'ar' | 'upload';
+    roi?: { x: number; y: number; w: number; h: number };
+    measure?: { width_in: number; height_in: number; px_per_in: number };
+    measuring?: boolean;
+  };
+  
+  const [lastScan, setLastScan] = useState<LastScan | null>(null);
   const [roiOpen, setRoiOpen] = useState(false);
   const [lastRegionId, setLastRegionId] = useState<string | null>(null);
   const [measureOpen, setMeasureOpen] = useState(false);
@@ -98,7 +108,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const scrollRef = React.useRef<ScrollView>(null);
   const descRef = React.useRef<TextInput>(null);
   const ctaRef = React.useRef<View>(null);
-  const lastScanRef = useRef<{ scanId: string; imageUrl?: string; source?: 'ar' | 'upload' } | null>(null);
+  const lastScanRef = useRef<LastScan | null>(null);
   
   type MissingKey = 'title' | 'description' | 'budget' | 'skill' | null;
   const [missing, setMissing] = useState<MissingKey>(null);
@@ -1163,11 +1173,38 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
                 Saved scan {lastScan.source === 'ar' ? '(AR)' : ''}
               </Text>
-              <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                {lastScan.source === 'ar' 
-                  ? 'Measurement processing coming soon. You can still build your plan now.'
-                  : `${lastScan.scanId.slice(0, 8)}…`}
-              </Text>
+              
+              {lastScan.measuring && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <ActivityIndicator size="small" color="#7C3AED" />
+                  <Text style={{ fontSize: 12, color: '#7C3AED', fontWeight: '500' }}>
+                    Measuring…
+                  </Text>
+                </View>
+              )}
+              
+              {lastScan.measure && !lastScan.measuring && (
+                <View style={{
+                  marginTop: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  backgroundColor: '#F3F0FF',
+                  borderRadius: 6,
+                  alignSelf: 'flex-start',
+                }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#7C3AED' }}>
+                    Measurements • {lastScan.measure.width_in}" × {lastScan.measure.height_in}"
+                  </Text>
+                </View>
+              )}
+              
+              {!lastScan.measuring && !lastScan.measure && (
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                  {lastScan.source === 'ar' 
+                    ? `${lastScan.scanId.slice(0, 8)}…`
+                    : `${lastScan.scanId.slice(0, 8)}…`}
+                </Text>
+              )}
             </View>
             {/* V1: hide tool buttons for uploads */}
             {__HIDE_MEDIA_TOOLS ? null : lastScan?.imageUrl && (
