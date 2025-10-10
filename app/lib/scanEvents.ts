@@ -1,7 +1,18 @@
 // app/lib/scanEvents.ts
 import { supabase } from '../lib/supabase';
+import { requestScanMeasurement } from './api';
 
 export type Roi = { x: number; y: number; w: number; h: number };
+
+export async function startMeasurementJob(projectId: string, scanId: string) {
+  try {
+    console.log('[measure] start', { projectId, scanId });
+    await requestScanMeasurement(projectId, scanId);
+    console.log('[measure] started');
+  } catch (e: any) {
+    console.log('[measure] start failed', e?.message || e);
+  }
+}
 
 export async function saveArScan(opts: {
   projectId: string;
@@ -28,6 +39,9 @@ export async function saveArScan(opts: {
     console.log('[scan] save failed', error.message);
     throw error;
   }
+
+  // Trigger measurement job (non-blocking)
+  setTimeout(() => startMeasurementJob(projectId, data.id).catch(() => {}), 0);
 
   return { scanId: data.id, imageUrl: data.image_url, source: 'ar' };
 }
