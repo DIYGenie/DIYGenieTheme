@@ -234,27 +234,49 @@ export default function DetailedInstructions() {
 
       {/* Build Steps */}
       <View ref={refs.steps} style={{ marginTop: 24, marginHorizontal: 16 }}>
-        <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827', marginBottom: 16 }}>Build Steps</Text>
+        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 20, letterSpacing: -0.5 }}>Build Steps</Text>
         
         {plan.steps && plan.steps.length > 0 ? (
           plan.steps.map((step: any, i: number) => (
-            <View key={i} style={{ marginBottom: 24 }}>
+            <View key={i} style={{ marginBottom: 20 }}>
               {/* Step Card */}
-              <View style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
+              <View style={{ 
+                backgroundColor: 'white', 
+                borderRadius: 20, 
+                overflow: 'hidden', 
+                shadowColor: '#7C3AED', 
+                shadowOpacity: 0.1, 
+                shadowRadius: 16, 
+                shadowOffset: { width: 0, height: 4 }, 
+                elevation: 5,
+                borderWidth: 1,
+                borderColor: '#F3F4F6'
+              }}>
                 {/* Step Header */}
-                <View style={{ backgroundColor: '#F9FAFB', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+                <View style={{ backgroundColor: '#FAFAFA', padding: 18, borderBottomWidth: 2, borderBottomColor: '#F3F4F6' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: 'white', fontSize: 16, fontWeight: '700' }}>{i + 1}</Text>
+                      <View style={{ 
+                        width: 40, 
+                        height: 40, 
+                        borderRadius: 20, 
+                        backgroundColor: '#7C3AED', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        shadowColor: '#7C3AED',
+                        shadowOpacity: 0.4,
+                        shadowRadius: 8,
+                        shadowOffset: { width: 0, height: 2 }
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 18, fontWeight: '800' }}>{i + 1}</Text>
                       </View>
-                      <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', marginLeft: 12, flex: 1 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginLeft: 14, flex: 1, letterSpacing: -0.3 }}>
                         {step.title || `Step ${i + 1}`}
                       </Text>
                     </View>
                     {step.time_minutes && (
-                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#6D28D9' }}>{step.time_minutes} min</Text>
+                      <View style={{ backgroundColor: '#F3E8FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#E9D5FF' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#7C3AED' }}>⏱ {step.time_minutes} min</Text>
                       </View>
                     )}
                   </View>
@@ -262,11 +284,21 @@ export default function DetailedInstructions() {
 
                 {/* Photo Placeholder */}
                 {step.photo_url ? (
-                  <Image source={{ uri: step.photo_url }} style={{ width: '100%', height: 200 }} resizeMode="cover" />
+                  <Image source={{ uri: step.photo_url }} style={{ width: '100%', height: 220 }} resizeMode="cover" />
                 ) : (
-                  <View style={{ width: '100%', height: 180, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="image-outline" size={48} color="#D1D5DB" />
-                    <Text style={{ color: '#9CA3AF', fontSize: 13, marginTop: 8 }}>Visual guide coming soon</Text>
+                  <View style={{ width: '100%', height: 200, backgroundColor: '#FAFAFA', alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+                    <View style={{ 
+                      width: 80, 
+                      height: 80, 
+                      borderRadius: 40, 
+                      backgroundColor: '#F3F4F6', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      marginBottom: 12
+                    }}>
+                      <Ionicons name="image-outline" size={40} color="#D1D5DB" />
+                    </View>
+                    <Text style={{ color: '#9CA3AF', fontSize: 14, fontWeight: '500' }}>Visual guide coming soon</Text>
                   </View>
                 )}
 
@@ -274,34 +306,68 @@ export default function DetailedInstructions() {
                 <View style={{ padding: 16 }}>
                   {/* Purpose / What you're building */}
                   {step.purpose && (
-                    <View style={{ backgroundColor: '#F0F9FF', padding: 12, borderRadius: 8, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: '#0EA5E9' }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#0369A1', marginBottom: 4 }}>What you're building:</Text>
-                      <Text style={{ fontSize: 14, color: '#075985', lineHeight: 20 }}>{step.purpose}</Text>
+                    <View style={{ 
+                      backgroundColor: '#EFF6FF', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginBottom: 16, 
+                      borderLeftWidth: 4, 
+                      borderLeftColor: '#3B82F6',
+                      shadowColor: '#3B82F6',
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 }
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                        <Ionicons name="bulb-outline" size={18} color="#1D4ED8" />
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: '#1E40AF', marginLeft: 6 }}>What you're building:</Text>
+                      </View>
+                      <Text style={{ fontSize: 15, color: '#1E3A8A', lineHeight: 22, fontWeight: '500' }}>{step.purpose}</Text>
                     </View>
                   )}
 
                   {/* Materials needed for this step */}
                   {step.materials_needed && step.materials_needed.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <MaterialCommunityIcons name="package-variant" size={18} color="#7C3AED" />
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#7C3AED', marginLeft: 6 }}>Grab these materials:</Text>
+                    <View style={{ 
+                      backgroundColor: '#F9FAFB', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginBottom: 16,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB'
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                        <MaterialCommunityIcons name="package-variant" size={20} color="#7C3AED" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#7C3AED', marginLeft: 8 }}>Grab these materials:</Text>
                       </View>
                       {step.materials_needed.map((mat: string, idx: number) => (
-                        <Text key={idx} style={{ fontSize: 14, color: '#374151', marginLeft: 24, lineHeight: 20 }}>• {mat}</Text>
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+                          <Text style={{ fontSize: 16, color: '#7C3AED', marginRight: 8 }}>•</Text>
+                          <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, flex: 1, fontWeight: '500' }}>{mat}</Text>
+                        </View>
                       ))}
                     </View>
                   )}
 
                   {/* Tools needed for this step */}
                   {step.tools_needed && step.tools_needed.length > 0 && (
-                    <View style={{ marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Feather name="tool" size={18} color="#7C3AED" />
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#7C3AED', marginLeft: 6 }}>Tools you'll need:</Text>
+                    <View style={{ 
+                      backgroundColor: '#F9FAFB', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginBottom: 16,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB'
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                        <Feather name="tool" size={20} color="#7C3AED" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#7C3AED', marginLeft: 8 }}>Tools you'll need:</Text>
                       </View>
                       {step.tools_needed.map((tool: string, idx: number) => (
-                        <Text key={idx} style={{ fontSize: 14, color: '#374151', marginLeft: 24, lineHeight: 20 }}>• {tool}</Text>
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+                          <Text style={{ fontSize: 16, color: '#7C3AED', marginRight: 8 }}>•</Text>
+                          <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, flex: 1, fontWeight: '500' }}>{tool}</Text>
+                        </View>
                       ))}
                     </View>
                   )}
@@ -323,39 +389,81 @@ export default function DetailedInstructions() {
 
                   {/* Pro Tips */}
                   {step.pro_tips && step.pro_tips.length > 0 && (
-                    <View style={{ backgroundColor: '#EFF6FF', padding: 12, borderRadius: 8, marginTop: 8, borderLeftWidth: 3, borderLeftColor: '#3B82F6' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Ionicons name="bulb" size={18} color="#1D4ED8" />
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E40AF', marginLeft: 6 }}>Pro Tips:</Text>
+                    <View style={{ 
+                      backgroundColor: '#EFF6FF', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginTop: 12, 
+                      borderLeftWidth: 4, 
+                      borderLeftColor: '#3B82F6',
+                      shadowColor: '#3B82F6',
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 }
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Ionicons name="bulb" size={20} color="#2563EB" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E40AF', marginLeft: 8 }}>Pro Tips</Text>
                       </View>
                       {step.pro_tips.map((tip: string, idx: number) => (
-                        <Text key={idx} style={{ fontSize: 14, color: '#1E40AF', lineHeight: 20, marginTop: 4 }}>• {tip}</Text>
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+                          <Text style={{ fontSize: 16, color: '#3B82F6', marginRight: 8 }}>💡</Text>
+                          <Text style={{ fontSize: 15, color: '#1E3A8A', lineHeight: 22, flex: 1, fontWeight: '500' }}>{tip}</Text>
+                        </View>
                       ))}
                     </View>
                   )}
 
                   {/* Quality Checks */}
                   {step.checks && step.checks.length > 0 && (
-                    <View style={{ backgroundColor: '#F0FDF4', padding: 12, borderRadius: 8, marginTop: 12, borderLeftWidth: 3, borderLeftColor: '#10B981' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Ionicons name="checkmark-circle" size={18} color="#059669" />
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#065F46', marginLeft: 6 }}>Quality checks:</Text>
+                    <View style={{ 
+                      backgroundColor: '#F0FDF4', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginTop: 12, 
+                      borderLeftWidth: 4, 
+                      borderLeftColor: '#10B981',
+                      shadowColor: '#10B981',
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 }
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#047857', marginLeft: 8 }}>Quality Checks</Text>
                       </View>
                       {step.checks.map((check: string, idx: number) => (
-                        <Text key={idx} style={{ fontSize: 14, color: '#065F46', lineHeight: 20, marginTop: 4 }}>✓ {check}</Text>
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+                          <Text style={{ fontSize: 16, color: '#10B981', marginRight: 8 }}>✓</Text>
+                          <Text style={{ fontSize: 15, color: '#065F46', lineHeight: 22, flex: 1, fontWeight: '500' }}>{check}</Text>
+                        </View>
                       ))}
                     </View>
                   )}
 
                   {/* Common Mistakes / Pitfalls */}
                   {step.pitfalls && step.pitfalls.length > 0 && (
-                    <View style={{ backgroundColor: '#FEF2F2', padding: 12, borderRadius: 8, marginTop: 12, borderLeftWidth: 3, borderLeftColor: '#EF4444' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Ionicons name="alert-circle" size={18} color="#DC2626" />
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#991B1B', marginLeft: 6 }}>Avoid these mistakes:</Text>
+                    <View style={{ 
+                      backgroundColor: '#FEF2F2', 
+                      padding: 14, 
+                      borderRadius: 12, 
+                      marginTop: 12, 
+                      borderLeftWidth: 4, 
+                      borderLeftColor: '#EF4444',
+                      shadowColor: '#EF4444',
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 }
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#B91C1C', marginLeft: 8 }}>Avoid These Mistakes</Text>
                       </View>
                       {step.pitfalls.map((pitfall: string, idx: number) => (
-                        <Text key={idx} style={{ fontSize: 14, color: '#991B1B', lineHeight: 20, marginTop: 4 }}>⚠️ {pitfall}</Text>
+                        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 6 }}>
+                          <Text style={{ fontSize: 16, color: '#EF4444', marginRight: 8 }}>⚠️</Text>
+                          <Text style={{ fontSize: 15, color: '#991B1B', lineHeight: 22, flex: 1, fontWeight: '500' }}>{pitfall}</Text>
+                        </View>
                       ))}
                     </View>
                   )}
@@ -364,9 +472,20 @@ export default function DetailedInstructions() {
 
               {/* Progress indicator between steps */}
               {i < totalSteps - 1 && (
-                <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-                  <View style={{ width: 2, height: 20, backgroundColor: '#D1D5DB' }} />
-                  <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                  <View style={{ width: 3, height: 24, backgroundColor: '#E5E7EB', borderRadius: 2 }} />
+                  <View style={{ 
+                    width: 32, 
+                    height: 32, 
+                    borderRadius: 16, 
+                    backgroundColor: '#F3F4F6', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    marginVertical: 4
+                  }}>
+                    <Ionicons name="arrow-down" size={18} color="#9CA3AF" />
+                  </View>
+                  <View style={{ width: 3, height: 24, backgroundColor: '#E5E7EB', borderRadius: 2 }} />
                 </View>
               )}
             </View>
