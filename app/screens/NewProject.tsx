@@ -34,41 +34,48 @@ const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-
 // V1: tools are AR-only (hide on Upload flow)
 const __HIDE_MEDIA_TOOLS = true;
 
-// --- CTA button (inline, simple) ---
-function CTAButton({
-  title,
-  subtitle,
-  onPress,
-  variant = 'primary',
-  disabled = false,
-}: {
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary';
-  disabled?: boolean;
-}) {
-  const base = {
-    height: 60,
+// --- CTA Styles ---
+const CTA = {
+  base: {
+    width: '100%' as const,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     alignItems: 'flex-start' as const,
     justifyContent: 'center' as const,
-    marginTop: 10,
-    opacity: disabled ? 0.6 : 1,
-  };
-  const primary = { backgroundColor: '#6D28D9' };
-  const secondary = { borderWidth: 1, borderColor: '#6D28D9', backgroundColor: 'white' };
-  const titleStyle = { fontSize: 18, fontWeight: '600' as const, color: variant === 'primary' ? 'white' : '#111827' };
-  const subStyle = { fontSize: 12, color: variant === 'primary' ? '#EDE9FE' : '#6B7280', marginTop: 2, maxWidth: '95%' as const };
-  return (
-    <Pressable onPress={disabled ? undefined : onPress} style={[base, variant === 'primary' ? primary : secondary]} disabled={disabled}>
-      <Text style={titleStyle}>{title}</Text>
-      <Text numberOfLines={2} style={subStyle}>{subtitle}</Text>
-    </Pressable>
-  );
-}
+    gap: 6,
+  },
+  primary: {
+    backgroundColor: '#6D28D9',
+  },
+  primaryDisabled: {
+    backgroundColor: '#C4B5FD',
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#6D28D9',
+  },
+  outlineDisabled: {
+    borderColor: '#C4B5FD',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: '#111827',
+  },
+  titleOnPrimary: {
+    color: 'white',
+  },
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#6B7280',
+  },
+  subtitleOnPrimary: {
+    color: '#EDE9FE',
+  },
+};
 
 type NavProp = CompositeNavigationProp<
   BottomTabNavigationProp<RootTabParamList>,
@@ -1221,20 +1228,47 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             )}
             
             <View style={{ pointerEvents: isBuilding ? 'none' : 'auto', opacity: isBuilding ? 0.6 : 1 }}>
-              <CTAButton
-                title="Build with visual mockup"
-                subtitle="Visual mockup of your space + complete build plan"
-                onPress={handleBuildWithPreview}
-                variant="primary"
-                disabled={!canSubmit || isBuilding}
-              />
-              <CTAButton
-                title="Build plan only"
-                subtitle="Full DIY plan—steps, materials, tools, cuts, time & cost"
-                onPress={onBuildWithoutPreview}
-                variant="secondary"
-                disabled={!canSubmit || isBuilding}
-              />
+              <View style={{ gap: 14, marginTop: 12 }}>
+                {/* PRIMARY: Build with visual mockup */}
+                <Pressable
+                  onPress={handleBuildWithPreview}
+                  disabled={isBuilding || !canSubmit}
+                  style={[
+                    CTA.base,
+                    CTA.primary,
+                    (isBuilding || !canSubmit) && CTA.primaryDisabled,
+                    { opacity: isBuilding || !canSubmit ? 0.9 : 1 },
+                  ]}
+                  hitSlop={8}
+                >
+                  <Text style={[CTA.title, CTA.titleOnPrimary]}>
+                    Build with visual mockup
+                  </Text>
+                  <Text style={[CTA.subtitle, CTA.subtitleOnPrimary]}>
+                    Visual mockup of your space + complete build plan
+                  </Text>
+                </Pressable>
+
+                {/* SECONDARY: Build plan only */}
+                <Pressable
+                  onPress={onBuildWithoutPreview}
+                  disabled={isBuilding || !canSubmit}
+                  style={[
+                    CTA.base,
+                    CTA.outline,
+                    (isBuilding || !canSubmit) && CTA.outlineDisabled,
+                    { opacity: isBuilding || !canSubmit ? 0.6 : 1 },
+                  ]}
+                  hitSlop={8}
+                >
+                  <Text style={CTA.title}>
+                    Build plan only
+                  </Text>
+                  <Text style={CTA.subtitle}>
+                    Full DIY plan—steps, materials, tools, cuts, time & cost
+                  </Text>
+                </Pressable>
+              </View>
               
               <TouchableOpacity
                 onPress={resetForm}
