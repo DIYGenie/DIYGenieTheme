@@ -5,6 +5,8 @@ export async function saveArScan(opts: {
   imageUrl?: string;
   roi?: { x: number; y: number; w: number; h: number };
 }): Promise<{ scanId: string }> {
+  if (!opts.projectId) throw new Error('PROJECT_ID_REQUIRED');
+  
   const { projectId, imageUrl, roi } = opts;
 
   const { data, error } = await supabase

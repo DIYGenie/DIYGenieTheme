@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DraggableRect from '../components/DraggableRect';
-import { saveArScan, requestPreviewIfEligible } from '../lib/scanEvents';
+import { saveArScan } from '../lib/scanEvents';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
   type Params = { projectId?: string };
-  const route = useRoute<RouteProp<Record<'Scan', Params>, 'Scan'>>();
+  const route = useRoute<RouteProp<Record<'ScanScreen', Params>, 'ScanScreen'>>();
   const projectId = route.params?.projectId;
   const [norm, setNorm] = useState<{ x: number; y: number; w: number; h: number }>({ x: 0.2, y: 0.2, w: 0.5, h: 0.35 });
   const [saving, setSaving] = useState(false);

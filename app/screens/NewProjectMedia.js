@@ -44,7 +44,7 @@ export default function NewProjectMedia(props) {
       if (!draft?.projectId) onDraftChange({ ...draft, projectId });
 
       navigation.navigate('Main', {
-        screen: 'Scan',
+        screen: 'ScanScreen',
         params: { projectId },
       });
     } catch (e) {
