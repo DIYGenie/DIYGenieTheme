@@ -513,6 +513,66 @@ app.post('/api/projects/:id/suggestions', async (req, res) => {
   }
 });
 
+// Progress tracking endpoints
+app.get('/api/projects/:id/progress', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+      .from('projects')
+      .select('completed_steps, current_step_index')
+      .eq('id', id)
+      .single();
+    
+    if (error || !data) {
+      return res.status(404).json({ ok: false, error: 'Project not found' });
+    }
+    
+    return res.json({ 
+      ok: true, 
+      completed_steps: data.completed_steps || [],
+      current_step_index: data.current_step_index || 0
+    });
+  } catch (e) {
+    console.error(`[PROGRESS GET ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/projects/:id/progress', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { completed_steps, current_step_index } = req.body;
+    
+    const updates = {};
+    if (completed_steps !== undefined) updates.completed_steps = completed_steps;
+    if (current_step_index !== undefined) updates.current_step_index = current_step_index;
+    
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updates)
+      .eq('id', id)
+      .select('completed_steps, current_step_index')
+      .single();
+    
+    if (error) {
+      console.error(`[PROGRESS UPDATE ERROR] Project ${id}:`, error.message);
+      return res.status(500).json({ ok: false, error: error.message });
+    }
+    
+    console.log(`[PROGRESS UPDATE] Project ${id} - step ${current_step_index}, completed: ${(completed_steps || []).length}`);
+    
+    return res.json({ 
+      ok: true, 
+      completed_steps: data.completed_steps || [],
+      current_step_index: data.current_step_index || 0
+    });
+  } catch (e) {
+    console.error(`[PROGRESS UPDATE ERROR] Project ${req.params.id}:`, e.message);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ DIY Genie API server running on port ${PORT}`);
   console.log(`📡 CORS enabled for all origins`);

@@ -381,3 +381,20 @@ export async function createProjectAndReturnId(payload: {
 
   return String(id);
 }
+
+// Progress tracking
+export async function fetchProjectProgress(projectId: string) {
+  const res = await api(`/api/projects/${projectId}/progress`);
+  return res.data || { completed_steps: [], current_step_index: 0 };
+}
+
+export async function updateProjectProgress(
+  projectId: string,
+  progress: { completed_steps?: number[]; current_step_index?: number }
+) {
+  const res = await api(`/api/projects/${projectId}/progress`, {
+    method: 'POST',
+    body: JSON.stringify(progress),
+  });
+  return res.data || { completed_steps: [], current_step_index: 0 };
+}
