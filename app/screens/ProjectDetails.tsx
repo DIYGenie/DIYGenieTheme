@@ -34,6 +34,11 @@ export default function ProjectDetails() {
   const [buildMode, setBuildMode] = useState(false);
   const [idx, setIdx] = useState(0);
   const [sheet, setSheet] = useState<'materials' | 'cuts' | 'tools' | 'steps' | 'timeAndCost' | null>(null);
+
+  const closeBuildMode = () => {
+    setBuildMode(false);
+    setIdx(0);
+  };
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -371,7 +376,7 @@ export default function ProjectDetails() {
 
       {/* Build Mode Screen */}
       {buildMode && planObj && (
-        <BuildModeScreen planObj={planObj} idx={idx} setIdx={setIdx} setBuildMode={setBuildMode} />
+        <BuildModeScreen planObj={planObj} idx={idx} setIdx={setIdx} setBuildMode={closeBuildMode} />
       )}
 
       {/* Detail Sheets */}
@@ -407,22 +412,58 @@ export default function ProjectDetails() {
   );
 }
 
-function BuildModeScreen({ planObj, idx, setIdx, setBuildMode }: { planObj: Plan; idx: number; setIdx: (i: number) => void; setBuildMode: (b: boolean) => void }) {
+interface BuildModeProps {
+  planObj: Plan;
+  idx: number;
+  setIdx: (i: number) => void;
+  setBuildMode: (b: boolean) => void;
+}
+
+function BuildModeScreen({ planObj, idx, setIdx, setBuildMode }: BuildModeProps) {
   useKeepAwake();
+  
+  const steps = planObj?.steps || [];
+  const totalSteps = steps.length;
+  
+  if (totalSteps === 0) {
+    return (
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', padding: 20 }}>
+        <Text style={{ fontSize: 24, fontWeight: '800', marginBottom: 8 }}>No steps available</Text>
+        <Text style={{ fontSize: 16, lineHeight: 24, marginBottom: 24 }}>This plan doesn't have step-by-step instructions yet.</Text>
+        <TouchableOpacity onPress={() => setBuildMode(false)} style={{ backgroundColor: '#6D28D9', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
+  const currentIdx = Math.max(0, Math.min(idx, totalSteps - 1));
+  const currentStep = steps[currentIdx];
+  
+  const stepTitle = typeof currentStep === 'string' ? `Step ${currentIdx + 1}` : (currentStep?.title || `Step ${currentIdx + 1}`);
+  const stepBody = typeof currentStep === 'string' ? currentStep : (currentStep?.body || 'No instructions available');
   
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', padding: 20 }}>
-      <Text style={{ fontSize: 18, opacity: 0.6, marginBottom: 8 }}>Step {idx + 1} of {planObj?.steps?.length || 0}</Text>
-      <Text style={{ fontSize: 24, fontWeight: '800', marginBottom: 8 }}>{planObj?.steps?.[idx]?.title || 'Step'}</Text>
-      <Text style={{ fontSize: 16, lineHeight: 24 }}>{planObj?.steps?.[idx]?.body || ''}</Text>
+      <Text style={{ fontSize: 18, opacity: 0.6, marginBottom: 8 }}>Step {currentIdx + 1} of {totalSteps}</Text>
+      <Text style={{ fontSize: 24, fontWeight: '800', marginBottom: 8 }}>{stepTitle}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 24 }}>{stepBody}</Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
-        <TouchableOpacity onPress={() => setIdx(Math.max(0, idx - 1))}>
+        <TouchableOpacity 
+          onPress={() => setIdx(Math.max(0, currentIdx - 1))} 
+          disabled={currentIdx === 0}
+          style={{ opacity: currentIdx === 0 ? 0.4 : 1 }}
+        >
           <Text style={{ color: '#6D28D9', fontSize: 16 }}>Back</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setBuildMode(false)}>
           <Text style={{ color: '#111827', fontSize: 16 }}>Close</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIdx(Math.min((planObj?.steps?.length || 1) - 1, idx + 1))}>
+        <TouchableOpacity 
+          onPress={() => setIdx(Math.min(totalSteps - 1, currentIdx + 1))} 
+          disabled={currentIdx === totalSteps - 1}
+          style={{ opacity: currentIdx === totalSteps - 1 ? 0.4 : 1 }}
+        >
           <Text style={{ color: '#6D28D9', fontSize: 16 }}>Next</Text>
         </TouchableOpacity>
       </View>
@@ -430,7 +471,13 @@ function BuildModeScreen({ planObj, idx, setIdx, setBuildMode }: { planObj: Plan
   );
 }
 
-function DetailSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+interface DetailSheetProps {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+function DetailSheet({ title, onClose, children }: DetailSheetProps) {
   return (
     <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
