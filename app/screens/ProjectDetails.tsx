@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
 import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview } from '../lib/api';
@@ -8,6 +8,8 @@ import { parsePlanMarkdown, Plan } from '../lib/plan';
 import AccordionCard from '../components/ui/AccordionCard';
 import { countLabel, stepsTimeCost } from '../lib/planLabels';
 import Toast from '../components/Toast';
+import { saveImageToPhotos } from '../lib/media';
+import { Ionicons } from '@expo/vector-icons';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -81,6 +83,17 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
+  const handleSavePreview = async () => {
+    if (!project?.preview_url) return;
+    const result = await saveImageToPhotos(project.preview_url);
+    if (result.success) {
+      setToast({ visible: true, message: result.message, type: 'success' });
+    } else {
+      Alert.alert('Error', result.message);
+    }
+    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
+  };
+
   const onGeneratePreview = async () => {
     if (!projectId) return;
     setPreviewLoading(true);
@@ -149,27 +162,64 @@ export default function ProjectDetails() {
       ) : (
         <>
           {/* Hero image */}
-          {scan?.imageUrl ? (
-            <Image
-              source={{ uri: scan.imageUrl }}
-              style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE', marginBottom: 16 }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={{
-                width: '100%',
-                height: 220,
-                borderRadius: 16,
-                backgroundColor: '#F2F2F2',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 16,
-              }}
-            >
-              <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
-            </View>
-          )}
+          <View style={{ marginBottom: 16 }}>
+            {project?.preview_url ? (
+              <>
+                <View style={{ position: 'relative' }}>
+                  <Image
+                    source={{ uri: project.preview_url }}
+                    style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }}
+                    resizeMode="cover"
+                  />
+                  <View style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    right: 12, 
+                    backgroundColor: '#7C3AED', 
+                    paddingHorizontal: 10, 
+                    paddingVertical: 4, 
+                    borderRadius: 8 
+                  }}>
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Preview</Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  onPress={handleSavePreview}
+                  style={{ 
+                    marginTop: 12, 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    backgroundColor: '#F3F4F6',
+                    paddingVertical: 10,
+                    borderRadius: 10
+                  }}
+                >
+                  <Ionicons name="download-outline" size={18} color="#6B7280" />
+                  <Text style={{ color: '#374151', fontWeight: '600', marginLeft: 6 }}>Save to Photos</Text>
+                </TouchableOpacity>
+              </>
+            ) : scan?.imageUrl ? (
+              <Image
+                source={{ uri: scan.imageUrl }}
+                style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  width: '100%',
+                  height: 220,
+                  borderRadius: 16,
+                  backgroundColor: '#F2F2F2',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
+              </View>
+            )}
+          </View>
 
           {/* Plan status card */}
           <View style={{ marginBottom: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
