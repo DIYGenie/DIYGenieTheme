@@ -264,7 +264,7 @@ export default function ProjectDetails() {
               }}
               style={{ backgroundColor: '#6D28D9', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
             >
-              <Text style={{ color: 'white', fontWeight: '700' }}>View Plan</Text>
+              <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
             </Pressable>
           )}
         </View>
@@ -275,7 +275,7 @@ export default function ProjectDetails() {
           </Text>
         ) : (
           <Text style={{ color: '#6B7280', marginTop: 6 }}>
-            Plan is ready. Tap "View Plan" to see materials, tools, cuts, steps, time & cost.
+            Plan is ready. Tap "Get detailed instructions" to see materials, tools, cuts, steps, time & cost.
           </Text>
         )}
       </View>
