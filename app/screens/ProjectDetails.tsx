@@ -15,6 +15,8 @@ import { useInterval } from '../hooks/useInterval';
 import { ROOT_TABS_ID, PROJECTS_TAB, PROJECTS_LIST_SCREEN, PLAN_SCREEN } from '../navigation/routeNames';
 import PlanTabs from '../components/PlanTabs';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
+import SummaryCard from '../components/ui/SummaryCard';
+import { countLabel, stepsTimeCost } from '../lib/planLabels';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -297,6 +299,38 @@ export default function ProjectDetails() {
                   <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Plan</Text>
                   <Text style={{ color: '#4B5563' }}>Plan is ready. Browse tabs below or open the full, linear guide.</Text>
                 </View>
+
+                {/* Summary cards (only if plan is ready and planObj exists) */}
+                {!!planObj && (
+                  <View style={{ gap: 12, marginTop: 12 }}>
+                    <SummaryCard
+                      title="Overview"
+                      subtitle={planObj?.overview?.slice(0, 80) || 'High-level summary'}
+                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'overview' })}
+                    />
+                    <SummaryCard
+                      title="Materials"
+                      subtitle={countLabel(planObj?.materials?.length, 'item')}
+                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'materials' })}
+                    />
+                    <SummaryCard
+                      title="Cuts"
+                      subtitle={countLabel(planObj?.cuts?.length, 'cut')}
+                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'cuts' })}
+                    />
+                    <SummaryCard
+                      title="Tools"
+                      subtitle={countLabel(planObj?.tools?.length, 'tool')}
+                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'tools' })}
+                    />
+                    <SummaryCard
+                      title="Steps / Time & Cost"
+                      subtitle={stepsTimeCost(planObj)}
+                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'steps' })}
+                    />
+                  </View>
+                )}
+
                 <View style={{ height: 8 }} />
                 <PlanTabs plan={planObj} />
                 <View style={{ height: 12 }} />
