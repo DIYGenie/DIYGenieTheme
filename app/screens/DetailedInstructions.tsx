@@ -5,8 +5,9 @@ import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import { fetchProjectById, fetchProjectPlanMarkdown } from '../lib/api';
 import { parsePlanMarkdown } from '../lib/plan';
+import { Section, Bullets, Paragraph, DimText, Subtle, Step } from '../components/ui/DocAtoms';
 
-type R = RouteProp<Record<'DetailedInstructions', { id: string }>, 'DetailedInstructions'>;
+type R = RouteProp<Record<'DetailedInstructions', { id: string; initialTab?: string }>, 'DetailedInstructions'>;
 
 export default function DetailedInstructions() {
   const { params } = useRoute<R>();
@@ -76,61 +77,82 @@ export default function DetailedInstructions() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding:16, gap:16 }}>
-      {/* Cover */}
-      <View ref={refs.cover} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:22, fontWeight:'800', marginBottom:4 }}>{project?.name ?? 'Project'}</Text>
-        <Text>Detailed, step-by-step instructions.</Text>
-      </View>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      {/* Title block */}
+      <Section title={project?.name || 'Project'}>
+        <Paragraph>Detailed, step-by-step instructions.</Paragraph>
+      </Section>
 
-      {/* Materials */}
-      <View ref={refs.materials} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:18, fontWeight:'700', marginBottom:8 }}>Materials</Text>
-        {(plan.materials?.length ? plan.materials : []).map((m:any, i:number) => (
-          <Text key={i}>• {m.name}{m.qty ? ` — ${m.qty}${m.unit ? ` ${m.unit}` : ''}` : ''}</Text>
-        ))}
-        {!plan.materials?.length && <Text>No materials listed.</Text>}
-      </View>
+      <Section title="Materials">
+        {plan.materials?.length ? (
+          <Bullets items={plan.materials.map((m: any) => 
+            `${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}${m.note ? ` • ${m.note}` : ''}`
+          )} />
+        ) : (
+          <DimText>No materials listed.</DimText>
+        )}
+      </Section>
 
-      {/* Cuts */}
-      <View ref={refs.cuts} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:18, fontWeight:'700', marginBottom:8 }}>Cut list</Text>
-        {(plan.cuts?.length ? plan.cuts : []).map((c:any, i:number) => (
-          <Text key={i}>• {c.part}: {c.size}{c.qty ? `  ×${c.qty}` : ''}</Text>
-        ))}
-        {!plan.cuts?.length && <Text>No cut list.</Text>}
-      </View>
+      <Section title="Cut list">
+        {plan.cuts?.length ? (
+          <Bullets items={plan.cuts.map((c: any) => 
+            `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×${c.qty ?? 1}`
+          )} />
+        ) : (
+          <DimText>No cut list.</DimText>
+        )}
+      </Section>
 
-      {/* Tools */}
-      <View ref={refs.tools} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:18, fontWeight:'700', marginBottom:8 }}>Tools</Text>
-        {(plan.tools?.length ? plan.tools : []).map((t:string, i:number) => (<Text key={i}>• {t}</Text>))}
-        {!plan.tools?.length && <Text>No tools listed.</Text>}
-      </View>
+      <Section title="Tools">
+        <DimText style={{ marginBottom: 8 }}>Wear eye & hearing protection.</DimText>
+        {plan.tools?.length ? <Bullets items={plan.tools} /> : <DimText>No tools listed.</DimText>}
+      </Section>
 
-      {/* Steps */}
-      <View ref={refs.steps} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:18, fontWeight:'700', marginBottom:8 }}>Step-by-step</Text>
-        {(plan.steps?.length ? plan.steps : []).map((s:any, i:number) => (
-          <View key={i} style={{ marginBottom:10 }}>
-            <Text style={{ fontWeight:'700' }}>{i+1}. {s.title ?? 'Step'}</Text>
-            {!!s.body && <Text>{s.body}</Text>}
-          </View>
-        ))}
-        {!plan.steps?.length && <Text>No steps yet.</Text>}
-      </View>
+      <Section title="Step-by-step">
+        {plan.steps?.length ? (
+          plan.steps.map((s: any, i: number) => (
+            <Step key={i} n={i + 1} title={s.title}>
+              {s.purpose && (
+                <Paragraph>
+                  <Text style={{ fontWeight: '700' }}>Why:</Text> {s.purpose}
+                </Paragraph>
+              )}
+              {s.inputs?.length ? <Bullets items={s.inputs} /> : null}
+              {s.instructions?.map((line: string, idx: number) => (
+                <Paragraph key={idx}>{line}</Paragraph>
+              ))}
+              {s.body && <Paragraph>{s.body}</Paragraph>}
+              {s.checks?.length && (
+                <>
+                  <Subtle>Before you move on, check:</Subtle>
+                  <Bullets items={s.checks} />
+                </>
+              )}
+              {s.pitfalls?.length && (
+                <>
+                  <Subtle>Common mistakes:</Subtle>
+                  <Bullets items={s.pitfalls} />
+                </>
+              )}
+            </Step>
+          ))
+        ) : (
+          <DimText>No steps yet.</DimText>
+        )}
+      </Section>
 
-      {/* Summary */}
-      <View ref={refs.summary} collapsable={false} style={{ backgroundColor:'#fff', borderRadius:16, padding:16 }}>
-        <Text style={{ fontSize:18, fontWeight:'700', marginBottom:8 }}>Time & Cost</Text>
-        <Text>Estimated time: {plan.time_estimate_hours ?? '—'} hrs</Text>
-        <Text>Estimated cost: {plan.cost_estimate_usd != null ? `$${plan.cost_estimate_usd}` : '—'}</Text>
-      </View>
+      <Section title="Time & Cost">
+        <Paragraph>Estimated time: {plan.time_estimate_hours ?? '—'} hrs</Paragraph>
+        <Paragraph>Estimated cost: {plan.cost_estimate_usd ? `$${plan.cost_estimate_usd}` : '—'}</Paragraph>
+      </Section>
 
       {/* Save buttons */}
-      <Pressable disabled={saving} onPress={saveAll}
-        style={{ backgroundColor:'#6D28D9', borderRadius:16, padding:14, alignItems:'center' }}>
-        <Text style={{ color:'white', fontWeight:'700' }}>{saving ? 'Saving…' : 'Save all sections to Photos'}</Text>
+      <Pressable
+        disabled={saving}
+        onPress={saveAll}
+        style={{ backgroundColor: '#6D28D9', borderRadius: 16, padding: 14, alignItems: 'center', marginTop: 16 }}
+      >
+        <Text style={{ color: 'white', fontWeight: '700' }}>{saving ? 'Saving…' : 'Save all sections to Photos'}</Text>
       </Pressable>
     </ScrollView>
   );

@@ -1,9 +1,17 @@
 export type Plan = {
   overview?: string;
-  materials?: { name: string; qty?: string; unit?: string }[];
+  materials?: { name: string; qty?: string; unit?: string; note?: string }[];
   tools?: string[];
-  cuts?: { part: string; size: string; qty?: number }[];
-  steps?: { title?: string; body?: string }[];
+  cuts?: { part: string; width?: string; height?: string; size: string; qty?: number }[];
+  steps?: {
+    title?: string;
+    body?: string;
+    purpose?: string;
+    inputs?: string[];
+    instructions?: string[];
+    checks?: string[];
+    pitfalls?: string[];
+  }[];
   time_estimate_hours?: number;
   cost_estimate_usd?: number;
 };
