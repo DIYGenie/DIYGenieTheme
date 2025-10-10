@@ -83,9 +83,11 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
+  const previewUrl = project?.plan?.preview_url ?? null;
+
   const handleSavePreview = async () => {
-    if (!project?.preview_url) return;
-    const result = await saveImageToPhotos(project.preview_url);
+    if (!previewUrl) return;
+    const result = await saveImageToPhotos(previewUrl);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
@@ -170,14 +172,14 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Hero image */}
+          {/* Hero image - prefers plan.preview_url, falls back to latest scan */}
           <View style={{ marginBottom: 16 }}>
-            {project?.preview_url ? (
+            {previewUrl ? (
               <>
                 <View style={{ position: 'relative' }}>
                   <Image
-                    source={{ uri: project.preview_url }}
-                    style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }}
+                    source={{ uri: previewUrl }}
+                    style={{ width: '100%', height: 240, borderRadius: 16, backgroundColor: '#EEE' }}
                     resizeMode="cover"
                   />
                   <View style={{ 
@@ -211,14 +213,14 @@ export default function ProjectDetails() {
             ) : scan?.imageUrl ? (
               <Image
                 source={{ uri: scan.imageUrl }}
-                style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }}
+                style={{ width: '100%', height: 240, borderRadius: 16, backgroundColor: '#EEE' }}
                 resizeMode="cover"
               />
             ) : (
               <View
                 style={{
                   width: '100%',
-                  height: 220,
+                  height: 240,
                   borderRadius: 16,
                   backgroundColor: '#F2F2F2',
                   alignItems: 'center',
