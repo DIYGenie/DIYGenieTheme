@@ -154,7 +154,7 @@ export default function ScanScreen() {
         </Text>
 
         {/* Camera preview placeholder with adjustable ROI */}
-        <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center', flex: 1 }}>
+        <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center', flex: 1, overflow: 'visible' }} pointerEvents="box-none">
           <DraggableRect
             initial={norm}
             onChange={(n) => {
