@@ -1,21 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, InteractionManager } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import {
-  fetchProjectById,
-  fetchLatestScanForProject,
-  fetchProjectPlanMarkdown,
-  buildPlanWithoutPreview,
-  waitForPlanReady,
-} from '../lib/api';
-import Markdown from '../components/Markdown';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
-import { useInterval } from '../hooks/useInterval';
-import { ROOT_TABS_ID, PROJECTS_TAB, PROJECTS_LIST_SCREEN, PLAN_SCREEN } from '../navigation/routeNames';
-import PlanTabs from '../components/PlanTabs';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
-import SummaryCard from '../components/ui/SummaryCard';
+import AccordionCard from '../components/ui/AccordionCard';
 import { countLabel, stepsTimeCost } from '../lib/planLabels';
 
 type RouteParams = { id: string };
@@ -30,69 +20,12 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
-  const [planMd, setPlanMd] = useState<string | null>(null);
   const [planObj, setPlanObj] = useState<Plan | null>(null);
-  const [planLoading, setPlanLoading] = useState(false);
-  const [autoPolled, setAutoPolled] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
-
-  const status = (project?.plan_status || project?.status || '').toLowerCase();
-  const isBuilding = /requested|building|queued|pending/.test(status) && !/ready|done|error|failed/.test(status);
-
-  const isBuildingOld = (s?: string) =>
-    !!s && (s.includes('requested') || s.includes('building') || s === 'draft');
-  const isReady = (s?: string) =>
-    !!s && (s.includes('plan_ready') || s.includes('preview_ready') || s === 'ready');
-
-  // Auto-fetch plan markdown once the project says it's ready
-  useEffect(() => {
-    if (!projectId) return;
-    const status = String(project?.plan_status || project?.status || '').toLowerCase();
-    if (!/ready/.test(status) || planObj) return;
-
-    let cancelled = false;
-    let tries = 0;
-    let t: any;
-
-    const tick = async () => {
-      tries += 1;
-      try {
-        console.log('[plan] poll try', tries);
-        const { getLocalPlanMarkdown } = await import('../lib/localPlan');
-        const local = await getLocalPlanMarkdown(projectId);
-        let md = local;
-        if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
-        if (!cancelled && md) {
-          setPlanMd(md);
-          setPlanObj(parsePlanMarkdown(md));
-          console.log('[plan] loaded markdown');
-          return;
-        }
-      } catch (e) {
-        console.log('[plan] poll error', String(e));
-      }
-      if (!cancelled && tries < 10) {
-        t = setTimeout(tick, 2000);
-      }
-    };
-
-    tick();
-    return () => { cancelled = true; if (t) clearTimeout(t); };
-  }, [projectId, project?.plan_status, project?.status, planObj]);
-
-  const clearPoll = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
 
   const load = useCallback(async () => {
     if (!projectId) return;
 
-    // Cancel any previous request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -103,43 +36,38 @@ export default function ProjectDetails() {
         fetchProjectById(projectId, { signal: controller.signal, timeoutMs: 8000 }),
         fetchLatestScanForProject(projectId),
       ]);
+      
       if (!controller.signal.aborted) {
         setProject(p);
         setScan(s);
         
-        // (re)arm polling based on latest status
-        clearPoll();
-        if (isBuildingOld(p?.status)) {
-          pollRef.current = setInterval(() => {
-            // cheap re-check: only refetch project
-            fetchProjectById(projectId).then(np => {
-              setProject(prev => ({ ...prev, ...np }));
-              if (isReady(np?.status)) clearPoll();
-            }).catch(()=>{});
-          }, 5000); // 5s cadence
-        }
+        const ready = /ready/.test(String(p?.plan_status || p?.status || '').toLowerCase()) && 
+                     !/requested|building|queued|pending/.test(String(p?.plan_status || p?.status || '').toLowerCase());
         
-        const ready = /ready/.test(String(p?.plan_status || p?.status || '').toLowerCase()) && !/requested|building|queued|pending/.test(String(p?.plan_status || p?.status || '').toLowerCase());
-        if (ready && !planMd) {
-          setPlanLoading(true);
+        if (ready) {
           try {
             const { getLocalPlanMarkdown } = await import('../lib/localPlan');
             const local = await getLocalPlanMarkdown(projectId);
             let md = local;
             if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
             if (md && !controller.signal.aborted) {
-              setPlanMd(md);
-              setPlanObj(parsePlanMarkdown(md));
+              const parsed = parsePlanMarkdown(md);
+              setPlanObj(parsed);
+              console.log('[details] plan ready', {
+                sections: {
+                  materials: parsed.materials?.length ?? 0,
+                  cuts: parsed.cuts?.length ?? 0,
+                  tools: parsed.tools?.length ?? 0,
+                  steps: parsed.steps?.length ?? 0
+                }
+              });
             }
           } catch (e) {
             if ((e as any)?.name !== 'AbortError') console.log('[plan fetch error]', String(e));
-          } finally {
-            if (!controller.signal.aborted) setPlanLoading(false);
           }
         }
       }
     } catch (e: any) {
-      // Ignore aborts; log other errors and still release spinner
       if (e?.name !== 'AbortError') {
         console.log('[ProjectDetails load error]', String(e));
       }
@@ -150,8 +78,8 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  // Dev-friendly back, and dynamic header title/status
   const isPlanReady = !!planObj;
+  
   useLayoutEffect(() => {
     navigation.setOptions({
       headerBackVisible: false,
@@ -162,10 +90,7 @@ export default function ProjectDetails() {
       ),
       headerTitle: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: 260 }}>
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 16, fontWeight: '700' }}
-          >
+          <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '700' }}>
             {project?.name || 'Project'}
           </Text>
           {isPlanReady && (
@@ -182,7 +107,6 @@ export default function ProjectDetails() {
     load();
     return () => {
       abortRef.current?.abort();
-      clearPoll();
     };
   }, [load]);
 
@@ -191,176 +115,164 @@ export default function ProjectDetails() {
       load();
       return () => {
         abortRef.current?.abort();
-        clearPoll();
       };
     }, [load])
   );
 
-  useEffect(() => () => clearPoll(), []);
-
-  // Auto-poll while building
-  useInterval(() => {
-    if (isBuilding) load();
-  }, isBuilding ? 8000 : null);
-
-  // Smart refresh: if project is not ready, start build; then poll for plan.
-  const smartRefresh = useCallback(async () => {
-    if (!projectId) return;
-    setPlanLoading(true);
-    try {
-      const fresh = await fetchProjectById(projectId, { timeoutMs: 8000 }).catch(() => project);
-      if (fresh) setProject(fresh);
-      if (!fresh || fresh.status !== 'ready') {
-        await buildPlanWithoutPreview(projectId);
-      }
-      const md = await waitForPlanReady(projectId, { totalMs: 60000, stepMs: 1200, maxStepMs: 5000 });
-      if (md !== null) {
-        setPlanMd(md);
-      } else {
-        // still not ready—leave "building" message
-        setPlanMd(null);
-      }
-    } catch (e) {
-      console.log('[plan smartRefresh error]', String((e as any)?.message || e));
-    } finally {
-      setPlanLoading(false);
-    }
-  }, [projectId, project]);
-
-  // Auto-poll once after first load if plan isn't ready yet.
-  useEffect(() => {
-    if (project && planMd === null && !planLoading && !autoPolled) {
-      setAutoPolled(true);
-      smartRefresh();
-    }
-  }, [project, planMd, planLoading, autoPolled, smartRefresh]);
-
-  const RefreshLink = () => (
-    <Pressable
-      onPress={async () => {
-        if (refreshing) return;
-        setRefreshing(true);
-        await load();
-        setRefreshing(false);
-      }}
-      disabled={refreshing}
-      style={{ paddingHorizontal: 8, paddingVertical: 4, opacity: refreshing ? 0.6 : 1 }}
-    >
-      {refreshing ? (
-        <ActivityIndicator size="small" color="#7C3AED" />
-      ) : (
-        <Text style={{ color: '#7C3AED', fontWeight: '600' }}>Refresh</Text>
-      )}
-    </Pressable>
-  );
+  const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
+  const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 6 }}>
-        {project?.name || project?.title || 'Project'}
-      </Text>
-      <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16 }}>
-        Status: {project?.status || 'In progress'}
-      </Text>
-
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
       {loading ? (
         <View style={{ paddingTop: 40 }}>
           <ActivityIndicator />
         </View>
-      ) : scan?.imageUrl ? (
-        <Image
-          source={{ uri: scan.imageUrl }}
-          style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }}
-          resizeMode="cover"
-        />
       ) : (
-        <View
-          style={{
-            width: '100%',
-            height: 220,
-            borderRadius: 16,
-            backgroundColor: '#F2F2F2',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
-        </View>
-      )}
-
-      {(() => {
-        const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
-        
-        if (statusReady) {
-          if (planObj) {
-            return (
-              <>
-                <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Plan</Text>
-                  <Text style={{ color: '#4B5563' }}>Plan is ready. Browse tabs below or open the full, linear guide.</Text>
-                </View>
-
-                {/* Summary cards (only if plan is ready and planObj exists) */}
-                {!!planObj && (
-                  <View style={{ gap: 12, marginTop: 12 }}>
-                    <SummaryCard
-                      title="Overview"
-                      subtitle={planObj?.overview?.slice(0, 80) || 'High-level summary'}
-                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'overview' })}
-                    />
-                    <SummaryCard
-                      title="Materials"
-                      subtitle={countLabel(planObj?.materials?.length, 'item')}
-                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'materials' })}
-                    />
-                    <SummaryCard
-                      title="Cuts"
-                      subtitle={countLabel(planObj?.cuts?.length, 'cut')}
-                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'cuts' })}
-                    />
-                    <SummaryCard
-                      title="Tools"
-                      subtitle={countLabel(planObj?.tools?.length, 'tool')}
-                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'tools' })}
-                    />
-                    <SummaryCard
-                      title="Steps / Time & Cost"
-                      subtitle={stepsTimeCost(planObj)}
-                      onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId, initialTab: 'steps' })}
-                    />
-                  </View>
-                )}
-
-                <View style={{ height: 8 }} />
-                <PlanTabs plan={planObj} />
-                <View style={{ height: 12 }} />
-                <Pressable
-                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-                  style={{ backgroundColor: '#6D28D9', padding: 14, borderRadius: 14, alignItems: 'center' }}
-                >
-                  <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
-                </Pressable>
-              </>
-            );
-          } else {
-            return (
-              <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
-                <Text style={{ fontWeight: '700', marginBottom: 6 }}>Plan</Text>
-                <Text style={{ color: '#4B5563' }}>Plan is ready — loading details…</Text>
-              </View>
-            );
-          }
-        } else {
-          return (
-            <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
-              <Text style={{ fontWeight: '700', marginBottom: 6 }}>Plan</Text>
-              <Text style={{ color: '#4B5563' }}>
-                Your plan is building. This screen will update automatically; you can also pull to refresh.
-              </Text>
+        <>
+          {/* Hero image */}
+          {scan?.imageUrl ? (
+            <Image
+              source={{ uri: scan.imageUrl }}
+              style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE', marginBottom: 16 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={{
+                width: '100%',
+                height: 220,
+                borderRadius: 16,
+                backgroundColor: '#F2F2F2',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
             </View>
-          );
-        }
-      })()}
+          )}
+
+          {/* Plan status card */}
+          <View style={{ marginBottom: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Plan</Text>
+            <Text style={{ color: '#4B5563' }}>
+              {isBuilding 
+                ? 'Plan is building…' 
+                : planObj 
+                  ? 'Plan is ready. Browse the sections below or open the full guide.'
+                  : 'Plan is ready — loading details…'}
+            </Text>
+          </View>
+
+          {/* Accordion cards (only if plan is ready) */}
+          {planObj && (
+            <>
+              <View style={{ gap: 12, marginBottom: 16 }}>
+                <AccordionCard
+                  testID="accordion-materials"
+                  title="Materials"
+                  subtitle={countLabel(planObj.materials?.length, 'item')}
+                  initiallyOpen={true}
+                >
+                  {planObj.materials?.length ? (
+                    <View style={{ gap: 6 }}>
+                      {planObj.materials.slice(0, 50).map((m: any, i: number) => (
+                        <Text key={i} style={{ lineHeight: 20 }}>
+                          • {m.name}
+                          {m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}
+                          {m.note ? ` • ${m.note}` : ''}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ color: '#6B7280' }}>No materials listed.</Text>
+                  )}
+                </AccordionCard>
+
+                <AccordionCard
+                  testID="accordion-cuts"
+                  title="Cut list"
+                  subtitle={countLabel(planObj.cuts?.length, 'cut')}
+                >
+                  {planObj.cuts?.length ? (
+                    <View style={{ gap: 6 }}>
+                      {planObj.cuts.map((c: any, i: number) => (
+                        <Text key={i} style={{ lineHeight: 20 }}>
+                          • {c.part} — {c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×{c.qty ?? 1}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ color: '#6B7280' }}>No cut list.</Text>
+                  )}
+                </AccordionCard>
+
+                <AccordionCard
+                  testID="accordion-tools"
+                  title="Tools"
+                  subtitle={countLabel(planObj.tools?.length, 'tool')}
+                >
+                  {planObj.tools?.length ? (
+                    <View style={{ gap: 6 }}>
+                      {planObj.tools.map((t: string, i: number) => (
+                        <Text key={i} style={{ lineHeight: 20 }}>• {t}</Text>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ color: '#6B7280' }}>No tools listed.</Text>
+                  )}
+                </AccordionCard>
+
+                <AccordionCard
+                  testID="accordion-steps"
+                  title="Step-by-step"
+                  subtitle={countLabel(planObj.steps?.length, 'step')}
+                >
+                  {planObj.steps?.length ? (
+                    <View style={{ gap: 10 }}>
+                      {planObj.steps.map((s: any, i: number) => (
+                        <View key={i}>
+                          <Text style={{ fontWeight: '700', marginBottom: 4 }}>
+                            {i + 1}. {s.title ?? 'Step'}
+                          </Text>
+                          {s.body && (
+                            <Text style={{ color: '#4B5563', lineHeight: 20 }}>
+                              {s.body.slice(0, 100)}{s.body.length > 100 ? '...' : ''}
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={{ color: '#6B7280' }}>No steps yet.</Text>
+                  )}
+                </AccordionCard>
+
+                <AccordionCard
+                  testID="accordion-time-cost"
+                  title="Time & Cost"
+                  subtitle={stepsTimeCost(planObj)}
+                >
+                  <Text style={{ lineHeight: 20, marginBottom: 4 }}>
+                    Estimated time: {planObj.time_estimate_hours ?? '—'} hrs
+                  </Text>
+                  <Text style={{ lineHeight: 20 }}>
+                    Estimated cost: {planObj.cost_estimate_usd ? `$${planObj.cost_estimate_usd}` : '—'}
+                  </Text>
+                </AccordionCard>
+              </View>
+
+              <Pressable
+                onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+                style={{ backgroundColor: '#6D28D9', padding: 14, borderRadius: 14, alignItems: 'center' }}
+              >
+                <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
+              </Pressable>
+            </>
+          )}
+        </>
+      )}
     </ScrollView>
   );
 }
