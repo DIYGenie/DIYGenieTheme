@@ -49,11 +49,20 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - All project creation entry points (Scan room, Upload photo, Build with AI) are protected by these guards
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
 - **AR Session Scaffolding**: iOS AR preparation with ARKit permissions in app.json, lightweight AR session facade (`app/lib/ar/ArSession.ts`) with platform checks, and ScanScreen integration with Expo Go banner. Shows "AR requires iOS dev build" banner in Expo Go while maintaining ROI overlay and Save Scan functionality. No native modules added yet - safe and reversible.
-- **AR Measurement Integration**: Server-side measurement job system that runs after AR scan saves. Features:
+- **AR Measurement Integration**: Server-side measurement job system (currently disabled via feature flag). Features:
   - API helpers (`requestScanMeasurement`, `pollScanMeasurement`) for triggering and polling measurement status
-  - Non-blocking measurement job triggered via `startMeasurementJob()` in `app/lib/scanEvents.ts` after scan save
+  - Feature flag `MEASURE_API_ENABLED` in `app/lib/config.ts` controls network calls (currently `false`)
+  - Non-blocking measurement job triggered via `startMeasurementJob()` in `app/lib/scanEvents.ts` after scan save (when enabled)
   - ProjectDetails overlay display that fetches latest scan, polls for measurement completion, and shows overlay image with dimensions/lines
   - Graceful fallback to base scan image while measuring, shows "Measuring…" state during processing
+  - When disabled: Shows "coming soon" messaging in NewProject, skips measurement API network calls
+- **AR ROI Gesture System**: Enhanced touch handling for draggable ROI overlay in ScanScreen:
+  - Proper bounds measurement via `onLayout` to constrain gestures to image area
+  - `pointerEvents` attributes: `box-none` on containers (touch pass-through), `auto` on interactive elements
+  - Debug logging (`[roi bounds]`) for container size and clamping verification
+  - Semi-transparent purple overlay (rgba(147, 51, 234, 0.4)) with 3px soft border
+  - Corner handles for resizing, full rect dragging for repositioning
+  - Save Snapshot feature captures screen with ROI overlay to camera roll via react-native-view-shot
 
 ## External Dependencies
 
