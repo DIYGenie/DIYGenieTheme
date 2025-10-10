@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Modal, ActivityIndicator, ScrollView, Image, TouchableOpacity, Platform, AppState, findNodeHandle, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, InteractionManager, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import useOptionalTabBarHeight from '../hooks/useOptionalTabBarHeight';
-import { useNavigation, useRoute, CompositeNavigationProp, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, CompositeNavigationProp, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -620,12 +620,37 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
-        const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
-        if (parent) {
-          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-        } else {
-          navigation.navigate('ProjectDetails' as any, { id } as any);
-        }
+        // Reset navigation to Projects tab with ProjectsList → ProjectDetails stack
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Main',
+                state: {
+                  type: 'tab',
+                  index: 2, // 0=Home, 1=NewProject, 2=Projects
+                  routes: [
+                    { name: 'Home' },
+                    { name: 'NewProject' },
+                    {
+                      name: 'Projects',
+                      state: {
+                        type: 'stack',
+                        index: 1,
+                        routes: [
+                          { name: 'ProjectsList' },
+                          { name: 'ProjectDetails', params: { id } },
+                        ],
+                      },
+                    },
+                    { name: 'Profile' },
+                  ],
+                },
+              },
+            ],
+          })
+        );
       } else {
         Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
       }
@@ -686,12 +711,37 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
-        const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
-        if (parent) {
-          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
-        } else {
-          navigation.navigate('ProjectDetails' as any, { id: projectId } as any);
-        }
+        // Reset navigation to Projects tab with ProjectsList → ProjectDetails stack
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Main',
+                state: {
+                  type: 'tab',
+                  index: 2, // 0=Home, 1=NewProject, 2=Projects
+                  routes: [
+                    { name: 'Home' },
+                    { name: 'NewProject' },
+                    {
+                      name: 'Projects',
+                      state: {
+                        type: 'stack',
+                        index: 1,
+                        routes: [
+                          { name: 'ProjectsList' },
+                          { name: 'ProjectDetails', params: { id: projectId } },
+                        ],
+                      },
+                    },
+                    { name: 'Profile' },
+                  ],
+                },
+              },
+            ],
+          })
+        );
       } else {
         Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
       }
