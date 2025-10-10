@@ -1,19 +1,38 @@
 export type Plan = {
   overview?: string;
-  materials?: { name: string; qty?: string; unit?: string; note?: string }[];
-  tools?: string[];
+  skill_level?: 'beginner' | 'intermediate' | 'advanced';
+  materials?: { 
+    name: string; 
+    qty?: string; 
+    unit?: string; 
+    price?: number;
+    note?: string;
+  }[];
+  tools?: { 
+    name: string; 
+    have?: boolean; // true = probably have, false = need to buy/rent
+    rental_price?: number;
+  }[];
   cuts?: { part: string; width?: string; height?: string; size: string; qty?: number }[];
   steps?: {
     title?: string;
     body?: string;
+    time_minutes?: number;
+    materials_needed?: string[];
+    tools_needed?: string[];
     purpose?: string;
     inputs?: string[];
     instructions?: string[];
     checks?: string[];
     pitfalls?: string[];
   }[];
+  finishing?: {
+    title?: string;
+    description?: string;
+  }[];
   time_estimate_hours?: number;
   cost_estimate_usd?: number;
+  safety_warnings?: string[];
 };
 
 function getSection(md: string, title: string): string {
@@ -47,7 +66,7 @@ export function parsePlanMarkdown(md: string): Plan {
 
   const toolsBlock = getSection(md, 'Tools');
   if (toolsBlock) {
-    plan.tools = bulletsToArray(toolsBlock);
+    plan.tools = bulletsToArray(toolsBlock).map(tool => ({ name: tool }));
   }
 
   const cutsBlock = getSection(md, 'Cut List') || getSection(md, 'Cuts');
@@ -122,6 +141,8 @@ interface Material {
 
 interface Tool {
   name: string;
+  have?: boolean;
+  rentalPrice?: number;
   substitute?: string;
 }
 
@@ -139,6 +160,9 @@ interface Step {
   title: string;
   description: string;
   estimatedTime?: string;
+  timeMinutes?: number;
+  materialsNeeded?: string[];
+  toolsNeeded?: string[];
 }
 
 export interface BuildPlan {
@@ -232,32 +256,32 @@ function generateToolsForProject(project: any): Tool[] {
   
   const toolSets = [
     [
-      { name: 'Drill/driver', substitute: 'Manual screwdriver' },
-      { name: 'Circular saw', substitute: 'Hand saw' },
-      { name: 'Measuring tape' },
-      { name: 'Level' },
-      { name: 'Pencil' },
-      { name: 'Safety glasses' },
+      { name: 'Drill/driver', have: false, rentalPrice: 25, substitute: 'Manual screwdriver' },
+      { name: 'Circular saw', have: false, rentalPrice: 35, substitute: 'Hand saw' },
+      { name: 'Measuring tape', have: true },
+      { name: 'Level', have: true },
+      { name: 'Pencil', have: true },
+      { name: 'Safety glasses', have: true },
     ],
     [
-      { name: 'Miter saw', substitute: 'Hand saw with miter box' },
-      { name: 'Drill/driver' },
-      { name: 'Orbital sander', substitute: 'Sanding block' },
-      { name: 'Clamps (4+)' },
-      { name: 'Measuring tape' },
-      { name: 'Square' },
-      { name: 'Paintbrush set' },
-      { name: 'Safety gear' },
+      { name: 'Miter saw', have: false, rentalPrice: 45, substitute: 'Hand saw with miter box' },
+      { name: 'Drill/driver', have: false, rentalPrice: 25 },
+      { name: 'Orbital sander', have: false, rentalPrice: 20, substitute: 'Sanding block' },
+      { name: 'Clamps (4+)', have: false },
+      { name: 'Measuring tape', have: true },
+      { name: 'Square', have: true },
+      { name: 'Paintbrush set', have: true },
+      { name: 'Safety gear', have: true },
     ],
     [
-      { name: 'Table saw', substitute: 'Circular saw with guide' },
-      { name: 'Drill/driver' },
-      { name: 'Jigsaw' },
-      { name: 'Router', substitute: 'Chisel set' },
-      { name: 'Clamps (6+)' },
-      { name: 'Measuring tape' },
-      { name: 'Level' },
-      { name: 'Safety equipment' },
+      { name: 'Table saw', have: false, rentalPrice: 60, substitute: 'Circular saw with guide' },
+      { name: 'Drill/driver', have: false, rentalPrice: 25 },
+      { name: 'Jigsaw', have: false, rentalPrice: 30 },
+      { name: 'Router', have: false, rentalPrice: 35, substitute: 'Chisel set' },
+      { name: 'Clamps (6+)', have: false },
+      { name: 'Measuring tape', have: true },
+      { name: 'Level', have: true },
+      { name: 'Safety equipment', have: true },
     ],
   ];
   
@@ -268,13 +292,13 @@ function generateStepsForProject(project: any): Step[] {
   const hash = hashString(project.id || 'default');
   const stepSets = [
     [
-      { stepNumber: 1, title: 'Prepare workspace', description: 'Clear the area and gather all materials and tools. Ensure proper lighting and ventilation.', estimatedTime: '15 min' },
-      { stepNumber: 2, title: 'Measure and mark', description: 'Take precise measurements and mark cutting lines on all lumber pieces.', estimatedTime: '20 min' },
-      { stepNumber: 3, title: 'Cut pieces to size', description: 'Carefully cut all pieces according to the cut list. Double-check measurements before cutting.', estimatedTime: '30 min' },
-      { stepNumber: 4, title: 'Sand all surfaces', description: 'Sand all cut edges and surfaces smooth, starting with coarse grit and finishing with fine grit.', estimatedTime: '25 min' },
-      { stepNumber: 5, title: 'Assemble frame', description: 'Pre-drill holes and assemble the main frame using wood glue and screws. Use clamps to hold pieces while securing.', estimatedTime: '45 min' },
-      { stepNumber: 6, title: 'Apply finish', description: 'Apply stain or paint according to manufacturer instructions. Allow proper drying time between coats.', estimatedTime: '1-2 hours' },
-      { stepNumber: 7, title: 'Final assembly', description: 'Complete final assembly, install hardware, and make any necessary adjustments.', estimatedTime: '30 min' },
+      { stepNumber: 1, title: 'Prepare workspace', description: 'Clear the area and gather all materials and tools. Ensure proper lighting and ventilation.', estimatedTime: '15 min', timeMinutes: 15, materialsNeeded: [], toolsNeeded: [] },
+      { stepNumber: 2, title: 'Measure and mark', description: 'Take precise measurements and mark cutting lines on all lumber pieces.', estimatedTime: '20 min', timeMinutes: 20, materialsNeeded: ['2x4 lumber'], toolsNeeded: ['Measuring tape', 'Pencil'] },
+      { stepNumber: 3, title: 'Cut pieces to size', description: 'Carefully cut all pieces according to the cut list. Double-check measurements before cutting.', estimatedTime: '30 min', timeMinutes: 30, materialsNeeded: ['2x4 lumber'], toolsNeeded: ['Circular saw', 'Safety glasses'] },
+      { stepNumber: 4, title: 'Sand all surfaces', description: 'Sand all cut edges and surfaces smooth, starting with coarse grit and finishing with fine grit.', estimatedTime: '25 min', timeMinutes: 25, materialsNeeded: ['Sandpaper pack'], toolsNeeded: ['Orbital sander'] },
+      { stepNumber: 5, title: 'Assemble frame', description: 'Pre-drill holes and assemble the main frame using wood glue and screws. Use clamps to hold pieces while securing.', estimatedTime: '45 min', timeMinutes: 45, materialsNeeded: ['Wood glue', '1 1/4 inch screws'], toolsNeeded: ['Drill/driver', 'Clamps'] },
+      { stepNumber: 6, title: 'Apply finish', description: 'Apply stain or paint according to manufacturer instructions. Allow proper drying time between coats.', estimatedTime: '1-2 hours', timeMinutes: 90, materialsNeeded: ['Wood stain'], toolsNeeded: ['Paintbrush set'] },
+      { stepNumber: 7, title: 'Final assembly', description: 'Complete final assembly, install hardware, and make any necessary adjustments.', estimatedTime: '30 min', timeMinutes: 30, materialsNeeded: [], toolsNeeded: ['Drill/driver', 'Level'] },
     ],
     [
       { stepNumber: 1, title: 'Review plans', description: 'Study the build plan and familiarize yourself with all steps before starting.', estimatedTime: '10 min' },

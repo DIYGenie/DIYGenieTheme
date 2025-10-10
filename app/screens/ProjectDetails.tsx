@@ -431,10 +431,10 @@ export default function ProjectDetails() {
                       </Text>
                     </View>
                     <View>
-                      {planObj.tools.map((tool: string, i: number) => (
+                      {planObj.tools.map((tool: any, i: number) => (
                         <View key={i} style={{ flexDirection: 'row', marginBottom: 6, gap: 8 }}>
                           <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
-                          <Text style={{ fontSize: 15, color: '#374151' }}>{tool}</Text>
+                          <Text style={{ fontSize: 15, color: '#374151' }}>{typeof tool === 'string' ? tool : tool.name}</Text>
                         </View>
                       ))}
                     </View>
