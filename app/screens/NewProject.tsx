@@ -36,45 +36,24 @@ const __HIDE_MEDIA_TOOLS = true;
 
 // --- CTA Styles ---
 const CTA = {
-  base: {
-    width: '100%' as const,
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    alignItems: 'flex-start' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-  },
+  wrap: { borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20 },
+  title: { fontSize: 18, fontWeight: '700' as const, letterSpacing: 0.2 },
+  sub: { fontSize: 13, opacity: 0.8, marginTop: 6, lineHeight: 18 },
   primary: {
     backgroundColor: '#6D28D9',
+    shadowColor: '#6D28D9',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
-  primaryDisabled: {
-    backgroundColor: '#C4B5FD',
+  secondary: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(109,40,217,0.25)',
   },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#6D28D9',
-  },
-  outlineDisabled: {
-    borderColor: '#C4B5FD',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    color: '#111827',
-  },
-  titleOnPrimary: {
-    color: 'white',
-  },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#6B7280',
-  },
-  subtitleOnPrimary: {
-    color: '#EDE9FE',
-  },
+  disabled: { opacity: 0.55 },
+  row: { flexDirection: 'column' as const },
 };
 
 type NavProp = CompositeNavigationProp<
@@ -1227,48 +1206,58 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </View>
             )}
             
-            <View style={{ pointerEvents: isBuilding ? 'none' : 'auto', opacity: isBuilding ? 0.6 : 1 }}>
-              <View style={{ gap: 14, marginTop: 12 }}>
-                {/* PRIMARY: Build with visual mockup */}
-                <Pressable
-                  onPress={handleBuildWithPreview}
-                  disabled={isBuilding || !canSubmit}
-                  style={[
-                    CTA.base,
-                    CTA.primary,
-                    (isBuilding || !canSubmit) && CTA.primaryDisabled,
-                    { opacity: isBuilding || !canSubmit ? 0.9 : 1 },
-                  ]}
-                  hitSlop={8}
-                >
-                  <Text style={[CTA.title, CTA.titleOnPrimary]}>
+            <View style={{ gap: 14, marginTop: 12 }}>
+              {/* Primary: Build with visual mockup */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Build with visual mockup"
+                disabled={!canSubmit || isBuilding}
+                onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                onPress={handleBuildWithPreview}
+                style={[
+                  CTA.wrap,
+                  CTA.primary,
+                  (!canSubmit || isBuilding) && CTA.disabled,
+                  { borderRadius: 16 }
+                ]}
+              >
+                <View style={CTA.row}>
+                  <Text style={[CTA.title, { color: '#fff' }]}>
                     Build with visual mockup
                   </Text>
-                  <Text style={[CTA.subtitle, CTA.subtitleOnPrimary]}>
+                  <Text style={[CTA.sub, { color: 'rgba(255,255,255,0.9)' }]} numberOfLines={2}>
                     Visual mockup of your space + complete build plan
                   </Text>
-                </Pressable>
+                  {isBuilding && (
+                    <View style={{ marginTop: 10 }}>
+                      <ActivityIndicator size="small" color="#fff" />
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
 
-                {/* SECONDARY: Build plan only */}
-                <Pressable
-                  onPress={onBuildWithoutPreview}
-                  disabled={isBuilding || !canSubmit}
-                  style={[
-                    CTA.base,
-                    CTA.outline,
-                    (isBuilding || !canSubmit) && CTA.outlineDisabled,
-                    { opacity: isBuilding || !canSubmit ? 0.6 : 1 },
-                  ]}
-                  hitSlop={8}
-                >
-                  <Text style={CTA.title}>
-                    Build plan only
-                  </Text>
-                  <Text style={CTA.subtitle}>
+              {/* Secondary: Build plan only */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Build plan only"
+                disabled={!canSubmit || isBuilding}
+                onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                onPress={onBuildWithoutPreview}
+                style={[
+                  CTA.wrap,
+                  CTA.secondary,
+                  (!canSubmit || isBuilding) && CTA.disabled,
+                ]}
+              >
+                <View style={CTA.row}>
+                  <Text style={[CTA.title, { color: '#111827' }]}>Build plan only</Text>
+                  <Text style={[CTA.sub, { color: '#374151' }]} numberOfLines={2}>
                     Full DIY plan—steps, materials, tools, cuts, time & cost
                   </Text>
-                </Pressable>
-              </View>
+                </View>
+              </TouchableOpacity>
               
               <TouchableOpacity
                 onPress={resetForm}
