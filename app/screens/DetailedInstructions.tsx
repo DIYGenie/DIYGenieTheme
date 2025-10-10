@@ -98,7 +98,22 @@ export default function DetailedInstructions() {
       <View ref={refs.overview}>
         <Section title={project?.name || 'Project'}>
           <Paragraph>Detailed, step-by-step instructions.</Paragraph>
-          {plan.overview && <Paragraph>{plan.overview}</Paragraph>}
+          {plan.overview && typeof plan.overview === 'string' && <Paragraph>{plan.overview}</Paragraph>}
+          {plan.skill_level && (
+            <View style={{ marginTop: 8, backgroundColor: '#F3F4F6', padding: 12, borderRadius: 8 }}>
+              <Text style={{ fontWeight: '600', color: '#374151' }}>
+                Skill Level: <Text style={{ color: '#6D28D9', textTransform: 'capitalize' }}>{plan.skill_level}</Text>
+              </Text>
+            </View>
+          )}
+          {plan.safety_warnings?.length > 0 && (
+            <>
+              <View style={{ marginTop: 12 }}>
+                <Subtle>⚠️ Safety Warnings:</Subtle>
+              </View>
+              <Bullets items={plan.safety_warnings} />
+            </>
+          )}
         </Section>
       </View>
 
