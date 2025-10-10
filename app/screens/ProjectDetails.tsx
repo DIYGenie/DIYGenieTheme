@@ -44,6 +44,39 @@ export default function ProjectDetails() {
   const isReady = (s?: string) =>
     !!s && (s.includes('plan_ready') || s.includes('preview_ready') || s === 'ready');
 
+  // Auto-fetch plan markdown once the project says it's ready
+  useEffect(() => {
+    if (!projectId) return;
+    const status = String(project?.plan_status || project?.status || '').toLowerCase();
+    if (!/ready/.test(status) || planObj) return;
+
+    let cancelled = false;
+    let tries = 0;
+    let t: any;
+
+    const tick = async () => {
+      tries += 1;
+      try {
+        console.log('[plan] poll try', tries);
+        const md = await fetchProjectPlanMarkdown(projectId);
+        if (!cancelled && md) {
+          setPlanMd(md);
+          setPlanObj(parsePlanMarkdown(md));
+          console.log('[plan] loaded markdown');
+          return;
+        }
+      } catch (e) {
+        console.log('[plan] poll error', String(e));
+      }
+      if (!cancelled && tries < 10) {
+        t = setTimeout(tick, 2000);
+      }
+    };
+
+    tick();
+    return () => { cancelled = true; if (t) clearTimeout(t); };
+  }, [projectId, project?.plan_status, project?.status, planObj]);
+
   const clearPoll = () => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
@@ -246,23 +279,47 @@ export default function ProjectDetails() {
         </View>
       )}
 
-      {!planObj ? (
-        <View style={{ backgroundColor: '#F6F7FF', borderRadius: 16, padding: 14, marginTop: 16 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 8 }}>Plan</Text>
-          <Text>Your plan is building. This screen will update automatically; you can also pull to refresh.</Text>
-        </View>
-      ) : (
-        <>
-          <PlanTabs plan={planObj} />
-
-          <Pressable
-            onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-            style={{ marginTop: 16, backgroundColor: '#6D28D9', borderRadius: 16, padding: 14, alignItems: 'center' }}
-          >
-            <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
-          </Pressable>
-        </>
-      )}
+      {(() => {
+        const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
+        
+        if (statusReady) {
+          if (planObj) {
+            return (
+              <>
+                <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Plan</Text>
+                  <Text style={{ color: '#4B5563' }}>Plan is ready. Browse tabs below or open the full, linear guide.</Text>
+                </View>
+                <View style={{ height: 8 }} />
+                <PlanTabs plan={planObj} />
+                <View style={{ height: 12 }} />
+                <Pressable
+                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+                  style={{ backgroundColor: '#6D28D9', padding: 14, borderRadius: 14, alignItems: 'center' }}
+                >
+                  <Text style={{ color: 'white', fontWeight: '700' }}>Get detailed instructions</Text>
+                </Pressable>
+              </>
+            );
+          } else {
+            return (
+              <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
+                <Text style={{ fontWeight: '700', marginBottom: 6 }}>Plan</Text>
+                <Text style={{ color: '#4B5563' }}>Plan is ready — loading details…</Text>
+              </View>
+            );
+          }
+        } else {
+          return (
+            <View style={{ marginTop: 16, backgroundColor: '#F6F5FF', borderRadius: 16, padding: 16 }}>
+              <Text style={{ fontWeight: '700', marginBottom: 6 }}>Plan</Text>
+              <Text style={{ color: '#4B5563' }}>
+                Your plan is building. This screen will update automatically; you can also pull to refresh.
+              </Text>
+            </View>
+          );
+        }
+      })()}
     </ScrollView>
   );
 }
