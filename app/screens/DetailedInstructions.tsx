@@ -254,8 +254,8 @@ export default function DetailedInstructions() {
               }}>
                 {/* Step Header */}
                 <View style={{ backgroundColor: '#FAFAFA', padding: 18, borderBottomWidth: 2, borderBottomColor: '#F3F4F6' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
                       <View style={{ 
                         width: 40, 
                         height: 40, 
@@ -266,16 +266,25 @@ export default function DetailedInstructions() {
                         shadowColor: '#7C3AED',
                         shadowOpacity: 0.4,
                         shadowRadius: 8,
-                        shadowOffset: { width: 0, height: 2 }
+                        shadowOffset: { width: 0, height: 2 },
+                        marginTop: 2
                       }}>
                         <Text style={{ color: 'white', fontSize: 18, fontWeight: '800' }}>{i + 1}</Text>
                       </View>
-                      <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginLeft: 14, flex: 1, letterSpacing: -0.3 }}>
+                      <Text style={{ 
+                        fontSize: 17, 
+                        fontWeight: '700', 
+                        color: '#111827', 
+                        marginLeft: 14, 
+                        flex: 1, 
+                        lineHeight: 24,
+                        letterSpacing: -0.2
+                      }}>
                         {step.title || `Step ${i + 1}`}
                       </Text>
                     </View>
                     {step.time_minutes && (
-                      <View style={{ backgroundColor: '#F3E8FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#E9D5FF' }}>
+                      <View style={{ backgroundColor: '#F3E8FF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: '#E9D5FF', marginTop: 2 }}>
                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#7C3AED' }}>⏱ {step.time_minutes} min</Text>
                       </View>
                     )}
