@@ -672,6 +672,20 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setIsBuilding(false);
       
       if (pollRes.ok) {
+        // SUCCESS: Clear form and navigate
+        try {
+          clearingRef.current = true;
+          await clearNewProjectDraft?.();
+          setDraftId(null);
+          setTitle('');
+          setDescription('');
+          setBudget('');
+          setSkillLevel('');
+          setPhotoUri(null);
+          setLastScan(null);
+          setTimeout(() => { clearingRef.current = false; }, 0);
+        } catch {}
+        
         const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
         if (parent) {
           parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
