@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation }) {
@@ -143,8 +143,18 @@ function ProjectCard({ project, navigation }) {
   const hasInputImage = !!project.input_image_url;
   const hasPreviewImage = !!project.preview_url;
   
-  const handlePress = () => {
-    navigation.navigate('ProjectDetails', { project });
+  const handlePress = async () => {
+    try {
+      await fetchProjectPlanMarkdown(project.id);
+      const parent = navigation.getParent?.();
+      parent?.navigate('Projects', { screen: 'ProjectsList' });
+      InteractionManager.runAfterInteractions(() => {
+        parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id: project.id } });
+      });
+    } catch (e) {
+      const parent = navigation.getParent?.();
+      parent?.navigate('Projects', { screen: 'PlanWaiting', params: { id: project.id } });
+    }
   };
   
   return (

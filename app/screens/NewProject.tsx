@@ -126,23 +126,14 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     setTimeout(() => setMissing(null), 1400);
   };
 
-  // Ensure Projects stack has ProjectsList, then push details on top
+  // Ensure Projects stack has ProjectsList, then push PlanWaiting
   const goToProjectDetailsSeeded = (projectId: string, extraParams?: any) => {
     const parent = (navigation as any).getParent?.('root-tabs') ?? (navigation as any).getParent?.();
     if (parent) {
-      // Step 1: land on Projects tab → ProjectsList
-      parent.navigate('Projects', { screen: 'ProjectsList' });
-      // Step 2: after nav settles, push ProjectDetails
-      InteractionManager.runAfterInteractions(() => {
-        parent.navigate('Projects', { 
-          screen: 'ProjectDetails', 
-          params: { id: projectId, ...extraParams } 
-        });
-      });
+      parent.navigate('Projects', { screen: 'PlanWaiting', params: { id: projectId } });
       return;
     }
-    // Fallback: try local navigate (will still work but may not seed)
-    navigation.navigate('ProjectDetails' as any, { id: projectId, ...extraParams } as any);
+    navigation.navigate('PlanWaiting' as any, { id: projectId } as any);
   };
 
   function hasValidForm() {

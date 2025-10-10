@@ -143,6 +143,7 @@ export default function ProjectDetails() {
   }, [projectId]);
 
   // Dev-friendly back, and dynamic header title/status
+  const isPlanReady = !!planObj;
   useLayoutEffect(() => {
     navigation.setOptions({
       headerBackVisible: false,
@@ -159,15 +160,15 @@ export default function ProjectDetails() {
           >
             {project?.name || 'Project'}
           </Text>
-          {!!project?.status && (
+          {isPlanReady && (
             <View style={{ marginLeft: 8 }}>
-              <StatusBadge status={project.status} />
+              <StatusBadge status="Plan ready" />
             </View>
           )}
         </View>
       ),
     });
-  }, [navigation, safeBack, project?.name, project?.status]);
+  }, [navigation, safeBack, project?.name, isPlanReady]);
 
   useEffect(() => {
     load();

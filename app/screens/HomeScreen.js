@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
@@ -249,32 +249,32 @@ export default function HomeScreen({ navigation }) {
 }
 
 function ProjectCard({ project, navigation }) {
-  const handlePress = () => {
+  const handlePress = async () => {
     const id = project?.id || project?.project_id;
     if (!id) return;
 
-    // Prefer parent tabs (id="root-tabs" if present)
-    // @ts-ignore
     const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
 
-    if (parent?.navigate) {
-      // 1) Jump to Projects tab with its LIST as the active child
-      parent.navigate('Projects', { screen: 'ProjectsList' });
-
-      // 2) After nav settles, push ProjectDetails on that stack
-      InteractionManager.runAfterInteractions(() => {
-        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-      });
-      return;
+    try {
+      await fetchProjectPlanMarkdown(id);
+      if (parent?.navigate) {
+        parent.navigate('Projects', { screen: 'ProjectsList' });
+        InteractionManager.runAfterInteractions(() => {
+          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+        });
+      } else {
+        navigation.navigate('Projects', { screen: 'ProjectsList' });
+        InteractionManager.runAfterInteractions(() => {
+          navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
+        });
+      }
+    } catch (e) {
+      if (parent?.navigate) {
+        parent.navigate('Projects', { screen: 'PlanWaiting', params: { id } });
+      } else {
+        navigation.navigate('Projects', { screen: 'PlanWaiting', params: { id } });
+      }
     }
-
-    // Fallback if no parent available (harmless if ignored)
-    // @ts-ignore
-    navigation.navigate('Projects', { screen: 'ProjectsList' });
-    InteractionManager.runAfterInteractions(() => {
-      // @ts-ignore
-      navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id } });
-    });
   };
 
   const statusText = project.status === 'plan_ready' 
