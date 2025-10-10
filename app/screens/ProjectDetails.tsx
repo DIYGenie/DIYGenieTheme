@@ -10,6 +10,8 @@ import { countLabel, stepsTimeCost } from '../lib/planLabels';
 import Toast from '../components/Toast';
 import { saveImageToPhotos } from '../lib/media';
 import { Ionicons } from '@expo/vector-icons';
+import DetailCard from '../components/DetailCard';
+import { getCachedPlan, setCachedPlan } from '../lib/planCache';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -51,12 +53,21 @@ export default function ProjectDetails() {
         
         if (ready) {
           try {
+            // Try cache first
+            const cached = await getCachedPlan(projectId);
+            if (cached?.plan && !controller.signal.aborted) {
+              setPlanObj(cached.plan);
+              console.log('[details] loaded from cache');
+            }
+            
+            // Then fetch fresh
             const { getLocalPlanMarkdown } = await import('../lib/localPlan');
             const local = await getLocalPlanMarkdown(projectId);
             let md = local;
             if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
             if (md && !controller.signal.aborted) {
               const parsed = parsePlanMarkdown(md);
+              await setCachedPlan(projectId, parsed);
               setPlanObj(parsed);
               console.log('[details] plan ready', {
                 sections: {
@@ -265,102 +276,40 @@ export default function ProjectDetails() {
             </View>
           )}
 
-          {/* Accordion cards (only if plan is ready) */}
+          {/* Info cards (only if plan is ready) */}
           {planObj && (
             <>
               <View style={{ gap: 12, marginBottom: 16 }}>
-                <AccordionCard
-                  testID="accordion-materials"
-                  title="Materials"
-                  subtitle={countLabel(planObj.materials?.length, 'item')}
-                  initiallyOpen={true}
-                >
-                  {planObj.materials?.length ? (
-                    <View style={{ gap: 6 }}>
-                      {planObj.materials.slice(0, 50).map((m: any, i: number) => (
-                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>
-                          • {m.name}
-                          {m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}
-                          {m.note ? ` • ${m.note}` : ''}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No materials listed.</Text>
-                  )}
-                </AccordionCard>
-
-                <AccordionCard
-                  testID="accordion-cuts"
-                  title="Cut list"
-                  subtitle={countLabel(planObj.cuts?.length, 'cut')}
-                >
-                  {planObj.cuts?.length ? (
-                    <View style={{ gap: 6 }}>
-                      {planObj.cuts.map((c: any, i: number) => (
-                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>
-                          • {c.part} — {c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} ×{c.qty ?? 1}
-                        </Text>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No cut list.</Text>
-                  )}
-                </AccordionCard>
-
-                <AccordionCard
-                  testID="accordion-tools"
-                  title="Tools"
-                  subtitle={countLabel(planObj.tools?.length, 'tool')}
-                >
-                  {planObj.tools?.length ? (
-                    <View style={{ gap: 6 }}>
-                      {planObj.tools.map((t: string, i: number) => (
-                        <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>• {t}</Text>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No tools listed.</Text>
-                  )}
-                </AccordionCard>
-
-                <AccordionCard
-                  testID="accordion-steps"
-                  title="Step-by-step"
-                  subtitle={countLabel(planObj.steps?.length, 'step')}
-                >
-                  {planObj.steps?.length ? (
-                    <View style={{ gap: 8 }}>
-                      {planObj.steps.map((s: any, i: number) => (
-                        <View key={i}>
-                          <Text style={{ fontSize: 15, fontWeight: '700', lineHeight: 22, marginBottom: 2 }}>
-                            {i + 1}. {s.title ?? 'Step'}
-                          </Text>
-                          {s.body && (
-                            <Text style={{ fontSize: 15, color: '#4B5563', lineHeight: 22 }}>
-                              {s.body.slice(0, 100)}{s.body.length > 100 ? '...' : ''}
-                            </Text>
-                          )}
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={{ color: '#6B7280', fontSize: 15 }}>No steps yet.</Text>
-                  )}
-                </AccordionCard>
-
-                <AccordionCard
-                  testID="accordion-time-cost"
-                  title="Time & Cost"
-                  subtitle={stepsTimeCost(planObj)}
-                >
-                  <Text style={{ fontSize: 15, lineHeight: 22, marginBottom: 4 }}>
-                    Estimated time: {planObj.time_estimate_hours ?? '—'} hrs
-                  </Text>
-                  <Text style={{ fontSize: 15, lineHeight: 22 }}>
-                    Estimated cost: {planObj.cost_estimate_usd ? `$${planObj.cost_estimate_usd}` : '—'}
-                  </Text>
-                </AccordionCard>
+                <DetailCard 
+                  title="Overview" 
+                  subtitle={planObj?.overview ? (planObj.overview.slice(0, 80) + (planObj.overview.length > 80 ? '...' : '')) : 'High-level summary'} 
+                  onPress={() => Alert.alert('Overview', planObj?.overview || 'No overview available')} 
+                />
+                <DetailCard 
+                  title="Materials" 
+                  subtitle={`${planObj?.materials?.length || 0} items`} 
+                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })} 
+                />
+                <DetailCard 
+                  title="Cuts" 
+                  subtitle={`${planObj?.cuts?.length || 0} parts`} 
+                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })} 
+                />
+                <DetailCard 
+                  title="Tools" 
+                  subtitle={`${planObj?.tools?.length || 0} tools`} 
+                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })} 
+                />
+                <DetailCard 
+                  title="Steps" 
+                  subtitle={`${planObj?.steps?.length || 0} steps`} 
+                  onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })} 
+                />
+                <DetailCard 
+                  title="Time & Cost" 
+                  subtitle={`${planObj?.time_estimate_hours || '—'} hrs • $${planObj?.cost_estimate_usd || '—'}`} 
+                  onPress={() => Alert.alert('Time & Cost', `Estimated time: ${planObj?.time_estimate_hours || '—'} hrs\nEstimated cost: $${planObj?.cost_estimate_usd || '—'}`)} 
+                />
               </View>
 
               <Pressable
