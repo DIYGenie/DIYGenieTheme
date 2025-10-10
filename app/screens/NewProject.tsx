@@ -602,6 +602,16 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         const markdown = await pollProjectReady(id);
         setIsBuilding(false);
         
+        // Parse markdown and cache it
+        const { parsePlanMarkdown } = await import('../lib/plan');
+        const { setCachedPlan } = await import('../lib/planCache');
+        const plan = parsePlanMarkdown(markdown);
+        await setCachedPlan(id, plan);
+        
+        // Emit build completed event
+        const { bus } = await import('../lib/events');
+        bus.emitBuildCompleted({ projectId: id });
+        
         // SUCCESS: Clear form and navigate
         try {
           clearingRef.current = true;
@@ -617,6 +627,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         } catch {}
         
         // Reset navigation to Projects tab with ProjectsList → ProjectDetails stack
+        // Pass preview data to show immediately
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -636,7 +647,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                         index: 1,
                         routes: [
                           { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id } },
+                          { name: 'ProjectDetails', params: { id, preview: plan } },
                         ],
                       },
                     },
