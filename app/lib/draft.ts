@@ -1,6 +1,6 @@
 // app/lib/draft.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE as base } from './api'; // existing base URL helper
+import { createProjectAndReturnId } from './api';
 
 const DRAFT_KEY = 'newProjectDraft:v1';
 
@@ -112,54 +112,42 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
   };
   console.log('[project create] payload', payload);
 
-  async function postOnce(p: typeof payload) {
-    const res = await fetch(`${base}/api/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
-    });
-    const text = await res.text().catch(() => '');
-    let body: any = null;
-    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
-    return { res, body, text };
-  }
-
-  // First attempt
-  let { res, body } = await postOnce(payload);
-
-  // If invalid_name, try one automatic repair and post again
-  if (res.status === 422 && (body?.error === 'invalid_name' || /invalid[_\s-]?name/i.test(String(body)))) {
-    // Always generate a fresh fallback name when server rejects
-    const repaired = generateDefaultName(v.description);
-    if (repaired !== cleanName && nameLooksValid(repaired)) {
-      console.log('[project create] retry with repaired name', { repaired });
-      ({ res, body } = await postOnce({ ...payload, name: repaired }));
-      cleanName = repaired;
-    }
-  }
-
-  if (!res.ok) {
-    console.log('[project create] failed', { status: res.status, body });
-    const detail =
-      body?.userMessage ||
-      body?.message ||
-      body?.error ||
-      body?.detail ||
-      `HTTP ${res.status}`;
-    const e: any = new Error(`PROJECT_CREATE_FAILED:${res.status}`);
-    if (res.status === 422 && (body?.error === 'invalid_name')) {
-      e.userMessage = 'Project title has characters the server does not accept. Use letters, numbers, spaces, and -_. (3–60 chars).';
+  // First attempt - use the helper that handles all response shapes
+  let id: string;
+  try {
+    id = await createProjectAndReturnId(payload);
+  } catch (err: any) {
+    // If invalid_name (422), try one automatic repair with fresh fallback
+    if (err.message?.includes('422') && /invalid[_\s-]?name/i.test(err.message)) {
+      const repaired = generateDefaultName(v.description);
+      if (repaired !== cleanName && nameLooksValid(repaired)) {
+        console.log('[project create] retry with repaired name', { repaired });
+        try {
+          id = await createProjectAndReturnId({ ...payload, name: repaired });
+          cleanName = repaired;
+        } catch (retryErr: any) {
+          console.log('[project create] retry failed', retryErr.message);
+          const e: any = new Error('PROJECT_CREATE_FAILED');
+          e.userMessage = retryErr.message || 'Project creation failed after retry';
+          throw e;
+        }
+      } else {
+        console.log('[project create] failed', err.message);
+        const e: any = new Error('PROJECT_CREATE_FAILED');
+        if (/invalid[_\s-]?name/i.test(err.message)) {
+          e.userMessage = 'Project title has characters the server does not accept. Use letters, numbers, spaces, and -_. (3–60 chars).';
+        } else {
+          e.userMessage = err.message;
+        }
+        throw e;
+      }
     } else {
-      e.userMessage = String(detail);
+      // Other errors - show the actual error message
+      console.log('[project create] error', err.message);
+      const e: any = new Error('PROJECT_CREATE_FAILED');
+      e.userMessage = err.message || 'Project creation failed';
+      throw e;
     }
-    throw e;
-  }
-
-  const id = body?.id || body?.project?.id || body?.data?.id;
-  if (!id) {
-    const e: any = new Error('PROJECT_CREATE_FAILED:NO_ID');
-    e.userMessage = 'Server did not return a project id.';
-    throw e;
   }
 
   // Persist sanitized name + id back into draft
