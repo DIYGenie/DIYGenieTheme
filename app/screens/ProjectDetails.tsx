@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
 import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview } from '../lib/api';
@@ -9,7 +9,9 @@ import Toast from '../components/Toast';
 import { saveImageToPhotos } from '../lib/media';
 import { Ionicons } from '@expo/vector-icons';
 import { getCachedPlan, setCachedPlan } from '../lib/planCache';
-import PlanSummaryList from '../components/PlanSummaryList';
+import SectionCard from '../components/SectionCard';
+import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type RouteParams = { id: string };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -124,29 +126,29 @@ export default function ProjectDetails() {
       // Refresh project to reflect "preview requested/plan requested" state
       load();
     } else {
-      setToast({ visible: true, message: 'Could not request preview. Try again.', type: 'error' });
-      console.log('[preview error]', r.status, r.body);
+      setToast({ visible: true, message: 'Failed to request preview.', type: 'error' });
     }
+    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
 
   const isPlanReady = !!planObj;
-  
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerBackVisible: false,
-      headerLeft: () => (
-        <Pressable onPress={safeBack} style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
-          <Text style={{ fontWeight: '600' }}>Back</Text>
-        </Pressable>
-      ),
-      headerTitle: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: 260 }}>
-          <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '700' }}>
-            {project?.name || 'Project'}
-          </Text>
+      title: '',
+      headerBackVisible: true,
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 }}>
+          {project?.name && (
+            <View style={{ maxWidth: 180 }}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }} numberOfLines={1}>
+                {project.name}
+              </Text>
+            </View>
+          )}
           {isPlanReady && (
-            <View style={{ marginLeft: 8 }}>
-              <StatusBadge status="Plan ready" />
+            <View style={{ paddingLeft: 4 }}>
+              <StatusBadge status="ready" />
             </View>
           )}
         </View>
@@ -173,8 +175,14 @@ export default function ProjectDetails() {
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
+  const copyToClipboard = async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    setToast({ visible: true, message: `${label} copied to clipboard`, type: 'success' });
+    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 2000);
+  };
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#F5F3FF' }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
       {loading ? (
         <View style={{ paddingTop: 40 }}>
@@ -183,7 +191,7 @@ export default function ProjectDetails() {
       ) : (
         <>
           {/* 16:9 Preview block */}
-          <View style={{ marginBottom: 16 }}>
+          <View style={{ marginBottom: 20 }}>
             {previewUrl ? (
               <>
                 <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE' }}>
@@ -211,63 +219,281 @@ export default function ProjectDetails() {
                     <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save image</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={{ marginTop: 8, fontSize: 13, color: '#6B7280', textAlign: 'center' }}>
-                  Visual mockup generated from your scan
-                </Text>
               </>
             ) : (
               <View
                 style={{
                   aspectRatio: 16/9,
                   borderRadius: 16,
-                  backgroundColor: '#F2F2F2',
+                  backgroundColor: '#E9D5FF',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: '#6B7280' }}>No scan image yet</Text>
+                <Ionicons name="image-outline" size={48} color="#A78BFA" />
+                <Text style={{ color: '#7C3AED', marginTop: 8, fontSize: 14 }}>No preview yet</Text>
               </View>
             )}
           </View>
 
-          {/* Single CTA button */}
+          {/* Single Gradient CTA button */}
           {!!planObj ? (
-            <View style={{ marginBottom: 20 }}>
-              <Pressable
-                onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
-                style={{
-                  backgroundColor: '#7C3AED',
-                  paddingVertical: 16,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  shadowColor: '#7C3AED',
-                  shadowOpacity: 0.25,
-                  shadowRadius: 8,
-                  shadowOffset: { height: 4, width: 0 },
-                  elevation: 4,
-                }}
+            <Pressable
+              onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+              style={({ pressed }) => ({
+                marginBottom: 24,
+                borderRadius: 16,
+                overflow: 'hidden',
+                shadowColor: '#6D28D9',
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                shadowOffset: { height: 8, width: 0 },
+                elevation: 8,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}
+            >
+              <LinearGradient
+                colors={['#7C3AED', '#6D28D9']}
+                style={{ paddingVertical: 20, alignItems: 'center' }}
               >
-                <Text style={{ color: 'white', fontWeight: '700', fontSize: 17, marginBottom: 4 }}>
+                <Text style={{ color: 'white', fontWeight: '800', fontSize: 18, marginBottom: 4 }}>
                   Open Detailed Build Plan
                 </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14 }}>
                   Document-style guide with every step and detail
                 </Text>
-              </Pressable>
-            </View>
+              </LinearGradient>
+            </Pressable>
           ) : null}
 
           {/* Building status banner */}
           {isBuilding && (
-            <View style={{ marginBottom: 16, backgroundColor: '#F3E8FF', borderRadius: 16, padding: 16 }}>
-              <Text style={{ color: '#7C3AED', fontSize: 15, textAlign: 'center' }}>
+            <View style={{ marginBottom: 20, backgroundColor: '#F3E8FF', borderRadius: 16, padding: 18, alignItems: 'center' }}>
+              <ActivityIndicator color="#6D28D9" />
+              <Text style={{ color: '#6D28D9', fontSize: 15, marginTop: 8 }}>
                 Plan is building…
               </Text>
             </View>
           )}
 
-          {/* Expandable summary list when plan is available */}
-          {!!planObj && <PlanSummaryList plan={planObj} />}
+          {/* Section Cards */}
+          {!!planObj && (
+            <>
+              {/* Overview */}
+              <SectionCard
+                icon={<Ionicons name="information-circle" size={26} color="#6D28D9" />}
+                title="Overview"
+                summary="What you'll build"
+              >
+                <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
+                  {planObj.overview || 'No overview yet.'}
+                </Text>
+                {(planObj.time_estimate_hours || planObj.cost_estimate_usd) && (
+                  <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {planObj.time_estimate_hours && (
+                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 16 }}>⏱</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>{planObj.time_estimate_hours} hrs</Text>
+                      </View>
+                    )}
+                    {planObj.cost_estimate_usd && (
+                      <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ fontSize: 16 }}>💵</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>${planObj.cost_estimate_usd}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </SectionCard>
+
+              {/* Steps */}
+              <SectionCard
+                icon={<Ionicons name="list" size={26} color="#6D28D9" />}
+                title="Steps"
+                countBadge={planObj.steps?.length || 0}
+                summary={`${planObj.steps?.length || 0} steps to complete`}
+              >
+                {planObj.steps?.length ? (
+                  <>
+                    <View style={{ marginBottom: 16 }}>
+                      {planObj.steps.slice(0, 10).map((step: any, i: number) => {
+                        const stepTitle = typeof step === 'string' ? step : (step.title || `Step ${i + 1}`);
+                        const stepBody = typeof step === 'string' ? '' : (step.body || '');
+                        const hasTip = stepBody.toLowerCase().includes('tip:') || stepBody.toLowerCase().includes('safety:');
+                        
+                        return (
+                          <View key={i} style={{ marginBottom: 10 }}>
+                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                              <Text style={{ fontSize: 15, fontWeight: '600', color: '#6D28D9' }}>{i + 1}.</Text>
+                              <Text style={{ fontSize: 15, color: '#374151', flex: 1, lineHeight: 22 }}>{stepTitle}</Text>
+                            </View>
+                            {hasTip && (
+                              <View style={{ marginLeft: 24, marginTop: 4, paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: '#FCD34D' }}>
+                                <Text style={{ fontSize: 13, color: '#92400E', fontStyle: 'italic' }}>
+                                  {stepBody.split('\n')[0].slice(0, 100)}...
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <Pressable
+                        onPress={() => (navigation as any).navigate('DetailedInstructions', { id: projectId })}
+                        style={{ flex: 1, backgroundColor: '#6D28D9', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
+                      >
+                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>Start Build</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => {
+                          const text = planObj.steps.map((s: any, i: number) => 
+                            `${i + 1}. ${typeof s === 'string' ? s : s.title}`
+                          ).join('\n');
+                          copyToClipboard(text, 'Steps');
+                        }}
+                        style={{ flex: 1, backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
+                      >
+                        <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy Steps</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No steps yet.</Text>
+                )}
+              </SectionCard>
+
+              {/* Materials */}
+              <SectionCard
+                icon={<Ionicons name="cube" size={26} color="#6D28D9" />}
+                title="Materials"
+                countBadge={planObj.materials?.length || 0}
+                summary={`${planObj.materials?.length || 0} items needed`}
+              >
+                {planObj.materials?.length ? (
+                  <>
+                    <View style={{ marginBottom: 16 }}>
+                      {planObj.materials.map((m: any, i: number) => (
+                        <View key={i} style={{ flexDirection: 'row', marginBottom: 8, gap: 8 }}>
+                          <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
+                          <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>
+                            {m.name}
+                            {m.qty && <Text style={{ fontWeight: '600' }}> — {m.qty}{m.unit ? ' ' + m.unit : ''}</Text>}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        const text = planObj.materials.map((m: any) => 
+                          `• ${m.name}${m.qty ? ` — ${m.qty}${m.unit ? ' ' + m.unit : ''}` : ''}`
+                        ).join('\n');
+                        copyToClipboard(text, 'Materials');
+                      }}
+                      style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy List</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No materials listed.</Text>
+                )}
+              </SectionCard>
+
+              {/* Tools */}
+              <SectionCard
+                icon={<Ionicons name="hammer" size={26} color="#6D28D9" />}
+                title="Tools"
+                countBadge={planObj.tools?.length || 0}
+                summary={`${planObj.tools?.length || 0} tools required`}
+              >
+                {planObj.tools?.length ? (
+                  <>
+                    <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginBottom: 12 }}>
+                      <Text style={{ fontSize: 13, color: '#92400E', fontWeight: '600' }}>
+                        ⚠️ Wear eye & hearing protection
+                      </Text>
+                    </View>
+                    <View>
+                      {planObj.tools.map((tool: string, i: number) => (
+                        <View key={i} style={{ flexDirection: 'row', marginBottom: 6, gap: 8 }}>
+                          <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
+                          <Text style={{ fontSize: 15, color: '#374151' }}>{tool}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No tools listed.</Text>
+                )}
+              </SectionCard>
+
+              {/* Cuts */}
+              <SectionCard
+                icon={<Ionicons name="cut" size={26} color="#6D28D9" />}
+                title="Cuts"
+                countBadge={planObj.cuts?.length || 0}
+                summary={`${planObj.cuts?.length || 0} pieces to cut`}
+              >
+                {planObj.cuts?.length ? (
+                  <View>
+                    {planObj.cuts.map((cut: any, i: number) => (
+                      <View key={i} style={{ 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between', 
+                        paddingVertical: 10, 
+                        borderBottomWidth: i < planObj.cuts.length - 1 ? 1 : 0,
+                        borderBottomColor: '#E5E7EB'
+                      }}>
+                        <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>{cut.part}</Text>
+                        <Text style={{ fontSize: 15, color: '#6B7280', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' }}>
+                          {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={{ color: '#9CA3AF', fontSize: 14 }}>No cuts listed.</Text>
+                )}
+              </SectionCard>
+
+              {/* Time & Cost */}
+              <SectionCard
+                icon={<Ionicons name="time" size={26} color="#6D28D9" />}
+                title="Time & Cost"
+                summary="Estimates"
+              >
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ 
+                    flex: 1, 
+                    backgroundColor: '#EDE9FE', 
+                    padding: 16, 
+                    borderRadius: 12,
+                    alignItems: 'center'
+                  }}>
+                    <Ionicons name="time-outline" size={28} color="#6D28D9" />
+                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#6D28D9', marginTop: 8 }}>
+                      {planObj.time_estimate_hours || '—'}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>hours</Text>
+                  </View>
+                  <View style={{ 
+                    flex: 1, 
+                    backgroundColor: '#EDE9FE', 
+                    padding: 16, 
+                    borderRadius: 12,
+                    alignItems: 'center'
+                  }}>
+                    <Ionicons name="cash-outline" size={28} color="#6D28D9" />
+                    <Text style={{ fontSize: 24, fontWeight: '700', color: '#6D28D9', marginTop: 8 }}>
+                      ${planObj.cost_estimate_usd || '—'}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>estimated cost</Text>
+                  </View>
+                </View>
+              </SectionCard>
+            </>
+          )}
 
           {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview */}
           {!!projectId && !statusReady && !isBuilding && !previewUrl && (
