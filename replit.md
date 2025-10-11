@@ -7,6 +7,12 @@ DIY Genie is a React Native mobile application built with Expo, designed to assi
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **Navigation Cleanup (Oct 11, 2025)**: Removed legacy debug Preview screen
+  - Removed ProjectPreview screen registration from AppNavigator (commented out with legacy note)
+  - No more navigation to debug Preview screen - all preview generation uses real production flow
+  - "Build with visual mockup" button calls `handleBuildWithPreview()` which creates project, starts preview job, polls for completion, then navigates to ProjectDetails
+  - Preview URLs persist in project record and display in ProjectDetails hero with automatic polling
+  - Media card shows single source with priority: AR scan image → uploaded photo (prevents duplicate cards)
 - **ProjectDetails Hero Polish (Oct 11, 2025)**: Streamlined single hero image display
   - Unified hero rendering with priority: preview_url → scan → placeholder (shows placeholder when no media)
   - Removed offline/network banner from ProjectDetails header for cleaner UI
@@ -59,12 +65,13 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - Cache-buster query param (`?t=${Date.now()}`) ensures fresh plan data
   - Logs: `[plan] first-fetch start`, `[plan] first-fetch done { sections }`
 - **Project Details Display**: Shows real-time project info with smart hero fallback system and 5 focused expandable sections using the `SectionCard` component:
-  - **Hero fallback priority**: preview image → scan image → none (single source of truth, no placeholder shown)
-  - **Preview hero**: Shows `project.preview_url` as 16:9 image with "Save to Photos" button overlay (top-right)
+  - **Hero fallback priority**: `preview_url` (from decor8) → scan image → placeholder (single source, automatic)
+  - **Preview hero**: Shows `project.preview_url` (or `project.plan.preview_url`) as 16:9 image with "Save to Photos" button overlay (top-right)
   - **Scan hero**: Shows latest scan image with optional measurement badge (bottom-left shows "48" × 30"" if available) and "Save to Photos" button
-  - **No hero**: When no preview or scan exists, no hero card is displayed (clean, minimal UI)
-  - **Preview status polling**: Automatically polls production endpoint every 2s when `preview_status` is 'queued' or 'processing', updates UI in-place when complete
-  - **Logging**: `[details] hero = preview|scan|none`, `[details] plan state = building|loading|ready|none`, `[preview] polling…`, `[preview] ready { url }`, `[preview] stop`
+  - **Placeholder hero**: Shown only when no preview or scan exists (gray placeholder image)
+  - **Preview status polling**: Automatically polls production endpoint (`/api/projects/${id}/preview/status`) every 2s when `preview_status` is 'queued' or 'processing', updates UI in-place when complete with preview_url
+  - **Preview persistence**: Generated preview URLs are saved to project record and persist across sessions
+  - **Logging**: `[details] hero = preview|scan|placeholder`, `[details] plan state = building|loading|ready|none`, `[preview] polling…`, `[preview] ready { url }`, `[preview] stop`
   - **Gradient CTA**: "Open Detailed Build Plan" button appears when plan is ready
   - **5 focused sections**:
   1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
