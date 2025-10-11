@@ -562,6 +562,25 @@ export async function pollMeasurementReady(
   throw new Error('[measure] timeout');
 }
 
+export type MeasureResult = { 
+  width_in: number; 
+  height_in: number; 
+  px_per_in: number; 
+  roi: { x: number; y: number; w: number; h: number } 
+};
+
+export async function getMeasurement(projectId: string, scanId: string): Promise<MeasureResult | null> {
+  try {
+    const url = `/api/projects/${projectId}/scans/${scanId}/measure/status`;
+    const res = await api(url, { method: 'GET' });
+    if (!res?.ok) return null;
+    return res.data as MeasureResult;
+  } catch (e) {
+    console.log('[getMeasurement] error', e);
+    return null;
+  }
+}
+
 const PREVIEW_API_BASE = 'https://api.diygenieapp.com/api';
 
 export async function startPreview(projectId: string, roi?: any) {
