@@ -702,10 +702,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function handleBuildWithPreview() {
     if (isBuilding || isPreviewing) return;
+    
     try {
-      const { data } = await supabase.auth.getSession();
-      if (!data?.session?.user) {
-        Alert.alert('Sign in required', 'Please sign in to build a preview.');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Sign in required', 'Please sign in to build with preview.');
         return;
       }
       if (!canSubmit) {
@@ -713,7 +714,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         return;
       }
       
-      // 1) Ensure a project exists for this draft (creates if needed)
+      // 1) Ensure project exists
       const projectId = await ensureProjectForDraft({
         name: title,
         description,
@@ -722,72 +723,106 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         projectId: draftId,
       });
       
-      // 2) Show loading state and disable inputs
+      // 2) Upload image if needed
+      if (photoUri) {
+        try {
+          await uploadProjectImage(projectId, photoUri);
+          console.log('[upload] complete');
+        } catch (e) {
+          console.error('[upload] failed', e);
+          Alert.alert('Upload failed', 'Could not upload photo. Please try again.');
+          return;
+        }
+      }
+      
+      // 3) Link scan to project if available
+      const ls = lastScanRef.current;
+      try {
+        if (ls?.scanId) {
+          await attachScanToProject(ls.scanId, projectId);
+        }
+      } catch (e) {
+        console.warn('[link scan]', e);
+      }
+      
+      // 4) Show loading state
       setIsBuilding(true);
       setIsPreviewing(true);
       
-      // 3) Start preview generation
-      const { startPreview, pollPreviewReady } = await import('../lib/api');
-      await startPreview(projectId, lastScan?.roi);
+      // 5) Start plan build job
+      const res = await apiRaw(`/api/projects/${projectId}/build-without-preview?user_id=${encodeURIComponent(user.id)}`, {
+        method: 'POST',
+      });
+      console.log('[build] accepted', res);
       
-      // 4) Poll for preview ready
-      await pollPreviewReady(projectId);
+      // 6) Start preview job in parallel (fire and forget)
+      const { startPreview } = await import('../lib/api');
+      startPreview(projectId, lastScan?.roi).catch((e) => {
+        console.log('[preview] start failed (non-blocking)', e);
+      });
+      
+      // 7) Poll for plan ready (not preview)
+      const pollRes = await pollProjectReady(projectId, { tries: 40, interval: 2000 });
       
       setIsBuilding(false);
       setIsPreviewing(false);
       
-      // 5) Clear form
-      try {
-        clearingRef.current = true;
-        await clearNewProjectDraft?.();
-        setDraftId(null);
-        setTitle('');
-        setDescription('');
-        setBudget('');
-        setSkillLevel('');
-        setPhotoUri(null);
-        setLastScan(null);
-        lastScanRef.current = null;
-        console.log('[media] cleared after build (with preview)');
-        setTimeout(() => { clearingRef.current = false; }, 0);
-      } catch {}
-      
-      // 6) Navigate to ProjectDetails
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'Main',
-              state: {
-                type: 'tab',
-                index: 2,
-                routes: [
-                  { name: 'Home' },
-                  { name: 'NewProject' },
-                  {
-                    name: 'Projects',
-                    state: {
-                      type: 'stack',
-                      index: 1,
-                      routes: [
-                        { name: 'ProjectsList' },
-                        { name: 'ProjectDetails', params: { id: projectId, justBuilt: true } },
-                      ],
+      if (pollRes.ok) {
+        // 8) Clear form
+        try {
+          clearingRef.current = true;
+          await clearNewProjectDraft?.();
+          setDraftId(null);
+          setTitle('');
+          setDescription('');
+          setBudget('');
+          setSkillLevel('');
+          setPhotoUri(null);
+          setLastScan(null);
+          lastScanRef.current = null;
+          console.log('[media] cleared after build (with preview)');
+          setTimeout(() => { clearingRef.current = false; }, 0);
+        } catch {}
+        
+        // 9) Navigate to ProjectDetails (preview will swap in via background polling)
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Main',
+                state: {
+                  type: 'tab',
+                  index: 2,
+                  routes: [
+                    { name: 'Home' },
+                    { name: 'NewProject' },
+                    {
+                      name: 'Projects',
+                      state: {
+                        type: 'stack',
+                        index: 1,
+                        routes: [
+                          { name: 'ProjectsList' },
+                          { name: 'ProjectDetails', params: { id: projectId, justBuilt: true } },
+                        ],
+                      },
                     },
-                  },
-                  { name: 'Profile' },
-                ],
+                    { name: 'Profile' },
+                  ],
+                },
               },
-            },
-          ],
-        })
-      );
+            ],
+          })
+        );
+      } else {
+        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
+      }
     } catch (e) {
-      console.error('[preview] error', e);
+      console.error('[build] error', e);
       setIsPreviewing(false);
       setIsBuilding(false);
-      Alert.alert('Preview failed', 'Could not generate preview. Please try again.');
+      Alert.alert('Build failed', 'Could not start build. Please try again.');
     }
   }
 
