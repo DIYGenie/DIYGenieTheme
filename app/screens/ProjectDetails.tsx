@@ -26,7 +26,7 @@ export default function ProjectDetails() {
 
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
-  const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
+  const [scan, setScan] = useState<{ scanId: string; imageUrl: string; roi?: any; measureResult?: any } | null>(null);
   const [planObj, setPlanObj] = useState<Plan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -151,12 +151,21 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
+  // Hero fallback logic: preview → scan → placeholder
   const previewUrl = project?.preview_url ?? project?.plan?.preview_url ?? null;
+  const scanUrl = scan?.imageUrl || null;
+  const measureResult = scan?.measureResult || null;
+  const roi = scan?.roi || null;
 
-  const handleSavePreview = async () => {
-    if (!previewUrl) return;
+  let hero: 'preview' | 'scan' | 'placeholder' = 'placeholder';
+  if (previewUrl) hero = 'preview';
+  else if (scanUrl) hero = 'scan';
+
+  const handleSaveImage = async () => {
+    const imageUrl = hero === 'preview' ? previewUrl : scanUrl;
+    if (!imageUrl) return;
     console.log('[preview] save-to-photos');
-    const result = await saveImageToPhotos(previewUrl);
+    const result = await saveImageToPhotos(imageUrl);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
@@ -300,19 +309,72 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Single Hero Image */}
+          {/* Single Hero Image - Priority: preview → scan → placeholder */}
           <View style={{ marginBottom: 20 }}>
-            {previewUrl ? (
+            {hero === 'preview' ? (
               <>
-                {console.log('[details] hero=preview')}
-                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE' }}>
+                {console.log('[details] hero', 'preview', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
+                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE', 
+                  shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
                   <Image
                     source={{ uri: previewUrl }}
                     style={{ width: '100%', height: '100%' }}
                     resizeMode="cover"
                   />
                   <TouchableOpacity 
-                    onPress={handleSavePreview}
+                    onPress={handleSaveImage}
+                    style={{ 
+                      position: 'absolute', 
+                      top: 12, 
+                      right: 12, 
+                      backgroundColor: 'rgba(0,0,0,0.6)', 
+                      paddingHorizontal: 12, 
+                      paddingVertical: 6, 
+                      borderRadius: 8,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Ionicons name="download-outline" size={16} color="white" />
+                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : hero === 'scan' ? (
+              <>
+                {console.log('[details] hero', 'scan', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
+                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE',
+                  shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
+                  <Image
+                    source={{ uri: scanUrl }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                  />
+                  
+                  {/* Measurement badge if available */}
+                  {measureResult && (
+                    <>
+                      {console.log('[measure] badge shown', { width_in: measureResult.width_in, height_in: measureResult.height_in })}
+                      <View style={{ 
+                        position: 'absolute', 
+                        bottom: 12, 
+                        left: 12, 
+                        backgroundColor: 'rgba(124,58,237,0.9)', 
+                        paddingHorizontal: 10, 
+                        paddingVertical: 6, 
+                        borderRadius: 8 
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                          {measureResult.width_in}" × {measureResult.height_in}"
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                  
+                  {/* Save to Photos button */}
+                  <TouchableOpacity 
+                    onPress={handleSaveImage}
                     style={{ 
                       position: 'absolute', 
                       top: 12, 
@@ -333,18 +395,23 @@ export default function ProjectDetails() {
               </>
             ) : (
               <>
-                {console.log('[details] hero=placeholder')}
+                {console.log('[details] hero', 'placeholder', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
                 <View
                   style={{
                     aspectRatio: 16/9,
                     borderRadius: 16,
-                    backgroundColor: '#E9D5FF',
+                    borderWidth: 2,
+                    borderColor: '#E9D5FF',
+                    borderStyle: 'dashed',
+                    backgroundColor: '#FAF5FF',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Ionicons name="image-outline" size={48} color="#A78BFA" />
-                  <Text style={{ color: '#7C3AED', marginTop: 8, fontSize: 14 }}>No preview yet</Text>
+                  <Ionicons name="image-outline" size={48} color="#C4B5FD" />
+                  <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
+                    Add a preview or scan to see it here
+                  </Text>
                 </View>
               </>
             )}

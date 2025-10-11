@@ -194,7 +194,7 @@ export async function pollProjectReady(projectId: string, opts = { tries: 40, in
 export async function fetchLatestScanForProject(projectId: string) {
   const { data, error } = await supabase
     .from('room_scans')
-    .select('id,image_url')
+    .select('id,image_url,roi,measure_result')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -202,7 +202,12 @@ export async function fetchLatestScanForProject(projectId: string) {
 
   if (error) throw error;
   if (!data) return null;
-  return { scanId: data.id as string, imageUrl: data.image_url as string };
+  return { 
+    scanId: data.id as string, 
+    imageUrl: data.image_url as string,
+    roi: data.roi || null,
+    measureResult: data.measure_result || null
+  };
 }
 
 export async function fetchProjectPlanMarkdown(
