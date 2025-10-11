@@ -643,6 +643,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setIsBuilding(false);
       
       if (pollRes.ok) {
+        // Warm cache before navigation
+        const { fetchProjectPlanMarkdown } = await import('../lib/api');
+        await fetchProjectPlanMarkdown(id, { cacheBust: true }).catch(() => null);
+        console.log('[cache] warmed before nav');
+        
         // SUCCESS: Clear form and navigate
         try {
           clearingRef.current = true;
@@ -768,7 +773,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       setIsPreviewing(false);
       
       if (pollRes.ok) {
-        // 8) Clear form
+        // 8) Warm cache before navigation
+        const { fetchProjectPlanMarkdown } = await import('../lib/api');
+        await fetchProjectPlanMarkdown(projectId, { cacheBust: true }).catch(() => null);
+        console.log('[cache] warmed before nav');
+        
+        // 9) Clear form
         try {
           clearingRef.current = true;
           await clearNewProjectDraft?.();
@@ -784,7 +794,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
-        // 9) Navigate to ProjectDetails (preview will swap in via background polling)
+        // 10) Navigate to ProjectDetails (preview will swap in via background polling)
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
