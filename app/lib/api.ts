@@ -555,3 +555,42 @@ export async function pollMeasurementReady(
   console.log('[measure] timeout');
   throw new Error('[measure] timeout');
 }
+
+const PREVIEW_API_BASE = 'https://api.diygenieapp.com/api';
+
+export async function startPreview(projectId: string, roi?: any) {
+  const u = await supabase.auth.getSession();
+  const user_id = u?.data?.session?.user?.id;
+  
+  console.log('[preview] start', { projectId, hasROI: !!roi });
+  
+  const res = await fetch(`${PREVIEW_API_BASE}/projects/${projectId}/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id, roi })
+  });
+  
+  return { ok: res.ok, status: res.status, body: await res.json() };
+}
+
+export async function pollPreviewReady(projectId: string, timeoutMs = 60000) {
+  const u = await supabase.auth.getSession();
+  const user_id = u?.data?.session?.user?.id;
+  const started = Date.now();
+  
+  while (Date.now() - started < timeoutMs) {
+    console.log('[preview] polling…');
+    
+    const r = await fetch(`${PREVIEW_API_BASE}/projects/${projectId}/preview/status?user_id=${user_id}`);
+    
+    if (r.status === 200) {
+      const result = await r.json();
+      console.log('[preview] ready', { url: result.preview_url });
+      return result;
+    }
+    
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  
+  throw new Error('PREVIEW_TIMEOUT');
+}
