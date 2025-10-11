@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
-type RouteParams = { id: string };
+type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
 
 export default function ProjectDetails() {
@@ -22,17 +22,65 @@ export default function ProjectDetails() {
   const navigation = useNavigation();
   const safeBack = useSafeBack();
   const projectId = route.params?.id;
+  const justBuilt = route.params?.justBuilt;
 
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string } | null>(null);
   const [planObj, setPlanObj] = useState<Plan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [offlineAvailable, setOfflineAvailable] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const prevProjectIdRef = useRef<string | undefined>(projectId);
+
+  // Reset plan state when projectId changes
+  useEffect(() => {
+    if (prevProjectIdRef.current !== projectId) {
+      setPlanObj(null);
+      setOfflineAvailable(false);
+      prevProjectIdRef.current = projectId;
+    }
+  }, [projectId]);
+
+  const loadPlanIfNeeded = useCallback(async () => {
+    if (!projectId || !project) return;
+    
+    const ready = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase()) && 
+                 !/requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
+    
+    if (ready && !planObj) {
+      console.log('[plan] first-fetch start');
+      setPlanLoading(true);
+      try {
+        const { getLocalPlanMarkdown } = await import('../lib/localPlan');
+        const local = await getLocalPlanMarkdown(projectId);
+        let md = local;
+        if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true, cacheBust: true });
+        if (md) {
+          const parsed = parsePlanMarkdown(md);
+          await setCachedPlan(projectId, parsed);
+          setPlanObj(parsed);
+          setOfflineAvailable(true);
+          console.log('[plan] first-fetch done', {
+            sections: {
+              materials: parsed.materials?.length ?? 0,
+              cuts: parsed.cuts?.length ?? 0,
+              tools: parsed.tools?.length ?? 0,
+              steps: parsed.steps?.length ?? 0
+            }
+          });
+        }
+      } catch (e) {
+        console.log('[plan] first-fetch error', String(e));
+      } finally {
+        setPlanLoading(false);
+      }
+    }
+  }, [projectId, project, planObj]);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -181,12 +229,26 @@ export default function ProjectDetails() {
   useFocusEffect(
     useCallback(() => {
       load();
+      
+      // Clear justBuilt param after first use
+      if (justBuilt) {
+        navigation.setParams({ justBuilt: undefined } as any);
+      }
+      
       return () => {
         abortRef.current?.abort();
       };
-    }, [load])
+    }, [load, justBuilt, navigation])
   );
 
+  // Load plan immediately when project is ready
+  useFocusEffect(
+    useCallback(() => {
+      if (justBuilt || !planObj) {
+        loadPlanIfNeeded();
+      }
+    }, [loadPlanIfNeeded, justBuilt, planObj])
+  );
 
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
@@ -318,6 +380,16 @@ export default function ProjectDetails() {
               <ActivityIndicator color="#6D28D9" />
               <Text style={{ color: '#6D28D9', fontSize: 15, marginTop: 8 }}>
                 Plan is building…
+              </Text>
+            </View>
+          )}
+
+          {/* Plan loading skeleton */}
+          {planLoading && !planObj && (
+            <View style={{ marginBottom: 20, backgroundColor: '#F3E8FF', borderRadius: 16, padding: 18, alignItems: 'center' }}>
+              <ActivityIndicator color="#6D28D9" />
+              <Text style={{ color: '#6D28D9', fontSize: 15, marginTop: 8 }}>
+                Loading plan…
               </Text>
             </View>
           )}
