@@ -14,7 +14,7 @@ import * as Linking from 'expo-linking';
 import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { api, apiRaw, requestProjectPreview, pollProjectReady } from '../lib/api';
+import { api, apiRaw, requestProjectPreview, pollProjectReady, patchProject } from '../lib/api';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
@@ -648,6 +648,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         await fetchProjectPlanMarkdown(id, { cacheBust: true }).catch(() => null);
         console.log('[cache] warmed before nav');
         
+        // Mark project as active (promote out of draft)
+        await patchProject(id, { status: 'active' });
+        console.log('[project] marked active');
+        
         // SUCCESS: Clear form and navigate
         try {
           clearingRef.current = true;
@@ -778,7 +782,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         await fetchProjectPlanMarkdown(projectId, { cacheBust: true }).catch(() => null);
         console.log('[cache] warmed before nav');
         
-        // 9) Clear form
+        // 9) Mark project as active (promote out of draft)
+        await patchProject(projectId, { status: 'active' });
+        console.log('[project] marked active');
+        
+        // 10) Clear form
         try {
           clearingRef.current = true;
           await clearNewProjectDraft?.();
@@ -794,7 +802,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
-        // 10) Navigate to ProjectDetails (preview will swap in via background polling)
+        // 11) Navigate to ProjectDetails (preview will swap in via background polling)
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
