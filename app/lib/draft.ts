@@ -10,6 +10,7 @@ export type NewProjectDraft = {
   description?: string;
   budget?: string | null;          // '$' | '$$' | '$$$'
   skill_level?: string | null;     // 'Beginner' | 'Intermediate' | 'Advanced'
+  measurement?: { width_in: number; height_in: number; px_per_in?: number; roi?: any } | null;
 };
 
 export async function loadNewProjectDraft(): Promise<NewProjectDraft | null> {
