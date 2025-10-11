@@ -649,8 +649,21 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         console.log('[cache] warmed before nav');
         
         // Mark project as active (promote out of draft)
-        await patchProject(id, { status: 'active' });
-        console.log('[project] marked active');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user_id = sessionData?.session?.user?.id;
+        const patchPayload = { user_id, status: 'active' };
+        console.log('[build] PATCH payload', { user_id: !!user_id, status: 'active' });
+        
+        try {
+          await patchProject(id, patchPayload);
+          console.log('[project] marked active');
+        } catch (e: any) {
+          if (e?.message?.includes('404')) {
+            console.log('[build] PATCH 404 (likely old deploy) – continuing');
+          } else {
+            console.warn('[build] PATCH failed', e?.message);
+          }
+        }
         
         // SUCCESS: Clear form and navigate
         try {
@@ -783,8 +796,21 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         console.log('[cache] warmed before nav');
         
         // 9) Mark project as active (promote out of draft)
-        await patchProject(projectId, { status: 'active' });
-        console.log('[project] marked active');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const user_id = sessionData?.session?.user?.id;
+        const patchPayload = { user_id, status: 'active' };
+        console.log('[build] PATCH payload', { user_id: !!user_id, status: 'active' });
+        
+        try {
+          await patchProject(projectId, patchPayload);
+          console.log('[project] marked active');
+        } catch (e: any) {
+          if (e?.message?.includes('404')) {
+            console.log('[build] PATCH 404 (likely old deploy) – continuing');
+          } else {
+            console.warn('[build] PATCH failed', e?.message);
+          }
+        }
         
         // 10) Clear form
         try {
