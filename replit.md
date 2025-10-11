@@ -7,6 +7,13 @@ DIY Genie is a React Native mobile application built with Expo, designed to assi
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **ProjectDetails Hero Polish (Oct 11, 2025)**: Streamlined single hero image display
+  - Unified hero rendering with priority: preview_url → scan → placeholder (shows placeholder when no media)
+  - Removed offline/network banner from ProjectDetails header for cleaner UI
+  - Consolidated duplicate hero code into single component with conditional overlays
+  - Save to Photos: Small icon-only button (36×36px) in top-right, hidden for placeholder
+  - Updated logging: '[hero] saved to photos' on successful save
+  - Preserved all overlays: ROI overlay (white border + dimensions), measurement badge (purple, bottom-left for scans)
 - **Dimensions Overlay & Card (Oct 11, 2025)**: Added measurement visualization to ProjectDetails
   - Created `getMeasurement()` API helper to fetch measurement results with ROI data
   - Added measurement state and polling effect to ProjectDetails (fetches once on mount)
