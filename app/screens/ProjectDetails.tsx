@@ -32,9 +32,6 @@ export default function ProjectDetails() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [offlineAvailable, setOfflineAvailable] = useState(false);
-  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
-  const [baseImgUrl, setBaseImgUrl] = useState<string | null>(null);
-  const [measuring, setMeasuring] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -110,6 +107,7 @@ export default function ProjectDetails() {
 
   const handleSavePreview = async () => {
     if (!previewUrl) return;
+    console.log('[preview] save-to-photos');
     const result = await saveImageToPhotos(previewUrl);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
@@ -189,40 +187,6 @@ export default function ProjectDetails() {
     }, [load])
   );
 
-  // Load most recent scan & poll overlay (disabled for now)
-  useEffect(() => {
-    if (!project?.id) return;
-    
-    let alive = true;
-    (async () => {
-      try {
-        // Get latest scan id for this project
-        const { data, error } = await supabase
-          .from('room_scans')
-          .select('id, image_url, created_at')
-          .eq('project_id', project.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error || !data) return;
-        setBaseImgUrl(data.image_url ?? null);
-        setMeasuring(true);
-        const status = await pollScanMeasurement(project.id, data.id, { tries: 30, intervalMs: 2000 });
-        if (!alive) return;
-        
-        // Type guard to check if status has ready property
-        if (status.ok && 'ready' in status && status.ready) {
-          setOverlayUrl(status.overlay_url);
-          if (status.image_url) setBaseImgUrl(status.image_url);
-        }
-      } catch (e) {
-        // Swallow; header will just show "No scan image yet"
-      } finally {
-        if (alive) setMeasuring(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [project?.id]);
 
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
@@ -274,23 +238,11 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Scan Overlay Header */}
-          <View style={{ borderRadius: 16, overflow: 'hidden', backgroundColor: '#F3F4F6', height: 220, marginBottom: 16 }}>
-            {overlayUrl || baseImgUrl ? (
-              <Image source={{ uri: overlayUrl ?? baseImgUrl! }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-            ) : (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#9CA3AF' }}>
-                  {measuring ? 'Measuring…' : 'No scan image yet'}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* 16:9 Preview block */}
+          {/* Single Hero Image */}
           <View style={{ marginBottom: 20 }}>
             {previewUrl ? (
               <>
+                {console.log('[details] hero=preview')}
                 <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE' }}>
                   <Image
                     source={{ uri: previewUrl }}
@@ -313,23 +265,26 @@ export default function ProjectDetails() {
                     }}
                   >
                     <Ionicons name="download-outline" size={16} color="white" />
-                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save image</Text>
+                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
                   </TouchableOpacity>
                 </View>
               </>
             ) : (
-              <View
-                style={{
-                  aspectRatio: 16/9,
-                  borderRadius: 16,
-                  backgroundColor: '#E9D5FF',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name="image-outline" size={48} color="#A78BFA" />
-                <Text style={{ color: '#7C3AED', marginTop: 8, fontSize: 14 }}>No preview yet</Text>
-              </View>
+              <>
+                {console.log('[details] hero=placeholder')}
+                <View
+                  style={{
+                    aspectRatio: 16/9,
+                    borderRadius: 16,
+                    backgroundColor: '#E9D5FF',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="image-outline" size={48} color="#A78BFA" />
+                  <Text style={{ color: '#7C3AED', marginTop: 8, fontSize: 14 }}>No preview yet</Text>
+                </View>
+              </>
             )}
           </View>
 
