@@ -1115,77 +1115,82 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           )}
           </View>
 
-          {lastScan && (
-          <View style={{
-            marginTop: 16,
-            padding: 12,
-            backgroundColor: '#F9FAFB',
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-          }}>
-            {lastScan.imageUrl ? (
-              <Image 
-                source={{ uri: lastScan.imageUrl }} 
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 8,
-                }}
-                resizeMode="cover"
-              />
-            ) : (
+          {(lastScan || photoUri) && (() => {
+            const thumbnailUri = lastScan?.imageUrl ?? photoUri;
+            const label = lastScan?.source === 'ar' ? 'Saved scan (AR)' : 'Uploaded photo';
+            console.log('[media] card label', label, { hasImage: !!thumbnailUri });
+            
+            return (
               <View style={{
-                width: 60,
-                height: 60,
-                borderRadius: 8,
-                backgroundColor: '#E5E7EB',
+                marginTop: 16,
+                padding: 12,
+                backgroundColor: '#F9FAFB',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 12,
               }}>
-                <Ionicons name="cube-outline" size={28} color="#9CA3AF" />
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
-                {lastScan.source === 'ar' ? 'Saved scan (AR)' : 'Saved photo'}
-              </Text>
-              
-              {lastScan.measuring && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <ActivityIndicator size="small" color="#7C3AED" />
-                  <Text style={{ fontSize: 12, color: '#7C3AED', fontWeight: '500' }}>
-                    Measuring…
+                {thumbnailUri ? (
+                  <Image 
+                    source={{ uri: thumbnailUri }} 
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 8,
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 8,
+                    backgroundColor: '#E5E7EB',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Ionicons name="cube-outline" size={28} color="#9CA3AF" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
+                    {label}
                   </Text>
-                </View>
-              )}
               
-              {lastScan.measure && !lastScan.measuring && (
-                <View style={{
-                  marginTop: 4,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  backgroundColor: '#F3F0FF',
-                  borderRadius: 6,
-                  alignSelf: 'flex-start',
-                }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#7C3AED' }}>
-                    Measurements • {lastScan.measure.width_in}" × {lastScan.measure.height_in}"
-                  </Text>
+                  {lastScan?.measuring && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <ActivityIndicator size="small" color="#7C3AED" />
+                      <Text style={{ fontSize: 12, color: '#7C3AED', fontWeight: '500' }}>
+                        Measuring…
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {lastScan?.measure && !lastScan?.measuring && (
+                    <View style={{
+                      marginTop: 4,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      backgroundColor: '#F3F0FF',
+                      borderRadius: 6,
+                      alignSelf: 'flex-start',
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#7C3AED' }}>
+                        Measurements • {lastScan.measure.width_in}" × {lastScan.measure.height_in}"
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {lastScan && !lastScan.measuring && !lastScan.measure && (
+                    <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                      {lastScan.source === 'ar' 
+                        ? `${lastScan.scanId.slice(0, 8)}…`
+                        : `${lastScan.scanId.slice(0, 8)}…`}
+                    </Text>
+                  )}
                 </View>
-              )}
-              
-              {!lastScan.measuring && !lastScan.measure && (
-                <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                  {lastScan.source === 'ar' 
-                    ? `${lastScan.scanId.slice(0, 8)}…`
-                    : `${lastScan.scanId.slice(0, 8)}…`}
-                </Text>
-              )}
-            </View>
             {/* V1: hide tool buttons for uploads */}
             {__HIDE_MEDIA_TOOLS ? null : lastScan?.imageUrl && (
               <View style={{ flexDirection: 'column', gap: 8 }}>
@@ -1222,7 +1227,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               </View>
             )}
           </View>
-          )}
+            );
+          })()}
 
           {(hasValidForm() || !!photoUri) && (
           <View ref={ctaRef} style={{ marginTop: 20 }}>
