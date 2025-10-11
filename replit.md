@@ -6,35 +6,6 @@ DIY Genie is a React Native mobile application built with Expo, designed to assi
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes
-- **Navigation Cleanup (Oct 11, 2025)**: Removed legacy debug Preview screen
-  - Removed ProjectPreview screen registration from AppNavigator (commented out with legacy note)
-  - No more navigation to debug Preview screen - all preview generation uses real production flow
-  - "Build with visual mockup" button calls `handleBuildWithPreview()` which creates project, starts preview job, polls for completion, then navigates to ProjectDetails
-  - Preview URLs persist in project record and display in ProjectDetails hero with automatic polling
-  - Media card shows single source with priority: AR scan image → uploaded photo (prevents duplicate cards)
-- **ProjectDetails Hero Polish (Oct 11, 2025)**: Streamlined single hero image display
-  - Unified hero rendering with priority: preview_url → scan → placeholder (shows placeholder when no media)
-  - Removed offline/network banner from ProjectDetails header for cleaner UI
-  - Consolidated duplicate hero code into single component with conditional overlays
-  - Save to Photos: Small icon-only button (36×36px) in top-right, hidden for placeholder
-  - Updated logging: '[hero] saved to photos' on successful save
-  - Preserved all overlays: ROI overlay (white border + dimensions), measurement badge (purple, bottom-left for scans)
-- **Dimensions Overlay & Card (Oct 11, 2025)**: Added measurement visualization to ProjectDetails
-  - Created `getMeasurement()` API helper to fetch measurement results with ROI data
-  - Added measurement state and polling effect to ProjectDetails (fetches once on mount)
-  - Implemented ROI overlay on hero images: white border box with semi-transparent fill, dimensions label above
-  - Created DimensionsCard component showing width, height, pixels/inch, and ROI region percentages
-  - ROI overlay appears on both preview and scan hero images when measurement data is available
-  - DimensionsCard renders below Overview section, displays "Waiting for dimensions…" when measure is null
-- **NewProject Media Card Enhancement (Oct 11, 2025)**: Improved media display and form clearing
-  - Media card now shows for either AR scans OR uploaded photos (previously only for scans)
-  - Dynamic labeling: "Saved scan (AR)" for AR captures, "Uploaded photo" for uploads
-  - Thumbnail priority: AR scan image → uploaded photo URI
-  - Enhanced form clearing: Both build handlers clear photoUri, lastScan, and lastScanRef.current
-  - Added logging: `[media] card label`, `[media] cleared after build (plan only/with preview)`
-  - Preserved measurement display: "Measuring…" spinner and purple badge with dimensions for AR scans
-
 ## System Architecture
 
 ### Frontend Architecture
@@ -49,75 +20,19 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Image Upload**: Supports server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking.
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
-- **Visual AI Preview Integration**: Live preview generation system for "Build + Visual AI Preview" button:
-  - **API helpers**: `startPreview(projectId, roi?)` (POST to production endpoint), `pollPreviewReady(projectId)` (GET polling with 60s timeout)
-  - **Production endpoints**: Calls `https://api.diygenieapp.com/api/projects/${projectId}/preview` and polls `/preview/status`
-  - **UI flow**: Shows purple loading banner "Generating visual preview…" while processing, disables inputs during generation
-  - **Auto-navigation**: On success, clears form and navigates to ProjectDetails with generated preview
-  - **Preview display**: ProjectDetails shows `project.preview_url` as 16:9 hero image with "Save to Photos" button
-  - **Logging**: `[preview] start { projectId, hasROI }`, `[preview] polling…`, `[preview] ready { url }`
-- **Immediate Plan Loading**: Plan content loads instantly on first arrival to ProjectDetails:
-  - NewProject passes `{ justBuilt: true }` param when navigating after successful build
-  - ProjectDetails resets plan state when projectId changes
-  - `useFocusEffect` triggers `loadPlanIfNeeded()` when project is ready and planObj is null
-  - Force plan refresh on first focus when `justBuilt=true`, then clears param
-  - Displays "Loading plan…" skeleton while fetching (lightweight, non-blocking)
-  - Cache-buster query param (`?t=${Date.now()}`) ensures fresh plan data
-  - Logs: `[plan] first-fetch start`, `[plan] first-fetch done { sections }`
-- **Project Details Display**: Shows real-time project info with smart hero fallback system and 5 focused expandable sections using the `SectionCard` component:
-  - **Hero fallback priority**: `preview_url` (from decor8) → scan image → placeholder (single source, automatic)
-  - **Preview hero**: Shows `project.preview_url` (or `project.plan.preview_url`) as 16:9 image with "Save to Photos" button overlay (top-right)
-  - **Scan hero**: Shows latest scan image with optional measurement badge (bottom-left shows "48" × 30"" if available) and "Save to Photos" button
-  - **Placeholder hero**: Shown only when no preview or scan exists (gray placeholder image)
-  - **Preview status polling**: Automatically polls production endpoint (`/api/projects/${id}/preview/status`) every 2s when `preview_status` is 'queued' or 'processing', updates UI in-place when complete with preview_url
-  - **Preview persistence**: Generated preview URLs are saved to project record and persist across sessions
-  - **Logging**: `[details] hero = preview|scan|placeholder`, `[details] plan state = building|loading|ready|none`, `[preview] polling…`, `[preview] ready { url }`, `[preview] stop`
-  - **Gradient CTA**: "Open Detailed Build Plan" button appears when plan is ready
-  - **5 focused sections**:
-  1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
-  2. **Materials + Tools**: Combined shopping list with definite material prices and tool rental pricing ("if needed" notes)
-  3. **Cut List**: Exact dimensions with copy-to-clipboard functionality (only shown if cuts exist)
-  4. **Build Steps**: Interactive checkboxes for progress tracking, visual progress bar showing % complete, time estimates per step, strikethrough on completed items, auto-save to backend
-  5. **Finishing**: Final touches section (only shown if finishing steps exist)
-  
-  Features depth with shadows, animated chevron rotation, #F8F7FF card backgrounds on #F5F3FF surface. Each section header navigates to DetailedInstructions with section anchor, chevron toggles expand/collapse. Includes offline mode indicator (green "OFFLINE ✓" badge when plan is cached), copy-to-clipboard actions for all sections, and progress persistence.
-- **Plan Viewing**: 
-  - `ProjectDetails`: At-a-glance expandable summary with interactive progress tracking. Features 3-4 main sections (Overview combines project info + time/cost/skill; Materials + Tools; Cut List; Build Steps) with checkboxes, progress bar, and copy-to-clipboard actions.
-  - `DetailedInstructions`: Comprehensive visual builder's guide with rich formatting. Features purple header with stats, white card sections (Overview, Materials, Tools, Cut List), and visual step cards with:
-    - Step numbers in purple circles with time estimates
-    - Photo placeholders (200px) for visual guides
-    - "What you're building" context in blue callouts
-    - Per-step materials/tools callouts with icons
-    - Pro tips in blue highlighted boxes
-    - Quality checks in green highlighted boxes
-    - Common mistakes/pitfalls in red highlighted boxes
-    - Progress indicators (arrows) between steps
-    - Save-to-photos functionality (captures each section individually)
-- **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans. Offline mode indicator shows when plan is available without internet connection.
-- **Progress Tracking**: Database-backed progress tracking with `completed_steps` (array of completed step indices) and `current_step_index` fields. API endpoints at `/api/projects/:id/progress` (GET/POST) allow fetching and updating build progress. Frontend displays interactive checkboxes, visual progress bar, and "Start Building" / "Continue Building" CTAs.
-- **Authentication**: Supabase email/password authentication via `AuthGate Provider` with sign-in, sign-up, and sign-out functionality. Authentication guards in project creation flow:
-  - `getUserId()` helper in `app/lib/auth.ts` retrieves current user session
-  - `createProjectAndReturnId()` in `app/lib/api.ts` always includes `user_id` in payload and throws `AUTH_REQUIRED` if no session
-  - `getOrCreateProjectId()` in `NewProject.tsx` checks auth before creating projects, shows "Sign in required" alert and navigates to SignIn screen if unauthorized
-  - All project creation entry points (Scan room, Upload photo, Build with AI) are protected by these guards
-- **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow, integrating with the New Project Photo section.
-- **AR Session Scaffolding**: iOS AR preparation with ARKit permissions in app.json, lightweight AR session facade (`app/lib/ar/ArSession.ts`) with platform checks, and ScanScreen integration with Expo Go banner. Shows "AR requires iOS dev build" banner in Expo Go while maintaining ROI overlay and Save Scan functionality. No native modules added yet - safe and reversible.
-- **AR Measurement Flow (FEATURE_MEASURE)**: End-to-end measurement system that processes AR scans and displays dimensions. Features:
-  - **Feature flag**: `FEATURE_MEASURE = true` in `app/lib/config.ts` enables full measurement flow
-  - **API helpers**: `startMeasurement()` (POST with ROI), `getMeasurementStatus()` (GET), and `pollMeasurementReady()` with 60s timeout
-  - **Scan flow**: After AR scan save in ScanScreen, passes `{ scanId, source: 'ar', projectId, roi }` to NewProject
-  - **Auto-trigger**: NewProject kicks off measurement via `kickOffMeasurement()` when AR scan arrives
-  - **UI states**: Shows "Measuring…" spinner during processing, then purple badge "Measurements • 48" × 30"" when complete
-  - **Type-safe**: Extended `LastScan` type includes `measure?: { width_in, height_in, px_per_in }` and `measuring?: boolean`
-  - **Resilience**: Swallows errors gracefully, treats 409 "not_ready" as pending, logs all steps (`[measure] start`, `[measure] poll`, `[measure] done`)
-  - **Legacy flag**: `MEASURE_API_ENABLED = false` preserves old overlay-based system (disabled)
-- **AR ROI Gesture System**: Enhanced touch handling for draggable ROI overlay in ScanScreen:
-  - Proper bounds measurement via `onLayout` to constrain gestures to image area
-  - `pointerEvents` attributes: `box-none` on containers (touch pass-through), `auto` on interactive elements
-  - Debug logging (`[roi bounds]`) for container size and clamping verification
-  - Semi-transparent purple overlay (rgba(147, 51, 234, 0.4)) with 3px soft border
-  - Corner handles for resizing, full rect dragging for repositioning
-  - Save Snapshot feature captures screen with ROI overlay to camera roll via react-native-view-shot
+- **Visual AI Preview Integration**: Live preview generation system for "Build with visual mockup" button, with parallel plan and preview job execution, plan-first polling, and background preview completion. Preview URLs persist in project records.
+- **Immediate Plan Loading**: Plan content loads instantly on first arrival to ProjectDetails, with `useFocusEffect` triggering `loadPlanIfNeeded()` and cache-busting for fresh data.
+- **Project Details Display**: Shows real-time project info with a smart hero fallback system (`preview_url` → scan image → placeholder) and 5 focused expandable sections using `SectionCard` (Overview, Materials + Tools, Cut List, Build Steps, Finishing). Includes progress tracking, preview status polling, and a "Save to Photos" button.
+- **Plan Viewing**:
+    - `ProjectDetails`: At-a-glance expandable summary with interactive progress tracking.
+    - `DetailedInstructions`: Comprehensive visual builder's guide with rich formatting, including step numbers, photo placeholders, context callouts, pro tips, quality checks, and common pitfalls.
+- **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans, with an offline mode indicator.
+- **Progress Tracking**: Database-backed progress tracking with `completed_steps` and `current_step_index` fields via `/api/projects/:id/progress` endpoints.
+- **Authentication**: Supabase email/password authentication via `AuthGate Provider`, with sign-in, sign-up, and sign-out functionality, and authentication guards in the project creation flow.
+- **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow.
+- **AR Session Scaffolding**: iOS AR preparation with ARKit permissions and a lightweight AR session facade.
+- **AR Measurement Flow (FEATURE_MEASURE)**: End-to-end measurement system for processing AR scans and displaying dimensions, including API helpers for starting and polling measurement status, and UI states for "Measuring…" and completed measurements.
+- **AR ROI Gesture System**: Enhanced touch handling for a draggable ROI overlay in ScanScreen, with bounds measurement, `pointerEvents` attributes, corner handles for resizing, and full rect dragging for repositioning. Includes a Save Snapshot feature.
 
 ## External Dependencies
 
@@ -141,8 +56,7 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Node.js/Express**: Backend API server with progress tracking endpoints.
 
 ### Database Schema (Supabase)
-- **projects table**: Includes `completed_steps` (integer array) and `current_step_index` (integer) for progress tracking
-- **Progress tracking**: Step completion state persists across sessions, allowing users to resume builds where they left off
+- **projects table**: Includes `completed_steps` (integer array) and `current_step_index` (integer) for progress tracking.
 
 ### Platform Support
 - **iOS, Android, Web**: Cross-platform deployment via Expo.
