@@ -479,7 +479,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         projectId: draftId ?? null,
       });
       
-      const scanData = { scanId, imageUrl };
+      const scanData = { scanId, imageUrl, source: source === 'upload' ? 'upload' as const : 'ar' as const };
       setLastScan(scanData);
       lastScanRef.current = scanData;
       setLastScanEphemeral(scanData);
@@ -1149,7 +1149,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             )}
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937', marginBottom: 4 }}>
-                Saved scan {lastScan.source === 'ar' ? '(AR)' : ''}
+                {lastScan.source === 'ar' ? 'Saved scan (AR)' : 'Saved photo'}
               </Text>
               
               {lastScan.measuring && (
