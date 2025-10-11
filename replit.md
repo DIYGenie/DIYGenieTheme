@@ -35,7 +35,14 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - Displays "Loading plan…" skeleton while fetching (lightweight, non-blocking)
   - Cache-buster query param (`?t=${Date.now()}`) ensures fresh plan data
   - Logs: `[plan] first-fetch start`, `[plan] first-fetch done { sections }`
-- **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save to Photos" overlay button), gradient CTA button "Open Detailed Build Plan", and 5 focused expandable sections using the `SectionCard` component:
+- **Project Details Display**: Shows real-time project info with smart hero fallback system and 5 focused expandable sections using the `SectionCard` component:
+  - **Hero fallback priority**: preview image → scan image → neutral placeholder (single source of truth)
+  - **Preview hero**: Shows `project.preview_url` as 16:9 image with "Save to Photos" button overlay (top-right)
+  - **Scan hero**: Shows latest scan image with optional measurement badge (bottom-left shows "48" × 30"" if available) and "Save to Photos" button
+  - **Placeholder hero**: Dashed border box with neutral message "Add a preview or scan to see it here" (no error state)
+  - **Logging**: `[details] hero preview|scan|placeholder { hasPreview, hasScan }`, `[measure] badge shown { width_in, height_in }`
+  - **Gradient CTA**: "Open Detailed Build Plan" button appears when plan is ready
+  - **5 focused sections**:
   1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
   2. **Materials + Tools**: Combined shopping list with definite material prices and tool rental pricing ("if needed" notes)
   3. **Cut List**: Exact dimensions with copy-to-clipboard functionality (only shown if cuts exist)
