@@ -710,7 +710,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         Alert.alert('Almost there', 'Please complete Title (≥3), Description (≥10), Budget and Skill level.');
         return;
       }
-      setIsPreviewing(true);
+      
       // 1) Ensure a project exists for this draft (creates if needed)
       const projectId = await ensureProjectForDraft({
         name: title,
@@ -719,133 +719,71 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         skill_level: skillLevel,
         projectId: draftId,
       });
-      // 2) Request preview build
-      const r = await requestProjectPreview(projectId);
       
-      // Handle 409 preview already used
-      if (r.status === 409 && r.body?.error === 'preview_already_used') {
-        console.log('[preview] already generated');
-        setIsPreviewing(false);
-        Alert.alert('Preview already generated', 'Opening your project now.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Clear form and navigate
-              (async () => {
-                try {
-                  clearingRef.current = true;
-                  await clearNewProjectDraft?.();
-                  setDraftId(null);
-                  setTitle('');
-                  setDescription('');
-                  setBudget('');
-                  setSkillLevel('');
-                  setPhotoUri(null);
-                  setLastScan(null);
-                  setTimeout(() => { clearingRef.current = false; }, 0);
-                } catch {}
-                
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [
-                      {
-                        name: 'Main',
-                        state: {
-                          type: 'tab',
-                          index: 2,
-                          routes: [
-                            { name: 'Home' },
-                            { name: 'NewProject' },
-                            {
-                              name: 'Projects',
-                              state: {
-                                type: 'stack',
-                                index: 1,
-                                routes: [
-                                  { name: 'ProjectsList' },
-                                  { name: 'ProjectDetails', params: { id: projectId } },
-                                ],
-                              },
-                            },
-                            { name: 'Profile' },
-                          ],
-                        },
-                      },
-                    ],
-                  })
-                );
-              })();
-            },
-          },
-        ]);
-        return;
-      }
-      
-      if (!r.ok) {
-        console.log('[preview request] non-OK', r.status, r.body);
-        Alert.alert('Preview not available', 'Preview service is disabled in this build. You can still proceed to your project details.');
-      }
-      
-      setIsPreviewing(false);
+      // 2) Show loading state and disable inputs
       setIsBuilding(true);
+      setIsPreviewing(true);
       
-      // 3) Poll for ready status
-      const pollRes = await pollProjectReady(projectId, { tries: 40, interval: 2000 });
+      // 3) Start preview generation
+      const { startPreview, pollPreviewReady } = await import('../lib/api');
+      await startPreview(projectId, lastScan?.roi);
+      
+      // 4) Poll for preview ready
+      await pollPreviewReady(projectId);
+      
       setIsBuilding(false);
+      setIsPreviewing(false);
       
-      if (pollRes.ok) {
-        // SUCCESS: Clear form and navigate
-        try {
-          clearingRef.current = true;
-          await clearNewProjectDraft?.();
-          setDraftId(null);
-          setTitle('');
-          setDescription('');
-          setBudget('');
-          setSkillLevel('');
-          setPhotoUri(null);
-          setLastScan(null);
-          setTimeout(() => { clearingRef.current = false; }, 0);
-        } catch {}
-        
-        // Reset navigation to Projects tab with ProjectsList → ProjectDetails stack
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'Main',
-                state: {
-                  type: 'tab',
-                  index: 2, // 0=Home, 1=NewProject, 2=Projects
-                  routes: [
-                    { name: 'Home' },
-                    { name: 'NewProject' },
-                    {
-                      name: 'Projects',
-                      state: {
-                        type: 'stack',
-                        index: 1,
-                        routes: [
-                          { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id: projectId } },
-                        ],
-                      },
+      // 5) Clear form
+      try {
+        clearingRef.current = true;
+        await clearNewProjectDraft?.();
+        setDraftId(null);
+        setTitle('');
+        setDescription('');
+        setBudget('');
+        setSkillLevel('');
+        setPhotoUri(null);
+        setLastScan(null);
+        setTimeout(() => { clearingRef.current = false; }, 0);
+      } catch {}
+      
+      // 6) Navigate to ProjectDetails
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                type: 'tab',
+                index: 2,
+                routes: [
+                  { name: 'Home' },
+                  { name: 'NewProject' },
+                  {
+                    name: 'Projects',
+                    state: {
+                      type: 'stack',
+                      index: 1,
+                      routes: [
+                        { name: 'ProjectsList' },
+                        { name: 'ProjectDetails', params: { id: projectId } },
+                      ],
                     },
-                    { name: 'Profile' },
-                  ],
-                },
+                  },
+                  { name: 'Profile' },
+                ],
               },
-            ],
-          })
-        );
-      } else {
-        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
-      }
+            },
+          ],
+        })
+      );
     } catch (e) {
+      console.error('[preview] error', e);
       setIsPreviewing(false);
       setIsBuilding(false);
+      Alert.alert('Preview failed', 'Could not generate preview. Please try again.');
     }
   }
 
@@ -1290,7 +1228,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             {isBuilding && (
               <View style={{ padding: 14, borderRadius: 12, backgroundColor: '#EFE9FF', marginBottom: 12 }}>
                 <ActivityIndicator color="#7C3AED" />
-                <Text style={{ marginTop: 8, fontWeight: '600', textAlign: 'center' }}>Building your plan…</Text>
+                <Text style={{ marginTop: 8, fontWeight: '600', textAlign: 'center' }}>
+                  {isPreviewing ? 'Generating visual preview…' : 'Building your plan…'}
+                </Text>
                 <Text style={{ color: '#5B5B66', textAlign: 'center', fontSize: 13, marginTop: 4 }}>Hang tight — we'll open the project when it's ready.</Text>
               </View>
             )}
