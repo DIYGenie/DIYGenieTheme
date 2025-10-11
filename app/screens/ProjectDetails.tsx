@@ -386,21 +386,20 @@ export default function ProjectDetails() {
                   />
                   <TouchableOpacity 
                     onPress={handleSaveImage}
+                    accessibilityLabel="Save image"
                     style={{ 
                       position: 'absolute', 
                       top: 12, 
                       right: 12, 
-                      backgroundColor: 'rgba(0,0,0,0.6)', 
-                      paddingHorizontal: 12, 
-                      paddingVertical: 6, 
-                      borderRadius: 8,
-                      flexDirection: 'row',
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: 'rgba(0,0,0,0.35)',
                       alignItems: 'center',
-                      gap: 6
+                      justifyContent: 'center'
                     }}
                   >
-                    <Ionicons name="download-outline" size={16} color="white" />
-                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
+                    <Ionicons name="download-outline" size={20} color="#fff" />
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -432,21 +431,20 @@ export default function ProjectDetails() {
                   {/* Save to Photos button */}
                   <TouchableOpacity 
                     onPress={handleSaveImage}
+                    accessibilityLabel="Save image"
                     style={{ 
                       position: 'absolute', 
                       top: 12, 
                       right: 12, 
-                      backgroundColor: 'rgba(0,0,0,0.6)', 
-                      paddingHorizontal: 12, 
-                      paddingVertical: 6, 
-                      borderRadius: 8,
-                      flexDirection: 'row',
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: 'rgba(0,0,0,0.35)',
                       alignItems: 'center',
-                      gap: 6
+                      justifyContent: 'center'
                     }}
                   >
-                    <Ionicons name="download-outline" size={16} color="white" />
-                    <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
+                    <Ionicons name="download-outline" size={20} color="#fff" />
                   </TouchableOpacity>
                 </View>
               )}
