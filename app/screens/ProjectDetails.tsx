@@ -424,20 +424,20 @@ export default function ProjectDetails() {
               {heroSource && (
                 <TouchableOpacity 
                   onPress={handleSaveImage}
-                  accessibilityLabel="Save image"
+                  accessibilityLabel="Save to Photos"
                   style={{ 
                     position: 'absolute', 
                     top: 12, 
                     right: 12, 
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: 'rgba(0,0,0,0.35)',
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: 'rgba(0,0,0,0.4)',
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}
                 >
-                  <Ionicons name="download-outline" size={20} color="#fff" />
+                  <Ionicons name="download-outline" size={22} color="#fff" />
                 </TouchableOpacity>
               )}
               
