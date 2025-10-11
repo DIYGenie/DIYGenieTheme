@@ -207,7 +207,7 @@ export async function fetchLatestScanForProject(projectId: string) {
 
 export async function fetchProjectPlanMarkdown(
   projectId: string,
-  opts: { signal?: AbortSignal; tolerate409?: boolean } = {}
+  opts: { signal?: AbortSignal; tolerate409?: boolean; cacheBust?: boolean } = {}
 ): Promise<string | null> {
   const base =
     (global as any).__API_BASE_URL__ ??
@@ -216,8 +216,9 @@ export async function fetchProjectPlanMarkdown(
     process.env.API_BASE ??
     'https://diy-genie-webhooks-tyekowalski.replit.app';
 
-  const url = `${base}/api/projects/${projectId}/plan`;
-  const res = await fetch(url, { method: 'GET', signal: opts?.signal } as any);
+  const cacheBuster = opts.cacheBust !== false ? `?t=${Date.now()}` : '';
+  const url = `${base}/api/projects/${projectId}/plan${cacheBuster}`;
+  const res = await fetch(url, { method: 'GET', signal: opts?.signal, cache: 'no-store' } as any);
   
   if (res.status === 409) {
     console.log('[plan fetch] GET /api/projects/:id/plan status', 409);

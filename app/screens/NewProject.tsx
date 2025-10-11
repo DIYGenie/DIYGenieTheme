@@ -677,7 +677,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                         index: 1,
                         routes: [
                           { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id } },
+                          { name: 'ProjectDetails', params: { id, justBuilt: true } },
                         ],
                       },
                     },
@@ -768,7 +768,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                       index: 1,
                       routes: [
                         { name: 'ProjectsList' },
-                        { name: 'ProjectDetails', params: { id: projectId } },
+                        { name: 'ProjectDetails', params: { id: projectId, justBuilt: true } },
                       ],
                     },
                   },
