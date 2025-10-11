@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview, fetchProjectProgress, updateProjectProgress, pollScanMeasurement } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
@@ -34,8 +34,10 @@ export default function ProjectDetails() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [offlineAvailable, setOfflineAvailable] = useState(false);
+  const [measure, setMeasure] = useState<MeasureResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const prevProjectIdRef = useRef<string | undefined>(projectId);
+  const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
 
   // Reset plan state when projectId changes
   useEffect(() => {
@@ -45,6 +47,19 @@ export default function ProjectDetails() {
       prevProjectIdRef.current = projectId;
     }
   }, [projectId]);
+
+  // Poll for measurement once on mount
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!project?.id || !scanId) return;
+      try {
+        const m = await getMeasurement(project.id, scanId);
+        if (mounted) setMeasure(m);
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, [project?.id, scanId]);
 
   const loadPlanIfNeeded = useCallback(async () => {
     if (!projectId || !project) return;
