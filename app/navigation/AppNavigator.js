@@ -9,7 +9,7 @@ import NewProject from '../screens/NewProject';
 // Force the minimal JS component (upload-only)
 import NewProjectMedia from '../screens/NewProjectMedia.js';
 import ScanScreen from '../screens/ScanScreen';
-import ProjectPreview from '../screens/ProjectPreview';
+// import ProjectPreview from '../screens/ProjectPreview'; // Legacy debug screen - removed
 import ProjectDetailScreen from '../screens/ProjectDetailScreen';
 import PlanScreen from '../screens/PlanScreen';
 import PlanTabsScreen from '../screens/PlanTabsScreen';
@@ -42,7 +42,8 @@ export default function AppNavigator() {
           component={AuthScreen} 
           options={{ headerShown: true, title: 'Sign in' }} 
         />
-        <Stack.Screen name="ProjectPreview" component={ProjectPreview} />
+        {/* Legacy debug screen - removed in favor of real preview flow */}
+        {/* <Stack.Screen name="ProjectPreview" component={ProjectPreview} /> */}
         <Stack.Screen name="Project" component={ProjectDetailScreen} />
         <Stack.Screen name="Plan" component={PlanScreen} />
         <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />
