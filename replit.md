@@ -6,6 +6,14 @@ DIY Genie is a React Native mobile application built with Expo, designed to assi
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **UX Polish (Oct 11, 2025)**: Improved Project Details and New Project UI
+  - Hidden offline badge in ProjectDetails header for cleaner UI (can be shown again by removing `false &&` condition)
+  - Converted "Save to Photos" to icon-only circular button (36×36px, semi-transparent overlay, top-right of hero images)
+  - Added source differentiation in NewProject: "Saved photo" for uploads, "Saved scan (AR)" for AR captures
+  - Enhanced form clearing after successful build: now clears photoUri, lastScan, and lastScanRef.current
+  - Added clearingRef guard to prevent autosave from re-persisting cleared data during navigation
+
 ## System Architecture
 
 ### Frontend Architecture
