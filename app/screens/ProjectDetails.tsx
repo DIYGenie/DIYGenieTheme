@@ -181,7 +181,7 @@ export default function ProjectDetails() {
   console.log('[details] hero =', heroType ?? 'none');
 
   const handleSaveImage = async () => {
-    if (heroType === 'placeholder') return;
+    if (!heroSource) return;
     console.log('[hero] saved to photos');
     const result = await saveImageToPhotos(heroSource!);
     if (result.success) {
@@ -382,25 +382,26 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Single Hero Image - Priority: preview → scan → placeholder */}
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ 
-              position: 'relative', 
-              aspectRatio: 16/9, 
-              borderRadius: 16, 
-              overflow: 'hidden', 
-              backgroundColor: '#EEE',
-              shadowColor: '#000', 
-              shadowOpacity: 0.1, 
-              shadowRadius: 8, 
-              shadowOffset: { width: 0, height: 2 }, 
-              elevation: 3 
-            }}>
-              <Image
-                source={{ uri: heroSource }}
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
+          {/* Single Hero Image - Priority: preview → scan → nothing */}
+          {heroSource ? (
+            <View style={{ marginBottom: 20 }}>
+              <View style={{ 
+                position: 'relative', 
+                aspectRatio: 16/9, 
+                borderRadius: 16, 
+                overflow: 'hidden', 
+                backgroundColor: '#EEE',
+                shadowColor: '#000', 
+                shadowOpacity: 0.1, 
+                shadowRadius: 8, 
+                shadowOffset: { width: 0, height: 2 }, 
+                elevation: 3 
+              }}>
+                <Image
+                  source={{ uri: heroSource }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
               
               {/* Measurement badge (only for scan with measureResult) */}
               {heroType === 'scan' && measureResult && (
@@ -419,8 +420,8 @@ export default function ProjectDetails() {
                 </View>
               )}
               
-              {/* Save to Photos icon button (hidden for placeholder) */}
-              {heroType !== 'placeholder' && (
+              {/* Save to Photos icon button (only shown when image exists) */}
+              {heroSource && (
                 <TouchableOpacity 
                   onPress={handleSaveImage}
                   accessibilityLabel="Save image"
@@ -473,8 +474,31 @@ export default function ProjectDetails() {
                   </View>
                 );
               })()}
+              </View>
             </View>
-          </View>
+          ) : (previewStatus === 'queued' || previewStatus === 'processing') ? (
+            <View style={{ marginBottom: 20 }}>
+              <View style={{ 
+                position: 'relative', 
+                aspectRatio: 16/9, 
+                borderRadius: 16, 
+                overflow: 'hidden', 
+                backgroundColor: '#F3F0FF',
+                shadowColor: '#000', 
+                shadowOpacity: 0.1, 
+                shadowRadius: 8, 
+                shadowOffset: { width: 0, height: 2 }, 
+                elevation: 3,
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ActivityIndicator size="large" color="#7C3AED" />
+                <Text style={{ marginTop: 12, color: '#7C3AED', fontSize: 14, fontWeight: '600' }}>
+                  Generating visual preview...
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Top CTA */}
           {!!planObj && (
