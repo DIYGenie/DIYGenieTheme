@@ -106,7 +106,7 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  const previewUrl = project?.plan?.preview_url ?? null;
+  const previewUrl = project?.preview_url ?? project?.plan?.preview_url ?? null;
 
   const handleSavePreview = async () => {
     if (!previewUrl) return;
