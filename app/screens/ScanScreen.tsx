@@ -8,6 +8,9 @@ import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { getUserId } from '../lib/auth';
+import { startMeasurement, pollMeasurement } from '../lib/measure';
+import { loadNewProjectDraft, saveNewProjectDraft } from '../lib/draft';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
@@ -91,6 +94,44 @@ export default function ScanScreen() {
         params: { screen: 'NewProject', params: { savedScan: result } },
         merge: true,
       });
+
+      const userId = await getUserId();
+      if (userId) {
+        (async () => {
+          const startResult = await startMeasurement({
+            projectId,
+            scanId,
+            userId,
+            roi: norm,
+          });
+
+          if (!startResult.ok) {
+            console.log('[measure] start failed, skipping poll');
+            return;
+          }
+
+          const pollResult = await pollMeasurement({
+            projectId,
+            scanId,
+            userId,
+          });
+
+          if (pollResult.ok && pollResult.result) {
+            const draft = await loadNewProjectDraft();
+            if (draft) {
+              await saveNewProjectDraft({
+                ...draft,
+                measurement: {
+                  width_in: pollResult.result.width_in,
+                  height_in: pollResult.result.height_in,
+                  px_per_in: pollResult.result.px_per_in,
+                  roi: norm,
+                },
+              });
+            }
+          }
+        })();
+      }
     } catch (e: any) {
       console.log('[scan] save failed', String(e?.message || e));
       Alert.alert('Could not save scan', 'Please try again.');
