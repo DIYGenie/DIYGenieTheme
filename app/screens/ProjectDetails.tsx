@@ -261,6 +261,63 @@ export default function ProjectDetails() {
     }, [loadPlanIfNeeded, justBuilt, planObj])
   );
 
+  // Poll for preview status when queued or processing
+  useEffect(() => {
+    if (!projectId || !project) return;
+    
+    const previewStatus = project.preview_status?.toLowerCase();
+    const shouldPoll = previewStatus === 'queued' || previewStatus === 'processing';
+    
+    if (!shouldPoll) return;
+    
+    const abortController = new AbortController();
+    let polling = true;
+    
+    const pollStatus = async () => {
+      try {
+        const u = await supabase.auth.getSession();
+        const user_id = u?.data?.session?.user?.id;
+        
+        while (polling && !abortController.signal.aborted) {
+          console.log('[preview] polling…');
+          
+          const r = await fetch(`https://api.diygenieapp.com/api/projects/${projectId}/preview/status?user_id=${user_id}`, {
+            signal: abortController.signal
+          });
+          
+          if (r.status === 200) {
+            const result = await r.json();
+            if (result.status === 'done' && result.url) {
+              console.log('[preview] ready', { url: result.url });
+              setProject((prev: any) => ({
+                ...prev,
+                preview_status: 'done',
+                preview_url: result.url
+              }));
+              polling = false;
+              console.log('[preview] stop');
+              break;
+            }
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (err) {
+        if ((err as any)?.name !== 'AbortError') {
+          console.log('[preview] poll error', err);
+        }
+      }
+    };
+    
+    pollStatus();
+    
+    return () => {
+      polling = false;
+      abortController.abort();
+      console.log('[preview] stop');
+    };
+  }, [projectId, project?.preview_status]);
+
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
