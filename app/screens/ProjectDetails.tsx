@@ -416,6 +416,40 @@ export default function ProjectDetails() {
                   >
                     <Ionicons name="download-outline" size={20} color="#fff" />
                   </TouchableOpacity>
+                  
+                  {/* ROI overlay for preview */}
+                  {measure?.roi && (() => {
+                    const labelTop = `${Math.max(0, (measure.roi.y * 100) - 6)}%` as any;
+                    return (
+                      <View style={{ position:'absolute', left: 16, right: 16, top: 16, bottom: 16 }}>
+                        <View
+                          pointerEvents="none"
+                          style={{
+                            position:'absolute',
+                            left: `${measure.roi.x * 100}%`,
+                            top: `${measure.roi.y * 100}%`,
+                            width: `${measure.roi.w * 100}%`,
+                            height: `${measure.roi.h * 100}%`,
+                            borderWidth: 2,
+                            borderColor: 'rgba(255,255,255,0.9)',
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            borderRadius: 8,
+                          }}
+                        />
+                        <View style={{
+                          position:'absolute',
+                          left: `${measure.roi.x * 100}%`,
+                          top: labelTop,
+                          paddingHorizontal:8, paddingVertical:4, borderRadius:6,
+                          backgroundColor:'rgba(0,0,0,0.55)'
+                        }}>
+                          <Text style={{color:'#fff', fontSize:12, fontWeight:'600'}}>
+                            {Math.round(measure.width_in)}″ × {Math.round(measure.height_in)}″
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </View>
               ) : (
                 <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE',
@@ -461,6 +495,40 @@ export default function ProjectDetails() {
                   >
                     <Ionicons name="download-outline" size={20} color="#fff" />
                   </TouchableOpacity>
+                  
+                  {/* ROI overlay for scan */}
+                  {measure?.roi && (() => {
+                    const labelTop = `${Math.max(0, (measure.roi.y * 100) - 6)}%` as any;
+                    return (
+                      <View style={{ position:'absolute', left: 16, right: 16, top: 16, bottom: 16 }}>
+                        <View
+                          pointerEvents="none"
+                          style={{
+                            position:'absolute',
+                            left: `${measure.roi.x * 100}%`,
+                            top: `${measure.roi.y * 100}%`,
+                            width: `${measure.roi.w * 100}%`,
+                            height: `${measure.roi.h * 100}%`,
+                            borderWidth: 2,
+                            borderColor: 'rgba(255,255,255,0.9)',
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            borderRadius: 8,
+                          }}
+                        />
+                        <View style={{
+                          position:'absolute',
+                          left: `${measure.roi.x * 100}%`,
+                          top: labelTop,
+                          paddingHorizontal:8, paddingVertical:4, borderRadius:6,
+                          backgroundColor:'rgba(0,0,0,0.55)'
+                        }}>
+                          <Text style={{color:'#fff', fontSize:12, fontWeight:'600'}}>
+                            {Math.round(measure.width_in)}″ × {Math.round(measure.height_in)}″
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </View>
               )}
             </View>
