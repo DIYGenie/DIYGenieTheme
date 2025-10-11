@@ -1274,9 +1274,13 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
               <View style={{ padding: 14, borderRadius: 12, backgroundColor: '#EFE9FF', marginBottom: 12 }}>
                 <ActivityIndicator color="#7C3AED" />
                 <Text style={{ marginTop: 8, fontWeight: '600', textAlign: 'center' }}>
-                  {isPreviewing ? 'Generating visual preview…' : 'Building your plan…'}
+                  Building your plan…
                 </Text>
-                <Text style={{ color: '#5B5B66', textAlign: 'center', fontSize: 13, marginTop: 4 }}>Hang tight — we'll open the project when it's ready.</Text>
+                <Text style={{ color: '#5B5B66', textAlign: 'center', fontSize: 13, marginTop: 4 }}>
+                  {isPreviewing 
+                    ? 'Visual preview is generating in the background'
+                    : "Hang tight — we'll open the project when it's ready"}
+                </Text>
               </View>
             )}
             
