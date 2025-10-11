@@ -654,6 +654,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setSkillLevel('');
           setPhotoUri(null);
           setLastScan(null);
+          lastScanRef.current = null;
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
@@ -745,6 +746,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setSkillLevel('');
         setPhotoUri(null);
         setLastScan(null);
+        lastScanRef.current = null;
         setTimeout(() => { clearingRef.current = false; }, 0);
       } catch {}
       
