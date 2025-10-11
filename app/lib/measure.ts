@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const MEASURE_API_BASE = 'https://api.diygenieapp.com/api';
 
 export async function startMeasurement({
@@ -89,4 +91,30 @@ export async function pollMeasurement({
 
   console.log('[measure] error → timeout after', tries, 'tries');
   return { ok: false };
+}
+
+export type LinePoint = { x: number; y: number };
+
+export async function saveLineMeasurement(opts: {
+  scanId: string;
+  regionId?: string | null;
+  points: LinePoint[];
+  valueInches: number;
+  unit?: string;
+}) {
+  const { data, error } = await supabase
+    .from('room_scan_measurements')
+    .insert({
+      scan_id: opts.scanId,
+      region_id: opts.regionId ?? null,
+      tool: 'line',
+      points: opts.points,
+      value: opts.valueInches,
+      unit: opts.unit ?? 'in',
+      meta: {},
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data;
 }

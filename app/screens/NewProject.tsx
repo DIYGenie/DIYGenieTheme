@@ -272,13 +272,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     if (!hydratedRef.current) return; // avoid saving empty default before hydration
     if (clearingRef.current) return; // don't persist while clearing
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
+    saveTimerRef.current = setTimeout(async () => {
+      const currentDraft = await loadNewProjectDraft();
       saveNewProjectDraft({
         projectId: draftId,
         name: title,
         description,
         budget: budget,
         skill_level: skillLevel,
+        measurement: currentDraft?.measurement,
       });
       console.log('[draft] autosave', { name: title, hasDesc: !!description, budget, skill_level: skillLevel, projectId: draftId });
     }, 250);
@@ -314,40 +316,46 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         // Clear param only - do NOT reset form fields
         navigation.setParams({ savedScan: undefined } as any);
         
-        // Kick off measurement if AR scan
+        // For AR scans, show "Measuring..." state and poll draft for measurement result
         if (s.source === 'ar' && s.scanId && s.projectId) {
-          (async () => {
-            try {
-              // Import kickOffMeasurement
-              const { kickOffMeasurement } = await import('../lib/scanEvents');
-              
-              // Set measuring state
-              setLastScan(prev => prev ? { ...prev, measuring: true } : prev);
-              lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: true } : lastScanRef.current;
-              
-              const result = await kickOffMeasurement(s.projectId, s.scanId, s.roi);
-              
-              if (result) {
-                // Update with measurement results
-                setLastScan(prev => prev ? { ...prev, measure: result, measuring: false } : prev);
-                lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measure: result, measuring: false } : lastScanRef.current;
-              } else {
-                // Clear measuring state on failure
-                setLastScan(prev => prev ? { ...prev, measuring: false } : prev);
-                lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: false } : lastScanRef.current;
-              }
-            } catch (e) {
-              console.log('[measure] error', e);
-              // Clear measuring state on error
-              setLastScan(prev => prev ? { ...prev, measuring: false } : prev);
-              lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: false } : lastScanRef.current;
-            }
-          })();
+          setLastScan(prev => prev ? { ...prev, measuring: true } : prev);
+          lastScanRef.current = lastScanRef.current ? { ...lastScanRef.current, measuring: true } : lastScanRef.current;
         }
       }
       return () => {};
     }, [route.params?.savedScan, navigation])
   );
+
+  // Poll draft for measurement updates
+  useEffect(() => {
+    if (!lastScan?.measuring) return;
+    
+    const pollInterval = setInterval(async () => {
+      const draft = await loadNewProjectDraft();
+      if (draft?.measurement) {
+        setLastScan(prev => prev ? {
+          ...prev,
+          measure: {
+            width_in: draft.measurement!.width_in,
+            height_in: draft.measurement!.height_in,
+            px_per_in: draft.measurement!.px_per_in,
+          },
+          measuring: false
+        } : prev);
+        lastScanRef.current = lastScanRef.current ? {
+          ...lastScanRef.current,
+          measure: {
+            width_in: draft.measurement!.width_in,
+            height_in: draft.measurement!.height_in,
+            px_per_in: draft.measurement!.px_per_in,
+          },
+          measuring: false
+        } : lastScanRef.current;
+      }
+    }, 1500);
+
+    return () => clearInterval(pollInterval);
+  }, [lastScan?.measuring]);
 
   // Handle section deep-link parameter
   const section = route.params?.section as 'desc' | 'media' | 'preview' | 'plan' | undefined;
