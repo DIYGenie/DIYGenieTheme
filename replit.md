@@ -21,12 +21,13 @@ Preferred communication style: Simple, everyday language.
   - Created DimensionsCard component showing width, height, pixels/inch, and ROI region percentages
   - ROI overlay appears on both preview and scan hero images when measurement data is available
   - DimensionsCard renders below Overview section, displays "Waiting for dimensions…" when measure is null
-- **UX Polish (Oct 11, 2025)**: Improved Project Details and New Project UI
-  - Hidden offline badge in ProjectDetails header for cleaner UI (can be shown again by removing `false &&` condition)
-  - Converted "Save to Photos" to icon-only circular button (36×36px, semi-transparent overlay, top-right of hero images)
-  - Added source differentiation in NewProject: "Saved photo" for uploads, "Saved scan (AR)" for AR captures
-  - Enhanced form clearing after successful build: now clears photoUri, lastScan, and lastScanRef.current
-  - Added clearingRef guard to prevent autosave from re-persisting cleared data during navigation
+- **NewProject Media Card Enhancement (Oct 11, 2025)**: Improved media display and form clearing
+  - Media card now shows for either AR scans OR uploaded photos (previously only for scans)
+  - Dynamic labeling: "Saved scan (AR)" for AR captures, "Uploaded photo" for uploads
+  - Thumbnail priority: AR scan image → uploaded photo URI
+  - Enhanced form clearing: Both build handlers clear photoUri, lastScan, and lastScanRef.current
+  - Added logging: `[media] card label`, `[media] cleared after build (plan only/with preview)`
+  - Preserved measurement display: "Measuring…" spinner and purple badge with dimensions for AR scans
 
 ## System Architecture
 
