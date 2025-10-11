@@ -20,6 +20,13 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Image Upload**: Supports server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking.
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
+- **Visual AI Preview Integration**: Live preview generation system for "Build + Visual AI Preview" button:
+  - **API helpers**: `startPreview(projectId, roi?)` (POST to production endpoint), `pollPreviewReady(projectId)` (GET polling with 60s timeout)
+  - **Production endpoints**: Calls `https://api.diygenieapp.com/api/projects/${projectId}/preview` and polls `/preview/status`
+  - **UI flow**: Shows purple loading banner "Generating visual preview…" while processing, disables inputs during generation
+  - **Auto-navigation**: On success, clears form and navigates to ProjectDetails with generated preview
+  - **Preview display**: ProjectDetails shows `project.preview_url` as 16:9 hero image with "Save to Photos" button
+  - **Logging**: `[preview] start { projectId, hasROI }`, `[preview] polling…`, `[preview] ready { url }`
 - **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save image" overlay button), gradient CTA button "Open Detailed Build Plan", and 5 focused expandable sections using the `SectionCard` component:
   1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
   2. **Materials + Tools**: Combined shopping list with definite material prices and tool rental pricing ("if needed" notes)
