@@ -75,6 +75,13 @@ export async function apiRaw(path: string, init: RequestInit = {}) {
   try { return await res.json(); } catch { return await res.text(); }
 }
 
+export async function patchProject(projectId: string, body: any) {
+  return api(`/api/projects/${projectId}`, { 
+    method: 'PATCH', 
+    body: JSON.stringify(body) 
+  });
+}
+
 export async function listProjects(userId: string) {
   const list = await api(`/api/projects?user_id=${encodeURIComponent(userId)}`);
   if (!list || !list.data) {
