@@ -27,7 +27,15 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
   - **Auto-navigation**: On success, clears form and navigates to ProjectDetails with generated preview
   - **Preview display**: ProjectDetails shows `project.preview_url` as 16:9 hero image with "Save to Photos" button
   - **Logging**: `[preview] start { projectId, hasROI }`, `[preview] polling…`, `[preview] ready { url }`
-- **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save image" overlay button), gradient CTA button "Open Detailed Build Plan", and 5 focused expandable sections using the `SectionCard` component:
+- **Immediate Plan Loading**: Plan content loads instantly on first arrival to ProjectDetails:
+  - NewProject passes `{ justBuilt: true }` param when navigating after successful build
+  - ProjectDetails resets plan state when projectId changes
+  - `useFocusEffect` triggers `loadPlanIfNeeded()` when project is ready and planObj is null
+  - Force plan refresh on first focus when `justBuilt=true`, then clears param
+  - Displays "Loading plan…" skeleton while fetching (lightweight, non-blocking)
+  - Cache-buster query param (`?t=${Date.now()}`) ensures fresh plan data
+  - Logs: `[plan] first-fetch start`, `[plan] first-fetch done { sections }`
+- **Project Details Display**: Shows real-time project info with a 16:9 preview image (with "Save to Photos" overlay button), gradient CTA button "Open Detailed Build Plan", and 5 focused expandable sections using the `SectionCard` component:
   1. **Overview**: Skill level (beginner/intermediate/advanced), time/cost estimates, and safety warnings
   2. **Materials + Tools**: Combined shopping list with definite material prices and tool rental pricing ("if needed" notes)
   3. **Cut List**: Exact dimensions with copy-to-clipboard functionality (only shown if cuts exist)
