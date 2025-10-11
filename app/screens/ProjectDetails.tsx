@@ -172,22 +172,13 @@ export default function ProjectDetails() {
   const scanUrl = scan?.imageUrl || null;
   const measureResult = scan?.measureResult || null;
   const roi = scan?.roi || null;
+  const previewStatus = project?.preview_status;
 
-  let heroSource: string | null = null;
-  let heroType: 'preview' | 'scan' | 'placeholder' = 'placeholder';
+  // Hero priority: preview_url → scan.image_url → nothing (no placeholder)
+  const heroSource = previewUrl ?? scanUrl ?? null;
+  const heroType = previewUrl ? 'preview' : scanUrl ? 'scan' : null;
   
-  if (previewUrl) {
-    heroSource = previewUrl;
-    heroType = 'preview';
-  } else if (scanUrl) {
-    heroSource = scanUrl;
-    heroType = 'scan';
-  } else {
-    heroSource = 'https://via.placeholder.com/800x450/E5E7EB/9CA3AF?text=No+Image';
-    heroType = 'placeholder';
-  }
-  
-  console.log('[details] hero =', heroType);
+  console.log('[details] hero =', heroType ?? 'none');
 
   const handleSaveImage = async () => {
     if (heroType === 'placeholder') return;
@@ -275,10 +266,9 @@ export default function ProjectDetails() {
   // Load plan immediately when project is ready
   useFocusEffect(
     useCallback(() => {
-      if (justBuilt || !planObj) {
-        loadPlanIfNeeded();
-      }
-    }, [loadPlanIfNeeded, justBuilt, planObj])
+      // Always refetch on focus to ensure fresh data
+      loadPlanIfNeeded();
+    }, [loadPlanIfNeeded])
   );
 
   // Poll for preview status when queued or processing
