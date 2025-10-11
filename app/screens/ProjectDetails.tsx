@@ -151,15 +151,17 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  // Hero fallback logic: preview → scan → placeholder
+  // Hero fallback logic: preview → scan → none
   const previewUrl = project?.preview_url ?? project?.plan?.preview_url ?? null;
   const scanUrl = scan?.imageUrl || null;
   const measureResult = scan?.measureResult || null;
   const roi = scan?.roi || null;
 
-  let hero: 'preview' | 'scan' | 'placeholder' = 'placeholder';
+  let hero: 'preview' | 'scan' | 'none' = 'none';
   if (previewUrl) hero = 'preview';
   else if (scanUrl) hero = 'scan';
+  
+  console.log('[details] hero =', hero);
 
   const handleSaveImage = async () => {
     const imageUrl = hero === 'preview' ? previewUrl : scanUrl;
@@ -309,11 +311,10 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Single Hero Image - Priority: preview → scan → placeholder */}
-          <View style={{ marginBottom: 20 }}>
-            {hero === 'preview' ? (
-              <>
-                {console.log('[details] hero', 'preview', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
+          {/* Single Hero Image - Priority: preview → scan → none */}
+          {(hero === 'preview' || hero === 'scan') && (
+            <View style={{ marginBottom: 20 }}>
+              {hero === 'preview' ? (
                 <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE', 
                   shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
                   <Image
@@ -340,10 +341,7 @@ export default function ProjectDetails() {
                     <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
                   </TouchableOpacity>
                 </View>
-              </>
-            ) : hero === 'scan' ? (
-              <>
-                {console.log('[details] hero', 'scan', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
+              ) : (
                 <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE',
                   shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
                   <Image
@@ -354,22 +352,19 @@ export default function ProjectDetails() {
                   
                   {/* Measurement badge if available */}
                   {measureResult && (
-                    <>
-                      {console.log('[measure] badge shown', { width_in: measureResult.width_in, height_in: measureResult.height_in })}
-                      <View style={{ 
-                        position: 'absolute', 
-                        bottom: 12, 
-                        left: 12, 
-                        backgroundColor: 'rgba(124,58,237,0.9)', 
-                        paddingHorizontal: 10, 
-                        paddingVertical: 6, 
-                        borderRadius: 8 
-                      }}>
-                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
-                          {measureResult.width_in}" × {measureResult.height_in}"
-                        </Text>
-                      </View>
-                    </>
+                    <View style={{ 
+                      position: 'absolute', 
+                      bottom: 12, 
+                      left: 12, 
+                      backgroundColor: 'rgba(124,58,237,0.9)', 
+                      paddingHorizontal: 10, 
+                      paddingVertical: 6, 
+                      borderRadius: 8 
+                    }}>
+                      <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                        {measureResult.width_in}" × {measureResult.height_in}"
+                      </Text>
+                    </View>
                   )}
                   
                   {/* Save to Photos button */}
@@ -392,30 +387,9 @@ export default function ProjectDetails() {
                     <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>Save to Photos</Text>
                   </TouchableOpacity>
                 </View>
-              </>
-            ) : (
-              <>
-                {console.log('[details] hero', 'placeholder', { hasPreview: !!previewUrl, hasScan: !!scanUrl })}
-                <View
-                  style={{
-                    aspectRatio: 16/9,
-                    borderRadius: 16,
-                    borderWidth: 2,
-                    borderColor: '#E9D5FF',
-                    borderStyle: 'dashed',
-                    backgroundColor: '#FAF5FF',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name="image-outline" size={48} color="#C4B5FD" />
-                  <Text style={{ color: '#9CA3AF', marginTop: 8, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
-                    Add a preview or scan to see it here
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
+              )}
+            </View>
+          )}
 
           {/* Top CTA */}
           {!!planObj && (
