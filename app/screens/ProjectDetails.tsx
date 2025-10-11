@@ -167,23 +167,32 @@ export default function ProjectDetails() {
     }
   }, [projectId]);
 
-  // Hero fallback logic: preview → scan → none
+  // Hero logic: preview → scan → placeholder
   const previewUrl = project?.preview_url ?? project?.plan?.preview_url ?? null;
   const scanUrl = scan?.imageUrl || null;
   const measureResult = scan?.measureResult || null;
   const roi = scan?.roi || null;
 
-  let hero: 'preview' | 'scan' | 'none' = 'none';
-  if (previewUrl) hero = 'preview';
-  else if (scanUrl) hero = 'scan';
+  let heroSource: string | null = null;
+  let heroType: 'preview' | 'scan' | 'placeholder' = 'placeholder';
   
-  console.log('[details] hero =', hero);
+  if (previewUrl) {
+    heroSource = previewUrl;
+    heroType = 'preview';
+  } else if (scanUrl) {
+    heroSource = scanUrl;
+    heroType = 'scan';
+  } else {
+    heroSource = 'https://via.placeholder.com/800x450/E5E7EB/9CA3AF?text=No+Image';
+    heroType = 'placeholder';
+  }
+  
+  console.log('[details] hero =', heroType);
 
   const handleSaveImage = async () => {
-    const imageUrl = hero === 'preview' ? previewUrl : scanUrl;
-    if (!imageUrl) return;
-    console.log('[preview] save-to-photos');
-    const result = await saveImageToPhotos(imageUrl);
+    if (heroType === 'placeholder') return;
+    console.log('[hero] saved to photos');
+    const result = await saveImageToPhotos(heroSource!);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
@@ -389,151 +398,99 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Single Hero Image - Priority: preview → scan → none */}
-          {(hero === 'preview' || hero === 'scan') && (
-            <View style={{ marginBottom: 20 }}>
-              {hero === 'preview' ? (
-                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE', 
-                  shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
-                  <Image
-                    source={{ uri: previewUrl }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                  <TouchableOpacity 
-                    onPress={handleSaveImage}
-                    accessibilityLabel="Save image"
-                    style={{ 
-                      position: 'absolute', 
-                      top: 12, 
-                      right: 12, 
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: 'rgba(0,0,0,0.35)',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Ionicons name="download-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
-                  
-                  {/* ROI overlay for preview */}
-                  {measure?.roi && (() => {
-                    const labelTop = `${Math.max(0, (measure.roi.y * 100) - 6)}%` as any;
-                    return (
-                      <View style={{ position:'absolute', left: 16, right: 16, top: 16, bottom: 16 }}>
-                        <View
-                          pointerEvents="none"
-                          style={{
-                            position:'absolute',
-                            left: `${measure.roi.x * 100}%`,
-                            top: `${measure.roi.y * 100}%`,
-                            width: `${measure.roi.w * 100}%`,
-                            height: `${measure.roi.h * 100}%`,
-                            borderWidth: 2,
-                            borderColor: 'rgba(255,255,255,0.9)',
-                            backgroundColor: 'rgba(255,255,255,0.12)',
-                            borderRadius: 8,
-                          }}
-                        />
-                        <View style={{
-                          position:'absolute',
-                          left: `${measure.roi.x * 100}%`,
-                          top: labelTop,
-                          paddingHorizontal:8, paddingVertical:4, borderRadius:6,
-                          backgroundColor:'rgba(0,0,0,0.55)'
-                        }}>
-                          <Text style={{color:'#fff', fontSize:12, fontWeight:'600'}}>
-                            {Math.round(measure.width_in)}″ × {Math.round(measure.height_in)}″
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })()}
-                </View>
-              ) : (
-                <View style={{ position: 'relative', aspectRatio: 16/9, borderRadius: 16, overflow: 'hidden', backgroundColor: '#EEE',
-                  shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 }}>
-                  <Image
-                    source={{ uri: scanUrl }}
-                    style={{ width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                  />
-                  
-                  {/* Measurement badge if available */}
-                  {measureResult && (
-                    <View style={{ 
-                      position: 'absolute', 
-                      bottom: 12, 
-                      left: 12, 
-                      backgroundColor: 'rgba(124,58,237,0.9)', 
-                      paddingHorizontal: 10, 
-                      paddingVertical: 6, 
-                      borderRadius: 8 
-                    }}>
-                      <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
-                        {measureResult.width_in}" × {measureResult.height_in}"
-                      </Text>
-                    </View>
-                  )}
-                  
-                  {/* Save to Photos button */}
-                  <TouchableOpacity 
-                    onPress={handleSaveImage}
-                    accessibilityLabel="Save image"
-                    style={{ 
-                      position: 'absolute', 
-                      top: 12, 
-                      right: 12, 
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: 'rgba(0,0,0,0.35)',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Ionicons name="download-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
-                  
-                  {/* ROI overlay for scan */}
-                  {measure?.roi && (() => {
-                    const labelTop = `${Math.max(0, (measure.roi.y * 100) - 6)}%` as any;
-                    return (
-                      <View style={{ position:'absolute', left: 16, right: 16, top: 16, bottom: 16 }}>
-                        <View
-                          pointerEvents="none"
-                          style={{
-                            position:'absolute',
-                            left: `${measure.roi.x * 100}%`,
-                            top: `${measure.roi.y * 100}%`,
-                            width: `${measure.roi.w * 100}%`,
-                            height: `${measure.roi.h * 100}%`,
-                            borderWidth: 2,
-                            borderColor: 'rgba(255,255,255,0.9)',
-                            backgroundColor: 'rgba(255,255,255,0.12)',
-                            borderRadius: 8,
-                          }}
-                        />
-                        <View style={{
-                          position:'absolute',
-                          left: `${measure.roi.x * 100}%`,
-                          top: labelTop,
-                          paddingHorizontal:8, paddingVertical:4, borderRadius:6,
-                          backgroundColor:'rgba(0,0,0,0.55)'
-                        }}>
-                          <Text style={{color:'#fff', fontSize:12, fontWeight:'600'}}>
-                            {Math.round(measure.width_in)}″ × {Math.round(measure.height_in)}″
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })()}
+          {/* Single Hero Image - Priority: preview → scan → placeholder */}
+          <View style={{ marginBottom: 20 }}>
+            <View style={{ 
+              position: 'relative', 
+              aspectRatio: 16/9, 
+              borderRadius: 16, 
+              overflow: 'hidden', 
+              backgroundColor: '#EEE',
+              shadowColor: '#000', 
+              shadowOpacity: 0.1, 
+              shadowRadius: 8, 
+              shadowOffset: { width: 0, height: 2 }, 
+              elevation: 3 
+            }}>
+              <Image
+                source={{ uri: heroSource }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+              
+              {/* Measurement badge (only for scan with measureResult) */}
+              {heroType === 'scan' && measureResult && (
+                <View style={{ 
+                  position: 'absolute', 
+                  bottom: 12, 
+                  left: 12, 
+                  backgroundColor: 'rgba(124,58,237,0.9)', 
+                  paddingHorizontal: 10, 
+                  paddingVertical: 6, 
+                  borderRadius: 8 
+                }}>
+                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                    {measureResult.width_in}" × {measureResult.height_in}"
+                  </Text>
                 </View>
               )}
+              
+              {/* Save to Photos icon button (hidden for placeholder) */}
+              {heroType !== 'placeholder' && (
+                <TouchableOpacity 
+                  onPress={handleSaveImage}
+                  accessibilityLabel="Save image"
+                  style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    right: 12, 
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: 'rgba(0,0,0,0.35)',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Ionicons name="download-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
+              
+              {/* ROI overlay (when measurement data available) */}
+              {measure?.roi && (() => {
+                const labelTop = `${Math.max(0, (measure.roi.y * 100) - 6)}%` as any;
+                return (
+                  <View style={{ position:'absolute', left: 16, right: 16, top: 16, bottom: 16 }}>
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position:'absolute',
+                        left: `${measure.roi.x * 100}%`,
+                        top: `${measure.roi.y * 100}%`,
+                        width: `${measure.roi.w * 100}%`,
+                        height: `${measure.roi.h * 100}%`,
+                        borderWidth: 2,
+                        borderColor: 'rgba(255,255,255,0.9)',
+                        backgroundColor: 'rgba(255,255,255,0.12)',
+                        borderRadius: 8,
+                      }}
+                    />
+                    <View style={{
+                      position:'absolute',
+                      left: `${measure.roi.x * 100}%`,
+                      top: labelTop,
+                      paddingHorizontal:8, paddingVertical:4, borderRadius:6,
+                      backgroundColor:'rgba(0,0,0,0.55)'
+                    }}>
+                      <Text style={{color:'#fff', fontSize:12, fontWeight:'600'}}>
+                        {Math.round(measure.width_in)}″ × {Math.round(measure.height_in)}″
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })()}
             </View>
-          )}
+          </View>
 
           {/* Top CTA */}
           {!!planObj && (
