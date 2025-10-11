@@ -215,7 +215,8 @@ export default function ProjectDetails() {
               </Text>
             </View>
           )}
-          {offlineAvailable && (
+          {/* Offline badge temporarily hidden for polish */}
+          {false && offlineAvailable && (
             <View style={{ backgroundColor: '#10B981', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
               <Text style={{ fontSize: 11, fontWeight: '700', color: 'white' }}>OFFLINE ✓</Text>
             </View>
