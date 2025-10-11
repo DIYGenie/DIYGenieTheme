@@ -321,6 +321,10 @@ export default function ProjectDetails() {
   const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
+  // Log plan state
+  const planState = isBuilding ? 'building' : planLoading ? 'loading' : planObj ? 'ready' : 'none';
+  console.log('[details] plan state =', planState);
+
   const copyText = async (txt: string) => {
     if (!txt) return;
     await Clipboard.setStringAsync(txt);
