@@ -6,6 +6,7 @@ import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, 
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
+import DimensionsCard from '../components/DimensionsCard';
 import { saveImageToPhotos } from '../lib/media';
 import { getCachedPlan, setCachedPlan } from '../lib/planCache';
 import SectionCard from '../components/SectionCard';
@@ -627,6 +628,9 @@ export default function ProjectDetails() {
                   </View>
                 )}
               </SectionCard>
+
+              {/* Dimensions Card */}
+              <DimensionsCard measure={measure} />
 
               {/* 2. Materials + Tools (combined shopping list) */}
               <SectionCard
