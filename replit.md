@@ -20,7 +20,7 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Image Upload**: Supports server-side multer for project images and client-side Supabase Storage for room scans, including signed URLs and metadata tracking.
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
-- **Visual AI Preview Integration**: Live preview generation system for "Build with visual mockup" button, with parallel plan and preview job execution, plan-first polling, and background preview completion. Preview URLs persist in project records. Cache warming ensures ProjectDetails loads populated on first arrival.
+- **Visual AI Preview Integration**: Live preview generation system for "Build with visual mockup" button, with parallel plan and preview job execution, plan-first polling, and background preview completion. Preview URLs persist in project records. Cache warming ensures ProjectDetails loads populated on first arrival. Projects are automatically marked as 'active' when plan is ready.
 - **Immediate Plan Loading**: Plan content loads instantly on first arrival to ProjectDetails, with `useFocusEffect` triggering `loadPlanIfNeeded()` and cache-busting for fresh data.
 - **Project Details Display**: Shows real-time project info with a single hero image system (`preview_url` → scan image → skeleton if queued/processing → nothing`) and 5 focused expandable sections using `SectionCard` (Overview, Materials + Tools, Cut List, Build Steps, Finishing). Includes progress tracking, preview status polling, always-fresh plan refetch on focus, and an icon-only "Save to Photos" button (44px tap target).
 - **Plan Viewing**:
@@ -53,7 +53,8 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 
 ### Data and Backend Integration
 - **Supabase (@supabase/supabase-js, @supabase/functions-js)**: Database, authentication, and storage.
-- **Node.js/Express**: Backend API server with progress tracking endpoints.
+- **Node.js/Express**: Backend API server with progress tracking endpoints and project status management.
+- **Project Status Management**: Automatic status promotion from draft to 'active' when plan is ready, with frontend filtering on ProjectsScreen (All/Active/Completed tabs).
 
 ### Database Schema (Supabase)
 - **projects table**: Includes `completed_steps` (integer array) and `current_step_index` (integer) for progress tracking.
