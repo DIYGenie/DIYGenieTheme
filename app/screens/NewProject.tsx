@@ -655,6 +655,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setPhotoUri(null);
           setLastScan(null);
           lastScanRef.current = null;
+          console.log('[media] cleared after build (plan only)');
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
@@ -747,6 +748,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setPhotoUri(null);
         setLastScan(null);
         lastScanRef.current = null;
+        console.log('[media] cleared after build (with preview)');
         setTimeout(() => { clearingRef.current = false; }, 0);
       } catch {}
       
