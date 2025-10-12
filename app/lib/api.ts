@@ -629,7 +629,10 @@ export async function pollPreviewReady(projectId: string, timeoutMs = 60000) {
   throw new Error('PREVIEW_TIMEOUT');
 }
 
-export async function submitPreview(projectId: string): Promise<{ ok: boolean; jobId?: string; mode?: 'stub' | 'live' }> {
+export type PreviewSubmitRes = { ok: boolean; jobId?: string; mode?: 'stub' | 'live' };
+export type PreviewStatusRes = { ok: boolean; status: string; preview_url?: string | null; cached?: boolean };
+
+export async function submitPreview(projectId: string): Promise<PreviewSubmitRes> {
   try {
     const res = await fetch(`${PREVIEW_API_BASE}/preview/decor8`, {
       method: 'POST',
@@ -637,9 +640,13 @@ export async function submitPreview(projectId: string): Promise<{ ok: boolean; j
       body: JSON.stringify({ projectId })
     });
     
+    if (!res.ok) {
+      return { ok: false };
+    }
+    
     const data = await res.json().catch(() => ({}));
     return { 
-      ok: res.ok, 
+      ok: true, 
       jobId: data.jobId || data.job_id,
       mode: data.mode 
     };
@@ -649,7 +656,7 @@ export async function submitPreview(projectId: string): Promise<{ ok: boolean; j
   }
 }
 
-export async function getPreviewStatus(projectId: string): Promise<{ ok: boolean; status: string; preview_url?: string | null }> {
+export async function getPreviewStatus(projectId: string): Promise<PreviewStatusRes> {
   try {
     const res = await fetch(`${PREVIEW_API_BASE}/preview/status/${projectId}`, {
       method: 'GET'
@@ -663,7 +670,8 @@ export async function getPreviewStatus(projectId: string): Promise<{ ok: boolean
     return {
       ok: true,
       status: data.status || 'unknown',
-      preview_url: data.preview_url || data.url || null
+      preview_url: data.preview_url || data.url || null,
+      cached: data.cached
     };
   } catch (e) {
     console.error('[getPreviewStatus] error', e);
