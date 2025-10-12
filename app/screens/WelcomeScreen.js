@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { getFlag } from '../lib/storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,18 +23,6 @@ const getIconSize = () => {
 };
 
 export default function WelcomeScreen({ navigation }) {
-  useEffect(() => {
-    async function checkFirstLaunch() {
-      const seen = await getFlag('wt_seen');
-      if (!seen) {
-        setTimeout(() => {
-          navigation.navigate('WhatToTest');
-        }, 800);
-      }
-    }
-    checkFirstLaunch();
-  }, [navigation]);
-
   const handleGetStarted = () => {
     navigation.replace('Main');
   };
