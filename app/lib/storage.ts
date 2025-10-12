@@ -5,6 +5,7 @@
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, UPLOADS_BUCKET } from '../config';
 
 // Initialize Supabase client
@@ -102,4 +103,22 @@ export async function uploadImageAsync(
   
   const { data: pub } = supabase.storage.from(UPLOADS_BUCKET).getPublicUrl(path);
   return pub?.publicUrl;
+}
+
+export async function getFlag(key: string): Promise<boolean> {
+  try {
+    const val = await AsyncStorage.getItem(key);
+    return val === 'true';
+  } catch (e) {
+    console.warn('[storage] getFlag failed', key, e);
+    return false;
+  }
+}
+
+export async function setFlag(key: string, value: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(key, String(value));
+  } catch (e) {
+    console.warn('[storage] setFlag failed', key, e);
+  }
 }
