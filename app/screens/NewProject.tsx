@@ -28,6 +28,7 @@ import { ensureProjectForDraft, loadNewProjectDraft, saveNewProjectDraft, clearN
 import { attachScanToProject } from '../lib/scans';
 import { setLastScan as setLastScanEphemeral } from '../lib/ephemeral';
 import { useShake } from '../hooks/useShake';
+import { simpleToast } from '../lib/ui';
 
 const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-000000000001';
 
@@ -85,6 +86,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
   const [previewStatusMsg, setPreviewStatusMsg] = useState('');
+  const [previewFailedOrTimeout, setPreviewFailedOrTimeout] = useState(false);
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -723,8 +725,19 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
     }
   }
 
+  // Exponential backoff utility
+  function* backoffDelays(ms = 1500, factor = 1.6, max = 10000, tries = 12) {
+    let d = ms;
+    for (let i = 0; i < tries; i++) {
+      yield Math.min(d, max);
+      d = Math.ceil(d * factor);
+    }
+  }
+
   async function handleBuildWithPreview() {
     if (isBuilding || isPreviewing) return;
+    
+    setPreviewFailedOrTimeout(false);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -770,124 +783,15 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
       
       // 4) Submit preview
       console.log('[preview ui] submit', { projectId });
-      const previewRes = await submitPreview(projectId);
+      const res = await submitPreview(projectId);
       
-      if (previewRes.ok && previewRes.jobId) {
-        setPreviewStatusMsg('Preview: queued…');
-        setIsPreviewing(true);
-        
-        // 5) Start polling for preview status
-        const maxAttempts = 24;
-        const pollInterval = 2500;
-        let attempt = 0;
-        let previewReady = false;
-        let previewUrl: string | null = null;
-        
-        const pollAbort = new AbortController();
-        
-        const pollPreview = async () => {
-          while (attempt < maxAttempts && !pollAbort.signal.aborted) {
-            attempt++;
-            
-            const statusRes = await getPreviewStatus(projectId);
-            console.log('[preview ui] poll', { projectId, attempt, status: statusRes.status });
-            
-            if (statusRes.ok && statusRes.status === 'ready' && statusRes.preview_url) {
-              previewReady = true;
-              previewUrl = statusRes.preview_url;
-              console.log('[preview ui] ready', { projectId, hasUrl: !!previewUrl });
-              
-              // Update local cache optimistically
-              try {
-                const { data: proj } = await supabase
-                  .from('projects')
-                  .update({ 
-                    preview_url: previewUrl,
-                    preview_status: 'ready'
-                  })
-                  .eq('id', projectId)
-                  .select()
-                  .single();
-                console.log('[preview ui] cache updated', { id: proj?.id });
-              } catch (e) {
-                console.warn('[preview ui] cache update failed', e);
-              }
-              
-              break;
-            }
-            
-            if (!pollAbort.signal.aborted) {
-              await new Promise(r => setTimeout(r, pollInterval));
-            }
-          }
-          
-          setIsPreviewing(false);
-          setPreviewStatusMsg('');
-          
-          // 6) Navigate to ProjectDetails
-          if (!previewReady) {
-            console.warn('[preview ui] timeout', { projectId, attempts: attempt });
-            setToastMessage('Preview is still processing, it will appear shortly.');
-            setToastType('success');
-            setTimeout(() => setToastMessage(''), 4000);
-          }
-          
-          // 7) Clear form
-          try {
-            clearingRef.current = true;
-            await clearNewProjectDraft?.();
-            setDraftId(null);
-            setTitle('');
-            setDescription('');
-            setBudget('');
-            setSkillLevel('');
-            setPhotoUri(null);
-            setLastScan(null);
-            lastScanRef.current = null;
-            console.log('[media] cleared after build (with preview)');
-            setTimeout(() => { clearingRef.current = false; }, 0);
-          } catch {}
-          
-          // 8) Navigate to ProjectDetails
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'Main',
-                  state: {
-                    type: 'tab',
-                    index: 2,
-                    routes: [
-                      { name: 'Home' },
-                      { name: 'NewProject' },
-                      {
-                        name: 'Projects',
-                        state: {
-                          type: 'stack',
-                          index: 1,
-                          routes: [
-                            { name: 'ProjectsList' },
-                            { name: 'ProjectDetails', params: { id: projectId } },
-                          ],
-                        },
-                      },
-                      { name: 'Profile' },
-                    ],
-                  },
-                },
-              ],
-            })
-          );
-        };
-        
-        pollPreview();
-      } else {
-        // Preview submit failed, fall back to normal navigation
-        console.warn('[preview ui] submit failed', { ok: previewRes.ok });
-        setToastMessage('Preview generation unavailable, continuing with scan image.');
-        setToastType('error');
-        setTimeout(() => setToastMessage(''), 4000);
+      if (!res.ok) {
+        console.error('[preview ui] error submit');
+        simpleToast('Could not start preview. Check connection and try again.');
+        setPreviewFailedOrTimeout(true);
+        // Fall through - still need to navigate
+        setIsPreviewing(false);
+        setPreviewStatusMsg('');
         
         // Clear form and navigate
         try {
@@ -904,6 +808,108 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Main',
+                state: {
+                  type: 'tab',
+                  index: 2,
+                  routes: [
+                    { name: 'Home' },
+                    { name: 'NewProject' },
+                    {
+                      name: 'Projects',
+                      state: {
+                        type: 'stack',
+                        index: 1,
+                        routes: [
+                          { name: 'ProjectsList' },
+                          { name: 'ProjectDetails', params: { id: projectId } },
+                        ],
+                      },
+                    },
+                    { name: 'Profile' },
+                  ],
+                },
+              },
+            ],
+          })
+        );
+        return;
+      } else {
+        if (res.mode) console.log('[preview ui] mode', res.mode);
+        setPreviewStatusMsg('Preview: queued…');
+        setIsPreviewing(true);
+        
+        // 5) Poll with exponential backoff
+        const delays = backoffDelays(1200, 1.7, 9000, 14); // ~2 min cap
+        let attempt = 0;
+        let ready = false;
+        let previewUrl: string | null = null;
+        
+        for (const delay of delays) {
+          attempt++;
+          const statusRes = await getPreviewStatus(projectId);
+          console.log('[preview ui] poll', { projectId, attempt, status: statusRes.status });
+          
+          if (!statusRes.ok) {
+            simpleToast('Preview status check failed — retrying…');
+          } else if (statusRes.status === 'ready' && statusRes.preview_url) {
+            console.log('[preview ui] ready', { projectId, hasUrl: !!statusRes.preview_url });
+            if (statusRes.cached) console.log('[preview ui] cached hit');
+            ready = true;
+            previewUrl = statusRes.preview_url;
+            
+            // Update local cache optimistically
+            try {
+              const { data: proj } = await supabase
+                .from('projects')
+                .update({ 
+                  preview_url: previewUrl,
+                  preview_status: 'ready'
+                })
+                .eq('id', projectId)
+                .select()
+                .single();
+              console.log('[preview ui] cache updated', { id: proj?.id });
+            } catch (e) {
+              console.warn('[preview ui] cache update failed', e);
+            }
+            
+            break;
+          }
+          await new Promise(r => setTimeout(r, delay + Math.floor(Math.random() * 250)));
+        }
+        
+        if (!ready) {
+          console.warn('[preview ui] timeout', { projectId, attempts: attempt });
+          simpleToast('Preview still processing — you can view the project now.');
+          setPreviewFailedOrTimeout(true);
+        }
+        
+        setIsPreviewing(false);
+        setPreviewStatusMsg('');
+        
+        // 6) Clear form
+        try {
+          clearingRef.current = true;
+          await clearNewProjectDraft?.();
+          setDraftId(null);
+          setTitle('');
+          setDescription('');
+          setBudget('');
+          setSkillLevel('');
+          setPhotoUri(null);
+          setLastScan(null);
+          lastScanRef.current = null;
+          console.log('[media] cleared after build (with preview)');
+          setTimeout(() => { clearingRef.current = false; }, 0);
+        } catch {}
+        
+        // 7) Navigate to ProjectDetails
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -1435,6 +1441,85 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                     )}
                   </View>
                 </TouchableOpacity>
+                
+                {/* Retry preview button (only on failure/timeout) */}
+                {previewFailedOrTimeout && draftId && (
+                  <Pressable
+                    onPress={async () => {
+                      console.log('[preview ui] retry');
+                      setPreviewFailedOrTimeout(false);
+                      setIsPreviewing(true);
+                      setPreviewStatusMsg('Preview: queued…');
+                      
+                      const res = await submitPreview(draftId);
+                      if (!res.ok) {
+                        console.error('[preview ui] error submit retry');
+                        simpleToast('Still unable to start preview.');
+                        setPreviewFailedOrTimeout(true);
+                        setIsPreviewing(false);
+                        setPreviewStatusMsg('');
+                        return;
+                      }
+                      
+                      if (res.mode) console.log('[preview ui] mode', res.mode);
+                      
+                      const delays = backoffDelays(1200, 1.7, 9000, 14);
+                      let attempt = 0;
+                      let ready = false;
+                      
+                      for (const delay of delays) {
+                        attempt++;
+                        const statusRes = await getPreviewStatus(draftId);
+                        console.log('[preview ui] poll', { projectId: draftId, attempt, status: statusRes.status });
+                        
+                        if (!statusRes.ok) {
+                          simpleToast('Preview status check failed — retrying…');
+                        } else if (statusRes.status === 'ready' && statusRes.preview_url) {
+                          console.log('[preview ui] ready', { projectId: draftId, hasUrl: !!statusRes.preview_url });
+                          if (statusRes.cached) console.log('[preview ui] cached hit');
+                          ready = true;
+                          
+                          try {
+                            await supabase
+                              .from('projects')
+                              .update({ 
+                                preview_url: statusRes.preview_url,
+                                preview_status: 'ready'
+                              })
+                              .eq('id', draftId);
+                            console.log('[preview ui] cache updated retry');
+                          } catch (e) {
+                            console.warn('[preview ui] cache update failed', e);
+                          }
+                          
+                          simpleToast('Preview is ready!');
+                          setPreviewFailedOrTimeout(false);
+                          break;
+                        }
+                        await new Promise(r => setTimeout(r, delay + Math.floor(Math.random() * 250)));
+                      }
+                      
+                      if (!ready) {
+                        console.warn('[preview ui] timeout retry', { projectId: draftId, attempts: attempt });
+                        simpleToast('Preview still processing.');
+                        setPreviewFailedOrTimeout(true);
+                      }
+                      
+                      setIsPreviewing(false);
+                      setPreviewStatusMsg('');
+                    }}
+                    style={({ pressed }) => ({
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      alignSelf: 'center',
+                      opacity: pressed ? 0.6 : 1,
+                    })}
+                  >
+                    <Text style={{ color: '#6D28D9', fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' }}>
+                      Retry preview
+                    </Text>
+                  </Pressable>
+                )}
               </View>
 
               {/* Secondary: Build plan only */}
