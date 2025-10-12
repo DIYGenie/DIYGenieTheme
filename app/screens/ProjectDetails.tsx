@@ -390,6 +390,17 @@ export default function ProjectDetails() {
                 );
               })()}
               </View>
+              
+              {/* AR measurements badge row */}
+              {(pxPerIn || widthIn || heightIn || depthIn || diagIn) && (
+                <View style={{ flexDirection: 'row', gap: 12, paddingVertical: 8 }}>
+                  {pxPerIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Scale: {pxPerIn.toFixed(2)} px/in</Text>}
+                  {widthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>W: {widthIn.toFixed(1)}"</Text>}
+                  {heightIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>H: {heightIn.toFixed(1)}"</Text>}
+                  {depthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>D: {depthIn.toFixed(1)}"</Text>}
+                  {diagIn   != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Diag: {diagIn.toFixed(1)}"</Text>}
+                </View>
+              )}
             </View>
           ) : (previewStatus === 'queued' || previewStatus === 'processing') ? (
             <View style={{ marginBottom: 20 }}>
@@ -511,6 +522,22 @@ export default function ProjectDetails() {
 
               {/* Dimensions Card */}
               <DimensionsCard measure={measure} />
+
+              {/* AR Measurements Card */}
+              <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 6 }}>Measurements</Text>
+                {pxPerIn == null && widthIn == null && heightIn == null && depthIn == null && diagIn == null ? (
+                  <Text style={{ opacity: 0.6 }}>No measurements yet</Text>
+                ) : (
+                  <>
+                    {pxPerIn != null && <Text>Scale: {pxPerIn.toFixed(3)} px/in</Text>}
+                    {widthIn  != null && <Text>Width: {widthIn.toFixed(2)}"</Text>}
+                    {heightIn != null && <Text>Height: {heightIn.toFixed(2)}"</Text>}
+                    {depthIn  != null && <Text>Depth: {depthIn.toFixed(2)}"</Text>}
+                    {diagIn   != null && <Text>Diagonal: {diagIn.toFixed(2)}"</Text>}
+                  </>
+                )}
+              </View>
 
               {/* 2. Materials + Tools (combined shopping list) */}
               <SectionCard
