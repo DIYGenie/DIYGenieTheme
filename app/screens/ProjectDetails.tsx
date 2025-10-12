@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeBack } from '../lib/useSafeBack';
 import { fetchProjectById, fetchLatestScanForProject, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
@@ -13,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import RulerOverlay from '../components/RulerOverlay';
+import { simpleToast } from '../lib/ui';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -33,8 +35,44 @@ export default function ProjectDetails() {
   const [measure, setMeasure] = useState<MeasureResult | null>(null);
   const [showRuler, setShowRuler] = useState(false);
   const [heroW, setHeroW] = useState(0);
+  const [openSections, setOpenSections] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
+
+  useEffect(() => {
+    (async () => {
+      if (!projectId) return;
+      try {
+        const stored = await AsyncStorage.getItem(`sections:${projectId}`);
+        if (stored) setOpenSections(JSON.parse(stored));
+      } catch (e) {
+        console.log('[ui] load sections error', e);
+      }
+    })();
+  }, [projectId]);
+
+  const toggleSection = useCallback(async (name: string) => {
+    const next = openSections.includes(name)
+      ? openSections.filter(s => s !== name)
+      : [...openSections, name];
+    setOpenSections(next);
+    try {
+      await AsyncStorage.setItem(`sections:${projectId}`, JSON.stringify(next));
+      console.log('[ui] toggle', { name, open: next.includes(name) });
+    } catch (e) {
+      console.log('[ui] save sections error', e);
+    }
+  }, [openSections, projectId]);
+
+  const copyList = useCallback(async (name: string, arr: any[], formatter?: (item: any) => string) => {
+    if (!arr?.length) return;
+    const defaultFormat = (i: any) => i.name || i.item || i.text || String(i);
+    const format = formatter || defaultFormat;
+    const txt = arr.map(format).filter(Boolean).join('\n');
+    await Clipboard.setStringAsync(txt);
+    simpleToast(`Copied ${arr.length} items`);
+    console.log('[ui] copy', { name, count: arr.length });
+  }, []);
 
   // Poll for measurement once on mount
   useEffect(() => {
