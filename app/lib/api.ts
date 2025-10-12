@@ -1,7 +1,11 @@
 import { supabase } from './supabase';
+import Constants from 'expo-constants';
 
-export const BASE =
-  (process.env.EXPO_PUBLIC_BASE_URL as string) || 'http://localhost:5000';
+const extras = (Constants?.expoConfig as any)?.extra ?? {};
+const configApiBase = extras.apiBase || 'https://api.diygenieapp.com';
+
+export const BASE = configApiBase;
+export const API_BASE = configApiBase;
 
 export async function api(path: string, init: RequestInit = {}) {
   const url = `${BASE}${path}`;
@@ -105,8 +109,9 @@ export async function fetchProjectsForCurrentUser() {
   const uid = data?.session?.user?.id;
   if (!uid) return [];
 
-  const API_BASE =
+  const webhooksBase =
     process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+    extras.apiBase ||
     'https://diy-genie-webhooks-tyekowalski.replit.app';
 
   const paramVariants = [
@@ -118,7 +123,7 @@ export async function fetchProjectsForCurrentUser() {
   // Try user-filtered endpoints first
   for (const q of paramVariants) {
     try {
-      const url = `${API_BASE}/api/projects?${q}`;
+      const url = `${webhooksBase}/api/projects?${q}`;
       const res = await fetch(url, { headers: { accept: 'application/json' } });
       if (!res.ok) continue;
 
@@ -140,7 +145,7 @@ export async function fetchProjectsForCurrentUser() {
 
   // Final fallback: fetch all and filter client-side by user_id
   try {
-    const url = `${API_BASE}/api/projects`;
+    const url = `${webhooksBase}/api/projects`;
     const res = await fetch(url, { headers: { accept: 'application/json' } });
     if (res.ok) {
       const json = await res.json();
@@ -159,13 +164,13 @@ export async function fetchProjectsForCurrentUser() {
   return [];
 }
 
-const API_BASE =
-  process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
-  'https://diy-genie-webhooks-tyekowalski.replit.app';
-
 type FetchProjOpts = { signal?: AbortSignal; timeoutMs?: number };
 
 export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
+  const projectsBase = extras.apiBase || 
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ||
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+    
   const controller = opts.signal ? null : new AbortController();
   const signal = opts.signal ?? controller!.signal;
   const timeoutMs = opts.timeoutMs ?? 8000;
@@ -177,7 +182,7 @@ export async function fetchProjectById(id: string, opts: FetchProjOpts = {}) {
 
   try {
     const res = await fetch(
-      `${API_BASE}/api/projects/${encodeURIComponent(id)}`,
+      `${projectsBase}/api/projects/${encodeURIComponent(id)}`,
       { signal, headers: { accept: 'application/json' } }
     );
     if (!res.ok) throw new Error(`PROJECT_FETCH_FAILED:${res.status}`);
@@ -590,15 +595,14 @@ export async function getMeasurement(projectId: string, scanId: string): Promise
   }
 }
 
-const PREVIEW_API_BASE = 'https://api.diygenieapp.com/api';
-
 export async function startPreview(projectId: string, roi?: any) {
+  const previewBase = (extras.previewApiBase || extras.apiBase || 'https://api.diygenieapp.com') + '/api';
   const u = await supabase.auth.getSession();
   const user_id = u?.data?.session?.user?.id;
   
   console.log('[preview] start', { projectId, hasROI: !!roi });
   
-  const res = await fetch(`${PREVIEW_API_BASE}/projects/${projectId}/preview`, {
+  const res = await fetch(`${previewBase}/projects/${projectId}/preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id, roi })
@@ -608,6 +612,7 @@ export async function startPreview(projectId: string, roi?: any) {
 }
 
 export async function pollPreviewReady(projectId: string, timeoutMs = 60000) {
+  const previewBase = (extras.previewApiBase || extras.apiBase || 'https://api.diygenieapp.com') + '/api';
   const u = await supabase.auth.getSession();
   const user_id = u?.data?.session?.user?.id;
   const started = Date.now();
@@ -615,7 +620,7 @@ export async function pollPreviewReady(projectId: string, timeoutMs = 60000) {
   while (Date.now() - started < timeoutMs) {
     console.log('[preview] polling…');
     
-    const r = await fetch(`${PREVIEW_API_BASE}/projects/${projectId}/preview/status?user_id=${user_id}`);
+    const r = await fetch(`${previewBase}/projects/${projectId}/preview/status?user_id=${user_id}`);
     
     if (r.status === 200) {
       const result = await r.json();
@@ -633,8 +638,9 @@ export type PreviewSubmitRes = { ok: boolean; jobId?: string; mode?: 'stub' | 'l
 export type PreviewStatusRes = { ok: boolean; status: string; preview_url?: string | null; cached?: boolean };
 
 export async function submitPreview(projectId: string): Promise<PreviewSubmitRes> {
+  const previewBase = (extras.previewApiBase || extras.apiBase || 'https://api.diygenieapp.com') + '/api';
   try {
-    const res = await fetch(`${PREVIEW_API_BASE}/preview/decor8`, {
+    const res = await fetch(`${previewBase}/preview/decor8`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ projectId })
@@ -657,8 +663,9 @@ export async function submitPreview(projectId: string): Promise<PreviewSubmitRes
 }
 
 export async function getPreviewStatus(projectId: string): Promise<PreviewStatusRes> {
+  const previewBase = (extras.previewApiBase || extras.apiBase || 'https://api.diygenieapp.com') + '/api';
   try {
-    const res = await fetch(`${PREVIEW_API_BASE}/preview/status/${projectId}`, {
+    const res = await fetch(`${previewBase}/preview/status/${projectId}`, {
       method: 'GET'
     });
     
