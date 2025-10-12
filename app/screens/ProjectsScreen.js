@@ -140,6 +140,7 @@ export default function ProjectsScreen({ navigation }) {
 function ProjectCard({ project, navigation }) {
   const projectName = project.name || project.title || 'Untitled Project';
   const status = project.status;
+  const previewStatus = project.preview_status;
   const hasInputImage = !!project.input_image_url;
   const hasPreviewImage = !!project.preview_url;
   
@@ -160,26 +161,40 @@ function ProjectCard({ project, navigation }) {
   return (
     <Card onPress={handlePress} style={{ marginBottom: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* Thumbnail */}
-        {hasPreviewImage ? (
-          <Image 
-            source={{ uri: project.preview_url }} 
-            style={styles.thumbnailImage}
-            resizeMode="cover"
-          />
-        ) : hasInputImage ? (
-          <Image 
-            source={{ uri: project.input_image_url }} 
-            style={styles.thumbnailImage}
-            resizeMode="cover"
-          />
-        ) : status === 'preview_requested' ? (
-          <View style={styles.thumbnailSkeleton}>
-            <ActivityIndicator size="small" color={brand.primary} />
-          </View>
-        ) : (
-          <View style={styles.thumbnailPlaceholder} />
-        )}
+        {/* Thumbnail with optional preview status badge */}
+        <View style={{ position: 'relative' }}>
+          {hasPreviewImage ? (
+            <Image 
+              source={{ uri: project.preview_url }} 
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
+          ) : hasInputImage ? (
+            <Image 
+              source={{ uri: project.input_image_url }} 
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
+          ) : status === 'preview_requested' ? (
+            <View style={styles.thumbnailSkeleton}>
+              <ActivityIndicator size="small" color={brand.primary} />
+            </View>
+          ) : (
+            <View style={styles.thumbnailPlaceholder} />
+          )}
+          
+          {/* Preview status badge overlay */}
+          {previewStatus === 'queued' && (
+            <View style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(109,40,217,0.9)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+              <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>Preview: queued</Text>
+            </View>
+          )}
+          {previewStatus === 'ready' && !hasPreviewImage && (
+            <View style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(5,150,105,0.9)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
+              <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>Preview: ready</Text>
+            </View>
+          )}
+        </View>
         
         {/* Content */}
         <View style={{ flex: 1, marginLeft: 12 }}>
