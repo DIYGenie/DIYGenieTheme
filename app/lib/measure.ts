@@ -118,3 +118,23 @@ export async function saveLineMeasurement(opts: {
   if (error) throw error;
   return data;
 }
+
+export async function getScanScalePxPerIn(scanId: string): Promise<number | null> {
+  try {
+    const { data } = await supabase
+      .from('room_scans')
+      .select('scale_px_per_in')
+      .eq('id', scanId)
+      .single();
+    return data?.scale_px_per_in ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setScanScalePxPerIn(scanId: string, pxPerIn: number): Promise<void> {
+  await supabase
+    .from('room_scans')
+    .update({ scale_px_per_in: pxPerIn })
+    .eq('id', scanId);
+}

@@ -39,7 +39,7 @@ export default function PlanTabs({ plan }: { plan: Plan }) {
     { key: 'Tools', render: () => (
       <View style={{ backgroundColor:'#fff', borderRadius:12, padding:16 }}>
         <Text style={{ fontWeight:'700', fontSize:18, marginBottom:8 }}>Tools</Text>
-        {(plan.tools?.length ? plan.tools : []).map((t, i) => (<Text key={i}>• {t}</Text>))}
+        {(plan.tools?.length ? plan.tools : []).map((t, i) => (<Text key={i}>• {typeof t === 'string' ? t : t.name}</Text>))}
         {!plan.tools?.length && <Text>No tools listed yet.</Text>}
       </View>
     )},

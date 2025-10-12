@@ -51,6 +51,29 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, status: 'healthy' });
 });
 
+app.get('/api/health/full', (req, res) => {
+  res.json({ 
+    ok: true, 
+    status: 'healthy',
+    modes: { 
+      decor8: 'live', 
+      openai: 'live' 
+    }
+  });
+});
+
+app.get('/api/version', (req, res) => {
+  const version = require('./package.json').version || '1.0.0';
+  res.json({ 
+    ok: true, 
+    version,
+    modes: { 
+      decor8: 'live', 
+      openai: 'live' 
+    }
+  });
+});
+
 app.get('/_debug/origin', (req, res) => {
   res.json({ origin: req.headers.origin || null });
 });
