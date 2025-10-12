@@ -10,10 +10,10 @@ module.exports = {
     version,
     scheme: "diygenie",
     orientation: "portrait",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     icon: "./assets/Icon.png",
     splash: {
-      image: "./assets/Icon.png",
+      image: "./assets/splash.png",
       resizeMode: "contain",
       backgroundColor: "#8B5CF6"
     },
@@ -24,6 +24,12 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "com.diygenie.app",
       buildNumber: version,
+      icon: "./assets/Icon.png",
+      splash: {
+        image: "./assets/splash.png",
+        resizeMode: "contain",
+        backgroundColor: "#8B5CF6"
+      },
       infoPlist: {
         NSCameraUsageDescription: "DIY Genie uses the camera to capture room photos for AI previews.",
         NSPhotoLibraryUsageDescription: "DIY Genie accesses photos you select for project previews.",
@@ -35,7 +41,7 @@ module.exports = {
       package: "com.diygenie.app",
       versionCode: 1,
       adaptiveIcon: {
-        foregroundImage: "./assets/Icon.png",
+        foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#8B5CF6"
       },
       permissions: ["CAMERA", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
