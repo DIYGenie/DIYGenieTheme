@@ -16,6 +16,7 @@ import PlanTabsScreen from '../screens/PlanTabsScreen';
 import OpenPlanScreen from '../screens/OpenPlanScreen';
 import AuthScreen from '../screens/AuthScreen';
 import Diagnostics from '../screens/Diagnostics';
+import WhatToTest from '../screens/WhatToTest';
 
 const Stack = createStackNavigator();
 
@@ -50,6 +51,7 @@ export default function AppNavigator() {
         <Stack.Screen name="PlanTabs" component={PlanTabsScreen} />
         <Stack.Screen name="OpenPlan" component={OpenPlanScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Diagnostics" component={Diagnostics} options={{ headerShown: true, headerTitle: 'Diagnostics', presentation: 'card' }} />
+        <Stack.Screen name="WhatToTest" component={WhatToTest} options={{ headerShown: false, presentation: 'modal' }} />
       </Stack.Navigator>
     </AuthGate>
   );
