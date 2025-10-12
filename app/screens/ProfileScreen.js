@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -113,6 +114,8 @@ export default function ProfileScreen() {
   const [lastSyncAt, setLastSyncAt] = React.useState(null);
   const [syncNote, setSyncNote] = React.useState('');
   const [toastMessage, setToastMessage] = React.useState('');
+  const [tapCount, setTapCount] = React.useState(0);
+  const [showDiag, setShowDiag] = React.useState(false);
 
   const fetchEntitlementsSafe = React.useCallback(async (userId) => {
     try {
@@ -238,6 +241,13 @@ export default function ProfileScreen() {
     } catch (e) {
       Alert.alert('Log out', 'Unable to sign out. Please try again.');
     }
+  };
+
+  const onVersionTap = () => {
+    const n = tapCount + 1;
+    setTapCount(n);
+    if (n >= 7) setShowDiag(true);
+    setTimeout(() => setTapCount(0), 1500);
   };
 
   return (
@@ -484,6 +494,22 @@ export default function ProfileScreen() {
               </View>
             </View>
           </Pressable>
+
+          {/* Version with 7-tap reveal */}
+          <View style={{ marginTop: 24, marginBottom: 16, alignItems: 'center' }}>
+            <TouchableOpacity onPress={onVersionTap}>
+              <Text style={{ opacity: 0.6, fontSize: 14 }}>Version {Constants?.expoConfig?.version}</Text>
+            </TouchableOpacity>
+            
+            {showDiag && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Diagnostics')}
+                style={{ marginTop: 12, backgroundColor: '#EEF2FF', padding: 10, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#4F46E5', fontWeight: '600' }}>Open Diagnostics</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
 
