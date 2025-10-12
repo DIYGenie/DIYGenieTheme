@@ -26,25 +26,12 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string; roi?: any; measureResult?: any } | null>(null);
-  const [planObj, setPlanObj] = useState<Plan | null>(null);
-  const [planLoading, setPlanLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [offlineAvailable, setOfflineAvailable] = useState(false);
   const [measure, setMeasure] = useState<MeasureResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const prevProjectIdRef = useRef<string | undefined>(projectId);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
-
-  // Reset plan state when projectId changes
-  useEffect(() => {
-    if (prevProjectIdRef.current !== projectId) {
-      setPlanObj(null);
-      setOfflineAvailable(false);
-      prevProjectIdRef.current = projectId;
-    }
-  }, [projectId]);
 
   // Poll for measurement once on mount
   useEffect(() => {
@@ -59,41 +46,17 @@ export default function ProjectDetails() {
     return () => { mounted = false; };
   }, [project?.id, scanId]);
 
-  const loadPlanIfNeeded = useCallback(async () => {
-    if (!projectId || !project) return;
-    
-    const ready = /ready|active/.test(String(project?.plan_status || project?.status || '').toLowerCase()) && 
-                 !/requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
-    
-    if (ready && !planObj) {
-      console.log('[plan] first-fetch start');
-      setPlanLoading(true);
-      try {
-        const { getLocalPlanMarkdown } = await import('../lib/localPlan');
-        const local = await getLocalPlanMarkdown(projectId);
-        let md = local;
-        if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true, cacheBust: true });
-        if (md) {
-          const parsed = parsePlanMarkdown(md);
-          await setCachedPlan(projectId, parsed);
-          setPlanObj(parsed);
-          setOfflineAvailable(true);
-          console.log('[plan] first-fetch done', {
-            sections: {
-              materials: parsed.materials?.length ?? 0,
-              cuts: parsed.cuts?.length ?? 0,
-              tools: parsed.tools?.length ?? 0,
-              steps: parsed.steps?.length ?? 0
-            }
-          });
-        }
-      } catch (e) {
-        console.log('[plan] first-fetch error', String(e));
-      } finally {
-        setPlanLoading(false);
-      }
-    }
-  }, [projectId, project, planObj]);
+  // Normalize plan from plan_json with safe defaults
+  const plan = project?.plan_json ?? {};
+  const overview = plan?.overview ?? {};
+  const materials = Array.isArray(plan?.materials) ? plan.materials : [];
+  const tools = Array.isArray(plan?.tools) ? plan.tools : [];
+  const cuts = Array.isArray(plan?.cuts) ? plan.cuts : [];
+  const steps = Array.isArray(plan?.steps) ? plan.steps : [];
+  const finishing = Array.isArray(plan?.finishing) ? plan.finishing : [];
+  const counts = { materials: materials.length, tools: tools.length, cuts: cuts.length, steps: steps.length };
+  
+  console.log('[details] plan counts', counts);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -116,42 +79,11 @@ export default function ProjectDetails() {
         setCompletedSteps(prog.completed_steps || []);
         setCurrentStepIndex(prog.current_step_index || 0);
         
-        const ready = /ready/.test(String(p?.plan_status || p?.status || '').toLowerCase()) && 
-                     !/requested|building|queued|pending/.test(String(p?.plan_status || p?.status || '').toLowerCase());
-        
-        if (ready) {
-          try {
-            // Try cache first
-            const cached = await getCachedPlan(projectId);
-            if (cached?.plan && !controller.signal.aborted) {
-              setPlanObj(cached.plan);
-              setOfflineAvailable(true);
-              console.log('[details] loaded from cache');
-            }
-            
-            // Then fetch fresh
-            const { getLocalPlanMarkdown } = await import('../lib/localPlan');
-            const local = await getLocalPlanMarkdown(projectId);
-            let md = local;
-            if (!md) md = await fetchProjectPlanMarkdown(projectId, { tolerate409: true });
-            if (md && !controller.signal.aborted) {
-              const parsed = parsePlanMarkdown(md);
-              await setCachedPlan(projectId, parsed);
-              setPlanObj(parsed);
-              setOfflineAvailable(true);
-              console.log('[details] plan ready', {
-                sections: {
-                  materials: parsed.materials?.length ?? 0,
-                  cuts: parsed.cuts?.length ?? 0,
-                  tools: parsed.tools?.length ?? 0,
-                  steps: parsed.steps?.length ?? 0
-                }
-              });
-            }
-          } catch (e) {
-            if ((e as any)?.name !== 'AbortError') console.log('[plan fetch error]', String(e));
-          }
-        }
+        console.log('[details] loaded', {
+          id: p?.id,
+          status: p?.status,
+          has_plan_json: !!p?.plan_json
+        });
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
@@ -189,7 +121,7 @@ export default function ProjectDetails() {
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
 
-  const isPlanReady = !!planObj;
+  const planReady = /ready|active/i.test(project?.status ?? '');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -204,7 +136,7 @@ export default function ProjectDetails() {
               </Text>
             </View>
           )}
-          {isPlanReady && (
+          {planReady && (
             <View style={{ paddingLeft: 4 }}>
               <StatusBadge status="ready" />
             </View>
@@ -212,7 +144,7 @@ export default function ProjectDetails() {
         </View>
       ),
     });
-  }, [navigation, safeBack, project?.name, isPlanReady]);
+  }, [navigation, safeBack, project?.name, planReady]);
 
   useEffect(() => {
     load();
@@ -236,13 +168,14 @@ export default function ProjectDetails() {
     }, [load, justBuilt, navigation])
   );
 
-  // Load plan immediately when project is ready
-  useFocusEffect(
-    useCallback(() => {
-      // Always refetch on focus to ensure fresh data
-      loadPlanIfNeeded();
-    }, [loadPlanIfNeeded])
-  );
+  // Refetch if plan is empty after active status (handles webhook race)
+  useEffect(() => {
+    if (planReady && counts.materials + counts.tools + counts.cuts + counts.steps === 0) {
+      console.log('[details] empty plan after active → refetch in 2s');
+      const t = setTimeout(() => load(), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [planReady, project?.updated_at, counts, load]);
 
   // Poll for preview status when queued or processing
   useEffect(() => {
@@ -301,11 +234,11 @@ export default function ProjectDetails() {
     };
   }, [projectId, project?.preview_status]);
 
-  const statusReady = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase());
   const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
 
   // Log plan state
-  const planState = isBuilding ? 'building' : planLoading ? 'loading' : planObj ? 'ready' : 'none';
+  const hasPlanContent = counts.materials + counts.tools + counts.cuts + counts.steps > 0;
+  const planState = isBuilding ? 'building' : planReady && hasPlanContent ? 'ready' : planReady ? 'active_empty' : 'none';
   console.log('[details] plan state =', planState);
 
   const copyText = async (txt: string) => {
@@ -474,7 +407,7 @@ export default function ProjectDetails() {
           ) : null}
 
           {/* Top CTA */}
-          {!!planObj && (
+          {hasPlanContent && (
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => {
@@ -508,7 +441,7 @@ export default function ProjectDetails() {
           )}
 
           {/* Plan loading skeleton */}
-          {planLoading && !planObj && (
+          {planReady && !hasPlanContent && (
             <View style={{ marginBottom: 20, backgroundColor: '#F3E8FF', borderRadius: 16, padding: 18, alignItems: 'center' }}>
               <ActivityIndicator color="#6D28D9" />
               <Text style={{ color: '#6D28D9', fontSize: 15, marginTop: 8 }}>
@@ -518,7 +451,7 @@ export default function ProjectDetails() {
           )}
 
           {/* Section Cards */}
-          {!!planObj && (
+          {hasPlanContent && (
             <>
               {/* 1. Overview */}
               <SectionCard
@@ -531,36 +464,36 @@ export default function ProjectDetails() {
                 }}
               >
                 <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
-                  {planObj.overview || 'No overview yet.'}
+                  {overview?.text || overview || 'No overview yet.'}
                 </Text>
                 
                 {/* Time & Cost & Skill */}
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                  {planObj.skill_level && (
+                  {plan.skill_level && (
                     <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontSize: 16 }}>🎯</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9', textTransform: 'capitalize' }}>{planObj.skill_level}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9', textTransform: 'capitalize' }}>{plan.skill_level}</Text>
                     </View>
                   )}
-                  {planObj.time_estimate_hours && (
+                  {plan.time_estimate_hours && (
                     <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontSize: 16 }}>⏱</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>{planObj.time_estimate_hours} hrs</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>{plan.time_estimate_hours} hrs</Text>
                     </View>
                   )}
-                  {planObj.cost_estimate_usd && (
+                  {plan.cost_estimate_usd && (
                     <View style={{ backgroundColor: '#EDE9FE', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={{ fontSize: 16 }}>💵</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>${planObj.cost_estimate_usd}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#6D28D9' }}>${plan.cost_estimate_usd}</Text>
                     </View>
                   )}
                 </View>
 
                 {/* Safety Warnings */}
-                {planObj.safety_warnings && planObj.safety_warnings.length > 0 && (
+                {plan.safety_warnings && plan.safety_warnings.length > 0 && (
                   <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, marginTop: 12 }}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 6 }}>⚠️ Safety First</Text>
-                    {planObj.safety_warnings.map((warning, i) => (
+                    {plan.safety_warnings.map((warning, i) => (
                       <Text key={i} style={{ fontSize: 13, color: '#92400E', lineHeight: 18 }}>• {warning}</Text>
                     ))}
                   </View>
@@ -574,7 +507,7 @@ export default function ProjectDetails() {
               <SectionCard
                 icon={<MaterialCommunityIcons name="cart-outline" size={22} color="#6D28D9" />}
                 title="Materials + Tools"
-                countBadge={(planObj.materials?.length || 0) + (planObj.tools?.length || 0)}
+                countBadge={materials.length + tools.length}
                 summary="Shopping list"
                 onNavigate={() => {
                   console.log('[details] nav section=shopping');
@@ -582,10 +515,10 @@ export default function ProjectDetails() {
                 }}
               >
                 {/* Materials section */}
-                {planObj.materials && planObj.materials.length > 0 && (
+                {materials.length > 0 && (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: '#6D28D9', marginBottom: 8 }}>Materials (Required)</Text>
-                    {planObj.materials.map((m: any, i: number) => (
+                    {materials.map((m: any, i: number) => (
                       <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
                         <View style={{ flexDirection: 'row', gap: 8, flex: 1 }}>
                           <Text style={{ color: '#6D28D9', fontSize: 18 }}>•</Text>
@@ -600,10 +533,10 @@ export default function ProjectDetails() {
                 )}
 
                 {/* Tools section */}
-                {planObj.tools && planObj.tools.length > 0 && (
+                {tools.length > 0 && (
                   <View>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: '#6D28D9', marginBottom: 8 }}>Tools</Text>
-                    {planObj.tools.map((tool: any, i: number) => {
+                    {tools.map((tool: any, i: number) => {
                       const toolObj = typeof tool === 'string' ? { name: tool } : tool;
                       const needToBuy = toolObj.have === false;
                       return (
@@ -626,10 +559,10 @@ export default function ProjectDetails() {
                 {/* Copy button */}
                 <Pressable
                   onPress={() => {
-                    const matText = (planObj.materials || []).map((m: any) => 
+                    const matText = materials.map((m: any) => 
                       `• ${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}${m.price ? ` - $${m.price}` : ''}`
                     ).join('\n');
-                    const toolText = (planObj.tools || []).map((t: any) => {
+                    const toolText = tools.map((t: any) => {
                       const tool = typeof t === 'string' ? { name: t } : t;
                       return `• ${tool.name}${tool.rentalPrice ? ` (~$${tool.rentalPrice})` : ''}`;
                     }).join('\n');
@@ -643,11 +576,11 @@ export default function ProjectDetails() {
               </SectionCard>
 
               {/* 3. Cut List */}
-              {planObj.cuts && planObj.cuts.length > 0 && (
+              {cuts.length > 0 && (
                 <SectionCard
                   icon={<MaterialCommunityIcons name="content-cut" size={22} color="#6D28D9" />}
                   title="Cut List"
-                  countBadge={planObj.cuts?.length || 0}
+                  countBadge={cuts.length}
                   summary="Cutting guide"
                   onNavigate={() => {
                     console.log('[details] nav section=cuts');
@@ -655,12 +588,12 @@ export default function ProjectDetails() {
                   }}
                 >
                   <View>
-                    {planObj.cuts.map((cut: any, i: number) => (
+                    {cuts.map((cut: any, i: number) => (
                       <View key={i} style={{ 
                         flexDirection: 'row', 
                         justifyContent: 'space-between', 
                         paddingVertical: 10, 
-                        borderBottomWidth: i < planObj.cuts.length - 1 ? 1 : 0,
+                        borderBottomWidth: i < cuts.length - 1 ? 1 : 0,
                         borderBottomColor: '#E5E7EB'
                       }}>
                         <Text style={{ fontSize: 15, color: '#374151', flex: 1 }}>{cut.part}</Text>
@@ -673,7 +606,7 @@ export default function ProjectDetails() {
                   
                   <Pressable
                     onPress={() => {
-                      const text = planObj.cuts.map((c: any) => 
+                      const text = cuts.map((c: any) => 
                         `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} (×${c.qty ?? 1})`
                       ).join('\n');
                       copyText(text);
@@ -689,15 +622,15 @@ export default function ProjectDetails() {
               <SectionCard
                 icon={<Feather name="check-square" size={22} color="#6D28D9" />}
                 title="Build Steps"
-                countBadge={planObj.steps?.length || 0}
-                summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (planObj.steps?.length || 1)) * 100)}% complete` : `${planObj.steps?.length || 0} steps`}
+                countBadge={steps.length}
+                summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (steps.length || 1)) * 100)}% complete` : `${steps.length} steps`}
                 onNavigate={() => {
                   console.log('[details] nav section=steps');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' });
                 }}
                 defaultOpen
               >
-                {planObj.steps?.length ? (
+                {steps.length ? (
                   <>
                     {/* Progress bar */}
                     {completedSteps.length > 0 && (
@@ -705,13 +638,13 @@ export default function ProjectDetails() {
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
                           <Text style={{ fontSize: 13, color: '#6B7280' }}>Progress</Text>
                           <Text style={{ fontSize: 13, fontWeight: '600', color: '#6D28D9' }}>
-                            {completedSteps.length}/{planObj.steps.length} steps
+                            {completedSteps.length}/{steps.length} steps
                           </Text>
                         </View>
                         <View style={{ height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
                           <View style={{ 
                             height: '100%', 
-                            width: `${(completedSteps.length / planObj.steps.length) * 100}%`, 
+                            width: `${(completedSteps.length / steps.length) * 100}%`, 
                             backgroundColor: '#6D28D9' 
                           }} />
                         </View>
@@ -719,7 +652,7 @@ export default function ProjectDetails() {
                     )}
 
                     <View style={{ marginBottom: 16 }}>
-                      {planObj.steps.slice(0, 10).map((step: any, i: number) => {
+                      {steps.slice(0, 10).map((step: any, i: number) => {
                         const stepTitle = typeof step === 'string' ? step : (step.title || `Step ${i + 1}`);
                         const stepTime = typeof step === 'object' ? step.estimatedTime || step.time_minutes : null;
                         const isCompleted = completedSteps.includes(i);
@@ -778,7 +711,7 @@ export default function ProjectDetails() {
                       </Pressable>
                       <Pressable
                         onPress={() => {
-                          const text = planObj.steps.map((s: any, i: number) => 
+                          const text = steps.map((s: any, i: number) => 
                             `${completedSteps.includes(i) ? '✓' : '☐'} ${i + 1}. ${typeof s === 'string' ? s : s.title}`
                           ).join('\n');
                           copyText(text);
@@ -795,7 +728,7 @@ export default function ProjectDetails() {
               </SectionCard>
 
               {/* 5. Finishing (only if applicable) */}
-              {planObj.finishing && planObj.finishing.length > 0 && (
+              {finishing.length > 0 && (
                 <SectionCard
                   icon={<MaterialCommunityIcons name="shimmer" size={22} color="#6D28D9" />}
                   title="Finishing"
@@ -806,7 +739,7 @@ export default function ProjectDetails() {
                   }}
                 >
                   <View>
-                    {planObj.finishing.map((item: any, i: number) => (
+                    {finishing.map((item: any, i: number) => (
                       <View key={i} style={{ marginBottom: 12 }}>
                         {item.title && (
                           <Text style={{ fontSize: 15, fontWeight: '600', color: '#374151', marginBottom: 4 }}>
