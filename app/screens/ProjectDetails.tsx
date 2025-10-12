@@ -682,24 +682,6 @@ export default function ProjectDetails() {
                     })}
                   </View>
                 )}
-
-                {/* Copy button */}
-                <Pressable
-                  onPress={() => {
-                    const matText = materials.map((m: any) => 
-                      `• ${m.name}${m.qty ? ` (${m.qty}${m.unit ? ' ' + m.unit : ''})` : ''}${m.price ? ` - $${m.price}` : ''}`
-                    ).join('\n');
-                    const toolText = tools.map((t: any) => {
-                      const tool = typeof t === 'string' ? { name: t } : t;
-                      return `• ${tool.name}${tool.rentalPrice ? ` (~$${tool.rentalPrice})` : ''}`;
-                    }).join('\n');
-                    const text = `MATERIALS:\n${matText}\n\nTOOLS:\n${toolText}`;
-                    copyText(text);
-                  }}
-                  style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginTop: 12 }}
-                >
-                  <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy Shopping List</Text>
-                </Pressable>
               </SectionCard>
 
               {/* 3. Cut List */}
@@ -743,18 +725,6 @@ export default function ProjectDetails() {
                       </View>
                     ))}
                   </View>
-                  
-                  <Pressable
-                    onPress={() => {
-                      const text = cuts.map((c: any) => 
-                        `${c.part}: ${c.width && c.height ? `${c.width}" × ${c.height}"` : c.size} (×${c.qty ?? 1})`
-                      ).join('\n');
-                      copyText(text);
-                    }}
-                    style={{ backgroundColor: '#EDE9FE', paddingVertical: 10, borderRadius: 10, alignItems: 'center', marginTop: 12 }}
-                  >
-                    <Text style={{ color: '#6D28D9', fontWeight: '600', fontSize: 14 }}>Copy Cut List</Text>
-                  </Pressable>
                 </SectionCard>
               )}
 
@@ -902,7 +872,16 @@ export default function ProjectDetails() {
               
               {/* Share Plan Button */}
               <TouchableOpacity
-                onPress={() => simpleToast('Share feature coming soon')}
+                onPress={async () => {
+                  try {
+                    const text = formatPlanText(project, { overview, materials, tools, cuts, steps });
+                    const res = await Share.share({ message: text, title: project?.name ?? 'DIY Plan' });
+                    console.log('[ui] share', { action: res.action });
+                  } catch (e) {
+                    console.error('[ui] share error', e);
+                    simpleToast('Could not open share sheet');
+                  }
+                }}
                 style={{ 
                   backgroundColor: '#6D28D9', 
                   borderRadius: 16, 
