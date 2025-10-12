@@ -105,13 +105,26 @@ export async function ensureProjectForDraft(draft: NewProjectDraft): Promise<str
     console.log('[project create] name sanitized to empty/invalid; using fallback', { fallback });
     cleanName = fallback;
   }
-  const payload = {
+  
+  // Include AR measurement data if present
+  const measurement = draft?.measurement;
+  const pxPerIn = measurement?.px_per_in ?? null;
+  const dims = (measurement?.width_in != null && measurement?.height_in != null) 
+    ? { width_in: measurement.width_in, height_in: measurement.height_in }
+    : null;
+  
+  const payload: any = {
     name: cleanName,
     description: v.description.trim(),
     budget: v.budget,
     skill_level: v.skill,
   };
+  
+  if (pxPerIn != null) payload.scale_px_per_in = pxPerIn;
+  if (dims != null) payload.dimensions_json = dims;
+  
   console.log('[project create] payload', payload);
+  console.log('[create] ar saved', { pxPerIn, dims: !!dims });
 
   // First attempt - use the helper that handles all response shapes
   let id: string;

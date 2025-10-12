@@ -377,6 +377,8 @@ export async function createProjectAndReturnId(payload: {
   description: string;
   budget: string;
   skill_level: string;
+  scale_px_per_in?: number;
+  dimensions_json?: any;
 }): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const user_id = data?.session?.user?.id;
