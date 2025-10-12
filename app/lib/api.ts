@@ -1,11 +1,20 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
 
-const extras = (Constants?.expoConfig as any)?.extra ?? {};
-const configApiBase = extras.apiBase || 'https://api.diygenieapp.com';
+function trimSlash(s?: string){ return (s || '').replace(/\/+$/,''); }
+function stripApiSuffix(s?: string){ return (s || '').replace(/\/api\/?$/,''); }
+export function joinUrl(base: string, path: string){
+  return `${trimSlash(base)}/${path.replace(/^\/+/,'')}`;
+}
 
-export const BASE = configApiBase;
-export const API_BASE = configApiBase;
+const extras = (Constants?.expoConfig as any)?.extra ?? {};
+const RAW_API_BASE = extras.apiBase || 'https://api.diygenieapp.com';
+export const API_BASE = stripApiSuffix(trimSlash(RAW_API_BASE)) || 'https://api.diygenieapp.com';
+
+const RAW_PREVIEW = extras.previewApiBase || RAW_API_BASE;
+export const PREVIEW_API_BASE = stripApiSuffix(trimSlash(RAW_PREVIEW)) || API_BASE;
+
+export const BASE = API_BASE;
 
 export async function api(path: string, init: RequestInit = {}) {
   const url = `${BASE}${path}`;

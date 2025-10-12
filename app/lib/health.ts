@@ -1,8 +1,13 @@
-import { API_BASE } from './api';
+import { API_BASE, joinUrl } from './api';
 
 export async function softHealthCheck(base = API_BASE) {
   try {
-    const res = await fetch(`${base}/health/full`, { method: 'GET' });
+    let url = joinUrl(base, 'health/full');
+    let res = await fetch(url);
+    if (res.status === 404) {
+      url = joinUrl(base, 'api/health/full');
+      res = await fetch(url);
+    }
     if (!res.ok) return console.warn('[health] non-200', res.status);
     const json = await res.json();
     console.log('[health] ok', { modes: json?.modes, uptime_s: json?.uptime_s });
