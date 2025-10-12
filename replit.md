@@ -71,10 +71,11 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Bundle Identifiers**: iOS (`com.diygenie.app`) and Android (`com.diygenie.app`) configured for store submission.
 - **Production Assets**: 
   - App Icon: `Icon.png` (1024×1024)
-  - Splash: `splash.png` (1024×1024, needs resize to ≥1242×2688 for iPhone)
+  - Splash: `splash.png` (1290×2796, iPhone 17 Pro Max native)
   - Adaptive Icon: `adaptive-icon.png` (1024×1024, Android)
   - Favicon: `favicon.png` (1024×1024, Web)
   - Screenshots: Metadata structure in `assets/screenshots/ios/` for iPhone 17 Pro/Pro Max (8 screens, light/dark)
+- **Splash Generator**: Automated script `scripts/gen-splash.js` creates 1290×2796 gradient splash with centered logo (38% width, 6% padding).
 - **Assets Report**: Comprehensive audit in `docs/assets-report.md` with device specs, contrast checks, and App Store captions.
 
 ### Error Handling & Monitoring

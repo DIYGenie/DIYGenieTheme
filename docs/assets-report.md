@@ -13,7 +13,7 @@
 | Asset | Path | Dimensions | Size | Status | Notes |
 |-------|------|------------|------|--------|-------|
 | **App Icon** | `assets/Icon.png` | 1024×1024 | 288KB | ✅ Pass | Meets minimum 1024×1024 requirement |
-| **Splash Screen** | `assets/splash.png` | 1024×1024 | 288KB | ⚠️ Warning | **Needs update to ≥ 1242×2688 for iPhone compatibility** |
+| **Splash Screen** | `assets/splash.png` | 1290×2796 | 153KB | ✅ Pass | **iPhone 17 Pro Max native resolution** |
 | **Adaptive Icon** | `assets/adaptive-icon.png` | 1024×1024 | 288KB | ✅ Pass | Square, suitable for Android |
 | **Favicon** | `assets/favicon.png` | 1024×1024 | 288KB | ✅ Pass | Web icon |
 
@@ -83,21 +83,21 @@ android: {
 
 ---
 
-## ⚠️ Action Items
+## ✅ Splash Screen Generator
 
-### Critical: Update Splash Screen
+### Automated Solution Implemented
 
-**Current Issue**: `splash.png` is 1024×1024, needs to be **≥ 1242×2688** for iPhone compatibility.
+**Generator Script**: `scripts/gen-splash.js`
+- **Output**: 1290×2796 PNG (iPhone 17 Pro Max native resolution)
+- **Design**: Purple → White gradient (#8B5CF6 → #FFFFFF)
+- **Logo**: Centered Icon.png at 38% width with 6% padding
+- **Usage**: `node scripts/gen-splash.js`
 
-**Recommended Dimensions**:
-- **Minimum**: 1242×2688 (iPhone Pro Max portrait)
-- **Recommended**: 1290×2796 (iPhone 17 Pro Max native)
-
-**Design Specs**:
-- Purple → White gradient background
-- Centered DIY Genie icon/logo
-- ResizeMode: "contain"
-- Background color: #8B5CF6 (purple-600)
+**Current Splash**:
+- ✅ Dimensions: 1290×2796
+- ✅ Format: PNG (153KB)
+- ✅ Gradient: #8B5CF6 → #FFFFFF (top to bottom)
+- ✅ Logo: Centered, properly scaled
 
 ### Screenshot Capture Process
 
@@ -127,7 +127,7 @@ Since app testing is currently off, screenshots should be captured during TestFl
 |-------------|--------|---------|
 | App Icon ≥ 1024×1024 | ✅ Pass | 1024×1024 PNG |
 | Adaptive Icon (square) | ✅ Pass | 1024×1024 PNG, transparent bg |
-| Splash Screen ≥ 1242×2688 | ❌ **Needs Update** | Currently 1024×1024 |
+| Splash Screen ≥ 1242×2688 | ✅ Pass | **1290×2796 PNG (iPhone 17 Pro Max)** |
 | Contrast ≥ 4.5:1 | ✅ Pass | 6.4:1 (purple/white) |
 | 8 Screenshots | 🔄 Ready | Structure + metadata created |
 | iPhone 17 Support | ✅ Ready | Config updated for latest devices |
@@ -141,13 +141,14 @@ Since app testing is currently off, screenshots should be captured during TestFl
 ```
 [assets] audit {
   icon: ✅ 1024×1024,
-  splash: ⚠️  1024×1024 (needs resize to ≥1242×2688),
+  splash: ✅ 1290×2796 (iPhone 17 Pro Max native),
   adaptive: ✅ 1024×1024,
   screenshots: 8 (metadata ready),
   contrast: "pass (6.4:1)",
   devices: ["iPhone 17 Pro (6.1\")", "iPhone 17 Pro Max (6.7\")"],
   config: "updated",
-  dark_mode: "enabled"
+  dark_mode: "enabled",
+  generator: "scripts/gen-splash.js"
 }
 ```
 
@@ -155,7 +156,7 @@ Since app testing is currently off, screenshots should be captured during TestFl
 
 ## 📝 Next Steps
 
-1. **Update splash.png** to 1242×2688 or larger
+1. ~~**Update splash.png** to 1242×2688 or larger~~ ✅ **Complete** (1290×2796)
 2. **Capture screenshots** from TestFlight build:
    - Use iPhone 17 Pro Max for primary frames
    - Use iPhone 17 Pro for secondary frames
