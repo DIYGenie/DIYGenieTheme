@@ -64,7 +64,7 @@ export default function ProjectDetails() {
   const loadPlanIfNeeded = useCallback(async () => {
     if (!projectId || !project) return;
     
-    const ready = /ready/.test(String(project?.plan_status || project?.status || '').toLowerCase()) && 
+    const ready = /ready|active/.test(String(project?.plan_status || project?.status || '').toLowerCase()) && 
                  !/requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
     
     if (ready && !planObj) {
