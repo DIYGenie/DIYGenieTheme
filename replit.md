@@ -21,12 +21,11 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **New Project Workflow**: Guides users through project creation with form validation, versioned draft persistence to AsyncStorage, and smart navigation. Includes robust error handling and project name sanitization.
 - **Build with AI on NewProject**: Features primary (visual mockup) and secondary (plan only) CTAs for building projects, displaying loading states and graceful error handling.
 - **Visual AI Preview Integration**: Live preview generation system for "Build with visual mockup" button, with parallel plan and preview job execution, plan-first polling, and background preview completion. Preview URLs persist in project records. Cache warming ensures ProjectDetails loads populated on first arrival. Projects are automatically marked as 'active' when plan is ready.
-- **Immediate Plan Loading**: Plan content loads instantly on first arrival to ProjectDetails, with `useFocusEffect` triggering `loadPlanIfNeeded()` and cache-busting for fresh data.
+- **Direct Plan Rendering from Supabase**: Plan data loads directly from the `plan_json` column in Supabase (no markdown parsing or local caching). Data is normalized into typed arrays (materials, tools, cuts, steps, finishing, overview) with safe defaults. Includes automatic refetch if plan is empty after active status (handles webhook race conditions).
 - **Project Details Display**: Shows real-time project info with a single hero image system (`preview_url` → scan image → skeleton if queued/processing → nothing`) and 5 focused expandable sections using `SectionCard` (Overview, Materials + Tools, Cut List, Build Steps, Finishing). Includes progress tracking, preview status polling, always-fresh plan refetch on focus, and an icon-only "Save to Photos" button (44px tap target).
 - **Plan Viewing**:
-    - `ProjectDetails`: At-a-glance expandable summary with interactive progress tracking.
+    - `ProjectDetails`: At-a-glance expandable summary with interactive progress tracking, directly rendering from plan_json arrays.
     - `DetailedInstructions`: Comprehensive visual builder's guide with rich formatting, including step numbers, photo placeholders, context callouts, pro tips, quality checks, and common pitfalls.
-- **Local Plan Storage & Fallback**: Utilizes AsyncStorage for plan caching, offering instant loading and fallback plans, with an offline mode indicator.
 - **Progress Tracking**: Database-backed progress tracking with `completed_steps` and `current_step_index` fields via `/api/projects/:id/progress` endpoints.
 - **Authentication**: Supabase email/password authentication via `AuthGate Provider`, with sign-in, sign-up, and sign-out functionality, and authentication guards in the project creation flow.
 - **AR Scan Event System**: Provides helpers for saving AR scan data (ROI) and managing the room scanning flow.
