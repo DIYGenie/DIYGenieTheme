@@ -14,7 +14,7 @@ import * as Linking from 'expo-linking';
 import { brand, colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { api, apiRaw, requestProjectPreview, pollProjectReady, patchProject } from '../lib/api';
+import { api, apiRaw, requestProjectPreview, pollProjectReady, patchProject, submitPreview, getPreviewStatus } from '../lib/api';
 import { PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { saveRoomScan } from '../features/scans/saveRoomScan';
 import { useAuth } from '../hooks/useAuth';
@@ -84,6 +84,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
   const [uploading, setUploading] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [previewStatusMsg, setPreviewStatusMsg] = useState('');
   
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -767,52 +768,128 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         console.warn('[link scan]', e);
       }
       
-      // 4) Show loading state
-      setIsBuilding(true);
-      setIsPreviewing(true);
+      // 4) Submit preview
+      console.log('[preview ui] submit', { projectId });
+      const previewRes = await submitPreview(projectId);
       
-      // 5) Start plan build job
-      const res = await apiRaw(`/api/projects/${projectId}/build-without-preview?user_id=${encodeURIComponent(user.id)}`, {
-        method: 'POST',
-      });
-      console.log('[build] accepted', res);
-      
-      // 6) Start preview job in parallel (fire and forget)
-      const { startPreview } = await import('../lib/api');
-      startPreview(projectId, lastScan?.roi).catch((e) => {
-        console.log('[preview] start failed (non-blocking)', e);
-      });
-      
-      // 7) Poll for plan ready (not preview)
-      const pollRes = await pollProjectReady(projectId, { tries: 40, interval: 2000 });
-      
-      setIsBuilding(false);
-      setIsPreviewing(false);
-      
-      if (pollRes.ok) {
-        // 8) Warm cache before navigation
-        const { fetchProjectPlanMarkdown } = await import('../lib/api');
-        await fetchProjectPlanMarkdown(projectId, { cacheBust: true }).catch(() => null);
-        console.log('[cache] warmed before nav');
+      if (previewRes.ok && previewRes.jobId) {
+        setPreviewStatusMsg('Preview: queued…');
+        setIsPreviewing(true);
         
-        // 9) Mark project as active (promote out of draft)
-        const { data: sessionData } = await supabase.auth.getSession();
-        const user_id = sessionData?.session?.user?.id;
-        const patchPayload = { user_id, status: 'active' };
-        console.log('[build] PATCH payload', { user_id: !!user_id, status: 'active' });
+        // 5) Start polling for preview status
+        const maxAttempts = 24;
+        const pollInterval = 2500;
+        let attempt = 0;
+        let previewReady = false;
+        let previewUrl: string | null = null;
         
-        try {
-          await patchProject(projectId, patchPayload);
-          console.log('[project] marked active');
-        } catch (e: any) {
-          if (e?.message?.includes('404')) {
-            console.log('[build] PATCH 404 (likely old deploy) – continuing');
-          } else {
-            console.warn('[build] PATCH failed', e?.message);
+        const pollAbort = new AbortController();
+        
+        const pollPreview = async () => {
+          while (attempt < maxAttempts && !pollAbort.signal.aborted) {
+            attempt++;
+            
+            const statusRes = await getPreviewStatus(projectId);
+            console.log('[preview ui] poll', { projectId, attempt, status: statusRes.status });
+            
+            if (statusRes.ok && statusRes.status === 'ready' && statusRes.preview_url) {
+              previewReady = true;
+              previewUrl = statusRes.preview_url;
+              console.log('[preview ui] ready', { projectId, hasUrl: !!previewUrl });
+              
+              // Update local cache optimistically
+              try {
+                const { data: proj } = await supabase
+                  .from('projects')
+                  .update({ 
+                    preview_url: previewUrl,
+                    preview_status: 'ready'
+                  })
+                  .eq('id', projectId)
+                  .select()
+                  .single();
+                console.log('[preview ui] cache updated', { id: proj?.id });
+              } catch (e) {
+                console.warn('[preview ui] cache update failed', e);
+              }
+              
+              break;
+            }
+            
+            if (!pollAbort.signal.aborted) {
+              await new Promise(r => setTimeout(r, pollInterval));
+            }
           }
-        }
+          
+          setIsPreviewing(false);
+          setPreviewStatusMsg('');
+          
+          // 6) Navigate to ProjectDetails
+          if (!previewReady) {
+            console.warn('[preview ui] timeout', { projectId, attempts: attempt });
+            setToastMessage('Preview is still processing, it will appear shortly.');
+            setToastType('success');
+            setTimeout(() => setToastMessage(''), 4000);
+          }
+          
+          // 7) Clear form
+          try {
+            clearingRef.current = true;
+            await clearNewProjectDraft?.();
+            setDraftId(null);
+            setTitle('');
+            setDescription('');
+            setBudget('');
+            setSkillLevel('');
+            setPhotoUri(null);
+            setLastScan(null);
+            lastScanRef.current = null;
+            console.log('[media] cleared after build (with preview)');
+            setTimeout(() => { clearingRef.current = false; }, 0);
+          } catch {}
+          
+          // 8) Navigate to ProjectDetails
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Main',
+                  state: {
+                    type: 'tab',
+                    index: 2,
+                    routes: [
+                      { name: 'Home' },
+                      { name: 'NewProject' },
+                      {
+                        name: 'Projects',
+                        state: {
+                          type: 'stack',
+                          index: 1,
+                          routes: [
+                            { name: 'ProjectsList' },
+                            { name: 'ProjectDetails', params: { id: projectId } },
+                          ],
+                        },
+                      },
+                      { name: 'Profile' },
+                    ],
+                  },
+                },
+              ],
+            })
+          );
+        };
         
-        // 10) Clear form
+        pollPreview();
+      } else {
+        // Preview submit failed, fall back to normal navigation
+        console.warn('[preview ui] submit failed', { ok: previewRes.ok });
+        setToastMessage('Preview generation unavailable, continuing with scan image.');
+        setToastType('error');
+        setTimeout(() => setToastMessage(''), 4000);
+        
+        // Clear form and navigate
         try {
           clearingRef.current = true;
           await clearNewProjectDraft?.();
@@ -824,11 +901,9 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
           setPhotoUri(null);
           setLastScan(null);
           lastScanRef.current = null;
-          console.log('[media] cleared after build (with preview)');
           setTimeout(() => { clearingRef.current = false; }, 0);
         } catch {}
         
-        // 11) Navigate to ProjectDetails (preview will swap in via background polling)
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -848,7 +923,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                         index: 1,
                         routes: [
                           { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id: projectId, justBuilt: true } },
+                          { name: 'ProjectDetails', params: { id: projectId } },
                         ],
                       },
                     },
@@ -859,13 +934,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             ],
           })
         );
-      } else {
-        Alert.alert('Still building', 'Plan is taking longer than usual. You can continue and check the Projects tab.');
       }
     } catch (e) {
-      console.error('[build] error', e);
+      console.error('[preview ui] error', e);
       setIsPreviewing(false);
-      setIsBuilding(false);
+      setPreviewStatusMsg('');
       Alert.alert('Build failed', 'Could not start build. Please try again.');
     }
   }

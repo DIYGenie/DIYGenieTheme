@@ -626,3 +626,45 @@ export async function pollPreviewReady(projectId: string, timeoutMs = 60000) {
   
   throw new Error('PREVIEW_TIMEOUT');
 }
+
+export async function submitPreview(projectId: string): Promise<{ ok: boolean; jobId?: string; mode?: 'stub' | 'live' }> {
+  try {
+    const res = await fetch(`${PREVIEW_API_BASE}/preview/decor8`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId })
+    });
+    
+    const data = await res.json().catch(() => ({}));
+    return { 
+      ok: res.ok, 
+      jobId: data.jobId || data.job_id,
+      mode: data.mode 
+    };
+  } catch (e) {
+    console.error('[submitPreview] error', e);
+    return { ok: false };
+  }
+}
+
+export async function getPreviewStatus(projectId: string): Promise<{ ok: boolean; status: string; preview_url?: string | null }> {
+  try {
+    const res = await fetch(`${PREVIEW_API_BASE}/preview/status/${projectId}`, {
+      method: 'GET'
+    });
+    
+    if (!res.ok) {
+      return { ok: false, status: 'error' };
+    }
+    
+    const data = await res.json();
+    return {
+      ok: true,
+      status: data.status || 'unknown',
+      preview_url: data.preview_url || data.url || null
+    };
+  } catch (e) {
+    console.error('[getPreviewStatus] error', e);
+    return { ok: false, status: 'error' };
+  }
+}
