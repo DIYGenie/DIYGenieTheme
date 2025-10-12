@@ -62,7 +62,7 @@ module.exports = {
     extra: {
       appEnv: APP_ENV,
       apiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev",
-      previewApiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev",
+      previewApiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev/api" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev/api",
     }
   }
 };
