@@ -74,10 +74,12 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 ### Error Handling & Monitoring
 - **Error Boundary**: React ErrorBoundary component (`app/components/ErrorBoundary.tsx`) catches and displays user-friendly crash screens.
 - **Global Error Handler**: Production-ready error logging with `ErrorUtils.setGlobalHandler` for fatal errors.
-- **Health Check**: Non-blocking startup health check (`app/lib/health.ts`) logs backend status on app boot.
+- **Health Check**: Non-blocking startup health check (`app/lib/health.ts`) with automatic fallback from `/health/full` to `/api/health/full` if 404. Gracefully handles missing endpoints.
 - **Console Management**: Production mode silences debug logs while preserving warnings and errors.
+- **Diagnostics Screen**: Hidden diagnostics screen (`app/screens/Diagnostics.tsx`) accessible via 7-tap reveal on version label in Profile. Shows app version, environment, API base, and manual health check trigger for TestFlight reviewers.
 
 ### API Configuration
 - **Runtime Environment**: Uses `Constants.expoConfig.extra` to read API bases from app.config.js.
+- **URL Normalization**: Automatic stripping of `/api` suffix from base URLs with `joinUrl()` helper to prevent double-path issues.
 - **Fallback URLs**: All API helpers default to `https://api.diygenieapp.com` if config extras unavailable.
 - **Environment Variables**: APP_ENV determines production vs development behavior.
