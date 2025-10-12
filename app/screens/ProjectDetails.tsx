@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
 import { fetchProjectById, fetchLatestScanForProject, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
@@ -12,6 +12,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import RulerOverlay from '../components/RulerOverlay';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -30,6 +31,8 @@ export default function ProjectDetails() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [measure, setMeasure] = useState<MeasureResult | null>(null);
+  const [showRuler, setShowRuler] = useState(false);
+  const [heroW, setHeroW] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
 
@@ -129,6 +132,11 @@ export default function ProjectDetails() {
     }
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
+
+  const onHeroLayout = useCallback((e: any) => {
+    const w = e?.nativeEvent?.layout?.width ?? 0;
+    if (w && w !== heroW) setHeroW(w);
+  }, [heroW]);
 
   const planReady = /ready|active/i.test(project?.status ?? '');
 
@@ -300,18 +308,20 @@ export default function ProjectDetails() {
           {/* Single Hero Image - Priority: preview → scan → nothing */}
           {heroSource ? (
             <View style={{ marginBottom: 20 }}>
-              <View style={{ 
-                position: 'relative', 
-                aspectRatio: 16/9, 
-                borderRadius: 16, 
-                overflow: 'hidden', 
-                backgroundColor: '#EEE',
-                shadowColor: '#000', 
-                shadowOpacity: 0.1, 
-                shadowRadius: 8, 
-                shadowOffset: { width: 0, height: 2 }, 
-                elevation: 3 
-              }}>
+              <View 
+                onLayout={onHeroLayout}
+                style={{ 
+                  position: 'relative', 
+                  aspectRatio: 16/9, 
+                  borderRadius: 16, 
+                  overflow: 'hidden', 
+                  backgroundColor: '#EEE',
+                  shadowColor: '#000', 
+                  shadowOpacity: 0.1, 
+                  shadowRadius: 8, 
+                  shadowOffset: { width: 0, height: 2 }, 
+                  elevation: 3 
+                }}>
                 <Image
                   source={{ uri: heroSource }}
                   style={{ width: '100%', height: '100%' }}
@@ -389,6 +399,11 @@ export default function ProjectDetails() {
                   </View>
                 );
               })()}
+              
+              {/* Ruler overlay */}
+              {(showRuler && pxPerIn && heroW > 0) && (
+                <RulerOverlay widthPx={heroW} pxPerIn={pxPerIn} />
+              )}
               </View>
               
               {/* AR measurements badge row & mode display */}
@@ -408,6 +423,21 @@ export default function ProjectDetails() {
                   </Text>
                 )}
               </View>
+              
+              {/* Ruler toggle (only shown when pxPerIn exists) */}
+              {pxPerIn ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, marginBottom: 8 }}>
+                  <Switch 
+                    value={showRuler} 
+                    onValueChange={(val) => {
+                      setShowRuler(val);
+                      console.log('[ruler] toggle', { on: val, pxPerIn, heroW });
+                    }} 
+                  />
+                  <Text style={{ fontSize: 14, opacity: 0.85 }}>Show ruler</Text>
+                  <Text style={{ marginLeft: 8, fontSize: 12, opacity: 0.6 }}>Scale: {pxPerIn.toFixed(2)} px/in</Text>
+                </View>
+              ) : null}
             </View>
           ) : (previewStatus === 'queued' || previewStatus === 'processing') ? (
             <View style={{ marginBottom: 20 }}>
