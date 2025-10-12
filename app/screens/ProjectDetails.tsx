@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase';
 import RulerOverlay from '../components/RulerOverlay';
 import { simpleToast } from '../lib/ui';
 import { formatPlanText } from '../lib/planFormat';
+import { enableLayoutAnimOnce, animateSection } from '../lib/anim';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -40,6 +41,8 @@ export default function ProjectDetails() {
   const abortRef = useRef<AbortController | null>(null);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
 
+  enableLayoutAnimOnce();
+
   useEffect(() => {
     (async () => {
       if (!projectId) return;
@@ -53,6 +56,7 @@ export default function ProjectDetails() {
   }, [projectId]);
 
   const toggleSection = useCallback(async (name: string) => {
+    animateSection(200);
     const next = openSections.includes(name)
       ? openSections.filter(s => s !== name)
       : [...openSections, name];
