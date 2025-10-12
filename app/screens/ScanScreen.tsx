@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Pressable, Alert, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import DraggableRect from '../components/DraggableRect';
 import { saveArScan } from '../lib/scanEvents';
 import { arSupported, startArSession, stopArSession } from '../lib/ar/ArSession';
@@ -11,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getUserId } from '../lib/auth';
 import { startMeasurement, pollMeasurement } from '../lib/measure';
 import { loadNewProjectDraft, saveNewProjectDraft } from '../lib/draft';
+import { saveRoomScan } from '../features/scans/saveRoomScan';
 
 export default function ScanScreen() {
   const navigation = useNavigation();
@@ -25,6 +27,12 @@ export default function ScanScreen() {
   const [arReady, setArReady] = useState(false);
   const usingExpoGo = !(global as any).expo?.modules?.ExpoModules;
   const viewRef = useRef<View>(null);
+  const cameraRef = useRef<any>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+
+  useEffect(() => {
+    requestPermission();
+  }, []);
 
   useEffect(() => {
     if (!projectId) {
@@ -70,14 +78,43 @@ export default function ScanScreen() {
 
     setSaving(true);
     try {
-      console.log('[scan] saveArScan start', { projectId, source: 'ar', roi: norm });
+      let imageUrl: string | undefined;
+      
+      if (cameraRef.current && permission?.granted) {
+        try {
+          console.log('[camera] taking picture...');
+          const photo = await cameraRef.current.takePictureAsync({ 
+            quality: 0.8, 
+            skipProcessing: true 
+          });
+          
+          if (photo?.uri) {
+            console.log('[camera] picture taken', { uri: photo.uri });
+            
+            const userId = await getUserId();
+            const result = await saveRoomScan({
+              uri: photo.uri,
+              source: 'scan',
+              projectId,
+              userId,
+            });
+            
+            imageUrl = result.image_url;
+            console.log('[media] saved scan (AR)', { hasImage: true, imageUrl });
+          }
+        } catch (cameraError: any) {
+          console.log('[camera] failed to take picture', cameraError?.message || cameraError);
+        }
+      }
+      
+      console.log('[scan] saveArScan start', { projectId, source: 'ar', roi: norm, hasImage: !!imageUrl });
       
       const { scanId } = await saveArScan({
         projectId,
         roi: norm,
       });
       
-      console.log('[scan] saved', { scanId });
+      console.log('[scan] saved', { scanId, hasImage: !!imageUrl });
       setScanSaved(true);
       
       const result = { 
@@ -193,18 +230,52 @@ export default function ScanScreen() {
       <View style={{ flex: 1, padding: 16 }}>
         <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 8, color: 'white' }}>Adjust area</Text>
         <Text style={{ fontSize: 14, color: '#9CA3AF', marginBottom: 12 }}>
-          Drag or resize the rectangle to the target spot. (Camera disabled in this preview.)
+          {permission?.granted 
+            ? 'Drag or resize the purple box to frame your target area.' 
+            : 'Camera permission required to scan.'}
         </Text>
 
-        {/* Camera preview placeholder with adjustable ROI */}
-        <View style={{ backgroundColor: '#111827', borderRadius: 16, padding: 8, alignItems: 'center', flex: 1, overflow: 'visible' }} pointerEvents="box-none">
-          <DraggableRect
-            initial={norm}
-            onChange={(n) => {
-              setNorm(n);
-            }}
-            style={{ width: '100%' }}
-          />
+        {/* Live camera view with adjustable ROI */}
+        <View style={{ borderRadius: 16, overflow: 'hidden', flex: 1 }}>
+          {permission?.granted ? (
+            <CameraView
+              ref={cameraRef}
+              style={{ flex: 1 }}
+              facing="back"
+              onCameraReady={() => console.log('[camera] ready')}
+              onMountError={(e) => console.error('[camera] mount error', e)}
+            >
+              <View style={{
+                position: 'absolute',
+                borderWidth: 3,
+                borderColor: '#8B5CF6',
+                borderRadius: 8,
+                left: '30%',
+                top: '25%',
+                width: '40%',
+                height: '50%',
+              }} />
+            </CameraView>
+          ) : (
+            <View style={{ backgroundColor: '#111827', flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              <Ionicons name="camera-outline" size={48} color="#9CA3AF" />
+              <Text style={{ color: '#9CA3AF', marginTop: 12, textAlign: 'center' }}>
+                Camera permission required
+              </Text>
+              <Pressable
+                onPress={requestPermission}
+                style={{ 
+                  backgroundColor: '#7C3AED', 
+                  paddingVertical: 12, 
+                  paddingHorizontal: 24, 
+                  borderRadius: 8, 
+                  marginTop: 16 
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>Grant Permission</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
 
