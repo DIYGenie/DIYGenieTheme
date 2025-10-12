@@ -391,16 +391,23 @@ export default function ProjectDetails() {
               })()}
               </View>
               
-              {/* AR measurements badge row */}
-              {(pxPerIn || widthIn || heightIn || depthIn || diagIn) && (
-                <View style={{ flexDirection: 'row', gap: 12, paddingVertical: 8 }}>
-                  {pxPerIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Scale: {pxPerIn.toFixed(2)} px/in</Text>}
-                  {widthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>W: {widthIn.toFixed(1)}"</Text>}
-                  {heightIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>H: {heightIn.toFixed(1)}"</Text>}
-                  {depthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>D: {depthIn.toFixed(1)}"</Text>}
-                  {diagIn   != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Diag: {diagIn.toFixed(1)}"</Text>}
-                </View>
-              )}
+              {/* AR measurements badge row & mode display */}
+              <View style={{ paddingVertical: 8 }}>
+                {(pxPerIn || widthIn || heightIn || depthIn || diagIn) && (
+                  <View style={{ flexDirection: 'row', gap: 12, marginBottom: 6 }}>
+                    {pxPerIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Scale: {pxPerIn.toFixed(2)} px/in</Text>}
+                    {widthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>W: {widthIn.toFixed(1)}"</Text>}
+                    {heightIn != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>H: {heightIn.toFixed(1)}"</Text>}
+                    {depthIn  != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>D: {depthIn.toFixed(1)}"</Text>}
+                    {diagIn   != null && <Text style={{ fontSize: 12, opacity: 0.8 }}>Diag: {diagIn.toFixed(1)}"</Text>}
+                  </View>
+                )}
+                {project?.preview_meta?.mode && (
+                  <Text style={{ fontSize: 12, opacity: 0.6 }}>
+                    Mode: {project.preview_meta.mode}
+                  </Text>
+                )}
+              </View>
             </View>
           ) : (previewStatus === 'queued' || previewStatus === 'processing') ? (
             <View style={{ marginBottom: 20 }}>
