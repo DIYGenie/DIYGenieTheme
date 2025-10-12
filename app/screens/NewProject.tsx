@@ -1403,34 +1403,39 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             
             <View style={{ gap: 14, marginTop: 12 }}>
               {/* Primary: Build with visual mockup */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Build with visual mockup"
-                disabled={!canSubmit || isBuilding}
-                onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                onPress={handleBuildWithPreview}
-                style={[
-                  CTA.wrap,
-                  CTA.primary,
-                  (!canSubmit || isBuilding) && CTA.disabled,
-                  { borderRadius: 16 }
-                ]}
-              >
-                <View style={CTA.row}>
-                  <Text style={[CTA.title, { color: '#fff' }]}>
-                    Build with visual mockup
-                  </Text>
-                  <Text style={[CTA.sub, { color: 'rgba(255,255,255,0.9)' }]} numberOfLines={2}>
-                    Visual mockup of your space + complete build plan
-                  </Text>
-                  {isBuilding && (
-                    <View style={{ marginTop: 10 }}>
-                      <ActivityIndicator size="small" color="#fff" />
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Build with visual mockup"
+                  disabled={!canSubmit || isBuilding || isPreviewing}
+                  onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                  onPress={handleBuildWithPreview}
+                  style={[
+                    CTA.wrap,
+                    CTA.primary,
+                    (!canSubmit || isBuilding || isPreviewing) && CTA.disabled,
+                    { borderRadius: 16 }
+                  ]}
+                >
+                  <View style={CTA.row}>
+                    <Text style={[CTA.title, { color: '#fff' }]}>
+                      Build with visual mockup
+                    </Text>
+                    <Text style={[CTA.sub, { color: 'rgba(255,255,255,0.9)' }]} numberOfLines={2}>
+                      Visual mockup of your space + complete build plan
+                    </Text>
+                    {isPreviewing && previewStatusMsg && (
+                      <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <ActivityIndicator size="small" color="#fff" />
+                        <Text style={{ color: '#fff', fontSize: 13, fontWeight: '500' }}>
+                          {previewStatusMsg}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
 
               {/* Secondary: Build plan only */}
               <TouchableOpacity
