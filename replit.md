@@ -65,11 +65,17 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 ## Production Configuration
 
 ### Build & Deployment
-- **App Configuration**: Environment-aware `app.config.js` with runtime extras for API base URLs (`apiBase`, `previewApiBase`).
+- **App Configuration**: Environment-aware `app.config.js` with runtime extras for API base URLs (`apiBase`, `previewApiBase`). Supports automatic dark mode via `userInterfaceStyle: "automatic"`.
 - **EAS Build Profiles**: Configured in `eas.json` with development, preview, and production profiles. Production profile auto-increments version.
 - **Version Management**: Automated version bumping via `npm run version:bump` script that updates `package.json` and propagates to iOS buildNumber and Android versionCode.
 - **Bundle Identifiers**: iOS (`com.diygenie.app`) and Android (`com.diygenie.app`) configured for store submission.
-- **Required Assets**: Icon.png, splash.png, adaptive-icon.png, favicon.png in `/assets` directory.
+- **Production Assets**: 
+  - App Icon: `Icon.png` (1024×1024)
+  - Splash: `splash.png` (1024×1024, needs resize to ≥1242×2688 for iPhone)
+  - Adaptive Icon: `adaptive-icon.png` (1024×1024, Android)
+  - Favicon: `favicon.png` (1024×1024, Web)
+  - Screenshots: Metadata structure in `assets/screenshots/ios/` for iPhone 17 Pro/Pro Max (8 screens, light/dark)
+- **Assets Report**: Comprehensive audit in `docs/assets-report.md` with device specs, contrast checks, and App Store captions.
 
 ### Error Handling & Monitoring
 - **Error Boundary**: React ErrorBoundary component (`app/components/ErrorBoundary.tsx`) catches and displays user-friendly crash screens.
