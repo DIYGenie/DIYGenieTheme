@@ -553,6 +553,8 @@ export default function ProjectDetails() {
                 icon={<Ionicons name="information-circle-outline" size={22} color="#6D28D9" />}
                 title="Overview"
                 summary="Project summary"
+                isOpen={openSections.includes('overview')}
+                onToggle={() => toggleSection('overview')}
                 onNavigate={() => {
                   console.log('[details] nav section=overview');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' });
@@ -620,6 +622,19 @@ export default function ProjectDetails() {
                 title="Materials + Tools"
                 countBadge={materials.length + tools.length}
                 summary="Shopping list"
+                isOpen={openSections.includes('materials')}
+                onToggle={() => toggleSection('materials')}
+                headerAction={
+                  <TouchableOpacity onPress={() => {
+                    const combined = [
+                      ...materials.map((m: any) => `${m.name || m.item}${m.quantity ? ` (${m.quantity})` : ''}`),
+                      ...tools.map((t: any) => typeof t === 'string' ? t : t.name)
+                    ];
+                    copyList('materials', combined);
+                  }}>
+                    <Ionicons name="copy-outline" size={20} color="#6D28D9" />
+                  </TouchableOpacity>
+                }
                 onNavigate={() => {
                   console.log('[details] nav section=shopping');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'shopping' });
@@ -693,6 +708,19 @@ export default function ProjectDetails() {
                   title="Cut List"
                   countBadge={cuts.length}
                   summary="Cutting guide"
+                  isOpen={openSections.includes('cuts')}
+                  onToggle={() => toggleSection('cuts')}
+                  headerAction={
+                    <TouchableOpacity onPress={() => {
+                      copyList('cuts', cuts, (c: any) => {
+                        const qty = c.quantity || c.qty || '';
+                        const dims = c.dimensions || c.size || '';
+                        return `${qty ? `${qty}x ` : ''}${c.name || c.item || c.description}${dims ? ` - ${dims}` : ''}`;
+                      });
+                    }}>
+                      <Ionicons name="copy-outline" size={20} color="#6D28D9" />
+                    </TouchableOpacity>
+                  }
                   onNavigate={() => {
                     console.log('[details] nav section=cuts');
                     (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' });
@@ -735,11 +763,12 @@ export default function ProjectDetails() {
                 title="Build Steps"
                 countBadge={steps.length}
                 summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (steps.length || 1)) * 100)}% complete` : `${steps.length} steps`}
+                isOpen={openSections.includes('steps')}
+                onToggle={() => toggleSection('steps')}
                 onNavigate={() => {
                   console.log('[details] nav section=steps');
                   (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' });
                 }}
-                defaultOpen
               >
                 {steps.length ? (
                   <>
@@ -844,6 +873,8 @@ export default function ProjectDetails() {
                   icon={<MaterialCommunityIcons name="shimmer" size={22} color="#6D28D9" />}
                   title="Finishing"
                   summary="Final touches"
+                  isOpen={openSections.includes('finishing')}
+                  onToggle={() => toggleSection('finishing')}
                   onNavigate={() => {
                     console.log('[details] nav section=finishing');
                     (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'finishing' });
@@ -867,6 +898,28 @@ export default function ProjectDetails() {
                   </View>
                 </SectionCard>
               )}
+              
+              {/* Share Plan Button */}
+              <TouchableOpacity
+                onPress={() => simpleToast('Share feature coming soon')}
+                style={{ 
+                  backgroundColor: '#6D28D9', 
+                  borderRadius: 16, 
+                  padding: 16, 
+                  alignItems: 'center', 
+                  marginTop: 20,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 4
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="share-outline" size={20} color="white" />
+                  <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Share Plan</Text>
+                </View>
+              </TouchableOpacity>
             </>
           )}
         </>
