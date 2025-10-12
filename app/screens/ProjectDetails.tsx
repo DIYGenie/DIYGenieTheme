@@ -2,13 +2,11 @@ import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
-import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
 import DimensionsCard from '../components/DimensionsCard';
 import { saveImageToPhotos } from '../lib/media';
-import { getCachedPlan, setCachedPlan } from '../lib/planCache';
 import SectionCard from '../components/SectionCard';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
