@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from
 import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeBack } from '../lib/useSafeBack';
-import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, requestProjectPreview, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
+import { fetchProjectById, fetchLatestScanForProject, fetchProjectPlanMarkdown, fetchProjectProgress, updateProjectProgress, pollScanMeasurement, getMeasurement, MeasureResult } from '../lib/api';
 import StatusBadge from '../components/StatusBadge';
 import { parsePlanMarkdown, Plan } from '../lib/plan';
 import Toast from '../components/Toast';
@@ -30,7 +30,6 @@ export default function ProjectDetails() {
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string; roi?: any; measureResult?: any } | null>(null);
   const [planObj, setPlanObj] = useState<Plan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -188,30 +187,6 @@ export default function ProjectDetails() {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
       Alert.alert('Error', result.message);
-    }
-    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
-  };
-
-  const onGeneratePreview = async () => {
-    if (!projectId) return;
-    setPreviewLoading(true);
-    const r = await requestProjectPreview(projectId);
-    setPreviewLoading(false);
-    
-    // Handle 409 preview already used
-    if (r.status === 409 && r.body?.error === 'preview_already_used') {
-      console.log('[preview] already generated');
-      Alert.alert('Preview already generated', 'Your project preview is ready to view.');
-      load(); // Refresh to show preview
-      return;
-    }
-    
-    if (r.ok) {
-      setToast({ visible: true, message: 'Preview requested. This may take a moment.', type: 'success' });
-      // Refresh project to reflect "preview requested/plan requested" state
-      load();
-    } else {
-      setToast({ visible: true, message: 'Failed to request preview.', type: 'error' });
     }
     setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
@@ -851,27 +826,6 @@ export default function ProjectDetails() {
                 </SectionCard>
               )}
             </>
-          )}
-
-          {/* Generate AI Preview CTA - only show when project exists and preview isn't ready and no preview */}
-          {!!projectId && !statusReady && !isBuilding && !previewUrl && (
-            <View style={{ marginTop: 16 }}>
-              <Pressable
-                onPress={onGeneratePreview}
-                disabled={previewLoading}
-                style={{
-                  backgroundColor: '#7C3AED',
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  alignItems: 'center',
-                  opacity: previewLoading ? 0.7 : 1,
-                }}
-              >
-                <Text style={{ color: 'white', fontWeight: '700' }}>
-                  {previewLoading ? 'Requesting…' : 'Generate AI Preview'}
-                </Text>
-              </Pressable>
-            </View>
           )}
         </>
       )}
