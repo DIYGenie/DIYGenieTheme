@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch, Share } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeBack } from '../lib/useSafeBack';
@@ -15,6 +15,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import RulerOverlay from '../components/RulerOverlay';
 import { simpleToast } from '../lib/ui';
+import { formatPlanText } from '../lib/planFormat';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
