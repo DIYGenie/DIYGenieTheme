@@ -61,8 +61,8 @@ module.exports = {
     },
     extra: {
       appEnv: APP_ENV,
-      apiBase: isProd ? "https://6323c953-7257-419b-8af6-7e45098659dc-00-2lusb44eg5dkr.picard.replit.dev:3001" : "https://6323c953-7257-419b-8af6-7e45098659dc-00-2lusb44eg5dkr.picard.replit.dev:3001",
-      previewApiBase: isProd ? "https://6323c953-7257-419b-8af6-7e45098659dc-00-2lusb44eg5dkr.picard.replit.dev:3001" : "https://6323c953-7257-419b-8af6-7e45098659dc-00-2lusb44eg5dkr.picard.replit.dev:3001",
+      apiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev",
+      previewApiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev",
     }
   }
 };
