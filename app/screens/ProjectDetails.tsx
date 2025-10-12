@@ -58,6 +58,15 @@ export default function ProjectDetails() {
   
   console.log('[details] plan counts', counts);
 
+  // Derive AR scale/dimensions with safe defaults
+  const pxPerIn = typeof project?.scale_px_per_in === 'number' ? project.scale_px_per_in : null;
+  const dims = project?.dimensions_json || {};
+  const widthIn  = typeof dims?.width_in === 'number'  ? dims.width_in  : null;
+  const heightIn = typeof dims?.height_in === 'number' ? dims.height_in : null;
+  const depthIn  = typeof dims?.depth_in === 'number'  ? dims.depth_in  : null;
+  const diagIn   = typeof dims?.diagonal_in === 'number' ? dims.diagonal_in : null;
+  console.log('[details] ar', { pxPerIn, widthIn, heightIn, depthIn, diagIn });
+
   const load = useCallback(async () => {
     if (!projectId) return;
 
