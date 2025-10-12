@@ -61,3 +61,23 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 
 ### Platform Support
 - **iOS, Android, Web**: Cross-platform deployment via Expo.
+
+## Production Configuration
+
+### Build & Deployment
+- **App Configuration**: Environment-aware `app.config.js` with runtime extras for API base URLs (`apiBase`, `previewApiBase`).
+- **EAS Build Profiles**: Configured in `eas.json` with development, preview, and production profiles. Production profile auto-increments version.
+- **Version Management**: Automated version bumping via `npm run version:bump` script that updates `package.json` and propagates to iOS buildNumber and Android versionCode.
+- **Bundle Identifiers**: iOS (`com.diygenie.app`) and Android (`com.diygenie.app`) configured for store submission.
+- **Required Assets**: Icon.png, splash.png, adaptive-icon.png, favicon.png in `/assets` directory.
+
+### Error Handling & Monitoring
+- **Error Boundary**: React ErrorBoundary component (`app/components/ErrorBoundary.tsx`) catches and displays user-friendly crash screens.
+- **Global Error Handler**: Production-ready error logging with `ErrorUtils.setGlobalHandler` for fatal errors.
+- **Health Check**: Non-blocking startup health check (`app/lib/health.ts`) logs backend status on app boot.
+- **Console Management**: Production mode silences debug logs while preserving warnings and errors.
+
+### API Configuration
+- **Runtime Environment**: Uses `Constants.expoConfig.extra` to read API bases from app.config.js.
+- **Fallback URLs**: All API helpers default to `https://api.diygenieapp.com` if config extras unavailable.
+- **Environment Variables**: APP_ENV determines production vs development behavior.
