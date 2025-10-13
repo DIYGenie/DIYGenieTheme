@@ -40,6 +40,11 @@ export default function ProjectDetails() {
   const [openSections, setOpenSections] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
+  
+  const [stubPreviewUrl, setStubPreviewUrl] = useState(null);
+  const [stubPreviewLoading, setStubPreviewLoading] = useState(false);
+  const RAW_BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
+  const API_BASE_URL = RAW_BASE.startsWith('http') ? RAW_BASE : `https://${RAW_BASE}`;
 
   enableLayoutAnimOnce();
 
@@ -180,6 +185,35 @@ export default function ProjectDetails() {
     const w = e?.nativeEvent?.layout?.width ?? 0;
     if (w && w !== heroW) setHeroW(w);
   }, [heroW]);
+
+  const handleGeneratePreview = async () => {
+    try {
+      if (!project || !project.photo_url || !project.prompt) {
+        Alert.alert('Missing data', 'This project needs a photo_url and prompt before generating a preview.');
+        return;
+      }
+      setStubPreviewLoading(true);
+      setStubPreviewUrl(null);
+      const res = await fetch(`${API_BASE_URL}/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photo_url: project.photo_url,
+          prompt: project.prompt,
+          measurements: project.measurements_json || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setStubPreviewUrl(data.preview_url);
+    } catch (err) {
+      Alert.alert('Preview failed', String(err?.message || err));
+    } finally {
+      setStubPreviewLoading(false);
+    }
+  };
 
   const planReady = /ready|active/i.test(project?.status ?? '');
 
@@ -904,6 +938,38 @@ export default function ProjectDetails() {
                   <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Share Plan</Text>
                 </View>
               </TouchableOpacity>
+
+              {/* --- Preview (Decor8 stub) --- */}
+              <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#f3f4f6' }}>
+                <Text style={{ fontWeight: '600', marginBottom: 8 }}>Design Preview</Text>
+                <Pressable
+                  onPress={handleGeneratePreview}
+                  disabled={stubPreviewLoading}
+                  style={({ pressed }) => ({
+                    opacity: stubPreviewLoading ? 0.6 : pressed ? 0.8 : 1,
+                    alignSelf: 'flex-start',
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 10,
+                    backgroundColor: '#6D28D9',
+                    marginBottom: 10
+                  })}
+                  testID="btn-generate-preview"
+                >
+                  <Text style={{ color: 'white', fontWeight: '600' }}>
+                    {stubPreviewLoading ? 'Generating…' : 'Generate Preview'}
+                  </Text>
+                </Pressable>
+                {stubPreviewLoading && <ActivityIndicator size="small" />}
+                {stubPreviewUrl && (
+                  <Image
+                    source={{ uri: stubPreviewUrl }}
+                    style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 10 }}
+                    resizeMode="cover"
+                    testID="img-preview"
+                  />
+                )}
+              </View>
             </>
           )}
         </>
