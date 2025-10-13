@@ -45,6 +45,9 @@ export default function ProjectDetails() {
   const [stubPreviewLoading, setStubPreviewLoading] = useState(false);
   const RAW_BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
   const API_BASE_URL = RAW_BASE.startsWith('http') ? RAW_BASE : `https://${RAW_BASE}`;
+  
+  const [planJson, setPlanJson] = useState(null);
+  const [planLoading, setPlanLoading] = useState(false);
 
   enableLayoutAnimOnce();
 
@@ -212,6 +215,35 @@ export default function ProjectDetails() {
       Alert.alert('Preview failed', String(err?.message || err));
     } finally {
       setStubPreviewLoading(false);
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    try {
+      if (!project || !project.photo_url || !project.prompt) {
+        Alert.alert('Missing data', 'Project needs a photo_url and prompt before generating a plan.');
+        return;
+      }
+      setPlanLoading(true);
+      setPlanJson(null);
+      const res = await fetch(`${API_BASE_URL}/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photo_url: project.photo_url,
+          prompt: project.prompt,
+          measurements: project.measurements_json || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data?.plan) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      setPlanJson(data.plan);
+    } catch (err) {
+      Alert.alert('Plan failed', String(err?.message || err));
+    } finally {
+      setPlanLoading(false);
     }
   };
 
@@ -968,6 +1000,43 @@ export default function ProjectDetails() {
                     resizeMode="cover"
                     testID="img-preview"
                   />
+                )}
+              </View>
+
+              {/* --- Build Plan (OpenAI stub) --- */}
+              <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#eef2ff' }}>
+                <Text style={{ fontWeight: '600', marginBottom: 8 }}>Build Plan</Text>
+                <Pressable
+                  onPress={handleGeneratePlan}
+                  disabled={planLoading}
+                  style={({ pressed }) => ({
+                    opacity: planLoading ? 0.6 : pressed ? 0.8 : 1,
+                    alignSelf: 'flex-start',
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 10,
+                    backgroundColor: '#6D28D9',
+                    marginBottom: 10
+                  })}
+                  testID="btn-generate-plan"
+                >
+                  <Text style={{ color: 'white', fontWeight: '600' }}>
+                    {planLoading ? 'Generating…' : 'Generate Plan'}
+                  </Text>
+                </Pressable>
+                {planLoading && <ActivityIndicator size="small" />}
+                {planJson && (
+                  <View testID="plan-summary" style={{ gap: 6 }}>
+                    <Text style={{ fontWeight: '600' }}>{planJson.overview}</Text>
+                    <Text>Materials: {Array.isArray(planJson.materials) ? planJson.materials.length : 0}</Text>
+                    <Text>Tools: {Array.isArray(planJson.tools) ? planJson.tools.length : 0}</Text>
+                    <Text>Steps: {Array.isArray(planJson.steps) ? planJson.steps.length : 0}</Text>
+                    {planJson.estimation && (
+                      <Text>
+                        Est: ${(planJson.estimation.grand_total ?? 0).toFixed ? planJson.estimation.grand_total.toFixed(2) : planJson.estimation.grand_total}
+                      </Text>
+                    )}
+                  </View>
                 )}
               </View>
             </>
