@@ -689,6 +689,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         } catch {}
         
         // Reset navigation to Projects tab with ProjectsList → ProjectDetails stack
+        // Pass both id and projectId to avoid param name mismatch.
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
@@ -708,7 +709,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                         index: 1,
                         routes: [
                           { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id, justBuilt: true } },
+                          { name: 'ProjectDetails', params: { id, projectId: id, justBuilt: true } },
                         ],
                       },
                     },
@@ -867,7 +868,8 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
         setTimeout(() => { clearingRef.current = false; }, 0);
       } catch {}
 
-      // 10) Navigate to details screen now that preview is ready
+      // 10) Navigate to the correct details screen (route key: "ProjectDetails")
+      //     Pass both id and projectId to avoid param name mismatch.
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -887,7 +889,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                       index: 1,
                       routes: [
                         { name: 'ProjectsList' },
-                        { name: 'ProjectDetails', params: { id: projectId } },
+                        { name: 'ProjectDetails', params: { id: projectId, projectId } },
                       ],
                     },
                   },
