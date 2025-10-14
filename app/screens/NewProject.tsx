@@ -35,6 +35,10 @@ const USER_ID = (globalThis as any).__DEV_USER_ID__ || '00000000-0000-0000-0000-
 // V1: tools are AR-only (hide on Upload flow)
 const __HIDE_MEDIA_TOOLS = true;
 
+// Base URL configuration
+const RAW_BASE = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = RAW_BASE.startsWith('http') ? RAW_BASE : `https://${RAW_BASE}`;
+
 // --- CTA Styles ---
 const CTA = {
   wrap: { borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20 },
@@ -736,216 +740,170 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
 
   async function handleBuildWithPreview() {
     if (isBuilding || isPreviewing) return;
-    
     setPreviewFailedOrTimeout(false);
-    
+
+    // 1) Auth required
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      Alert.alert('Sign in required', 'Please sign in to build with preview.');
+      return;
+    }
+
+    // 2) Validate required fields (using description as the prompt)
+    if (!description || description.trim().length < 3) {
+      Alert.alert('Add description', 'Please enter a description of what you want to build.');
+      return;
+    }
+
+    // 3) Ensure project exists first
+    let projectId: string;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert('Sign in required', 'Please sign in to build with preview.');
-        return;
-      }
-      if (!canSubmit) {
-        Alert.alert('Almost there', 'Please complete Title (≥3), Description (≥10), Budget and Skill level.');
-        return;
-      }
-      
-      // 1) Ensure project exists
-      const projectId = await ensureProjectForDraft({
+      projectId = await ensureProjectForDraft({
         name: title,
         description,
         budget,
         skill_level: skillLevel,
         projectId: draftId,
       });
-      
-      // 2) Upload image if needed
-      if (photoUri) {
-        try {
-          await uploadProjectImage(projectId, photoUri);
-          console.log('[upload] complete');
-        } catch (e) {
-          console.error('[upload] failed', e);
-          Alert.alert('Upload failed', 'Could not upload photo. Please try again.');
-          return;
-        }
-      }
-      
-      // 3) Link scan to project if available
-      const ls = lastScanRef.current;
+    } catch (e: any) {
+      Alert.alert('Project creation failed', String(e?.message || e));
+      return;
+    }
+
+    if (!projectId) {
+      Alert.alert('Missing project', 'Could not create project.');
+      return;
+    }
+
+    // 4) Upload image if needed
+    if (photoUri) {
       try {
-        if (ls?.scanId) {
-          await attachScanToProject(ls.scanId, projectId);
-        }
+        await uploadProjectImage(projectId, photoUri);
+        console.log('[upload] complete');
       } catch (e) {
-        console.warn('[link scan]', e);
-      }
-      
-      // 4) Submit preview
-      console.log('[preview ui] submit', { projectId });
-      const res = await submitPreview(projectId);
-      
-      if (!res.ok) {
-        console.error('[preview ui] error submit');
-        simpleToast('Could not start preview. Check connection and try again.');
-        setPreviewFailedOrTimeout(true);
-        // Fall through - still need to navigate
-        setIsPreviewing(false);
-        setPreviewStatusMsg('');
-        
-        // Clear form and navigate
-        try {
-          clearingRef.current = true;
-          await clearNewProjectDraft?.();
-          setDraftId(null);
-          setTitle('');
-          setDescription('');
-          setBudget('');
-          setSkillLevel('');
-          setPhotoUri(null);
-          setLastScan(null);
-          lastScanRef.current = null;
-          setTimeout(() => { clearingRef.current = false; }, 0);
-        } catch {}
-        
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'Main',
-                state: {
-                  type: 'tab',
-                  index: 2,
-                  routes: [
-                    { name: 'Home' },
-                    { name: 'NewProject' },
-                    {
-                      name: 'Projects',
-                      state: {
-                        type: 'stack',
-                        index: 1,
-                        routes: [
-                          { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id: projectId } },
-                        ],
-                      },
-                    },
-                    { name: 'Profile' },
-                  ],
-                },
-              },
-            ],
-          })
-        );
+        console.error('[upload] failed', e);
+        Alert.alert('Upload failed', 'Could not upload photo. Please try again.');
         return;
-      } else {
-        if (res.mode) console.log('[preview ui] mode', res.mode);
-        setPreviewStatusMsg('Preview: queued…');
-        setIsPreviewing(true);
-        
-        // 5) Poll with exponential backoff
-        const delays = backoffDelays(1200, 1.7, 9000, 14); // ~2 min cap
-        let attempt = 0;
-        let ready = false;
-        let previewUrl: string | null = null;
-        
-        for (const delay of delays) {
-          attempt++;
-          const statusRes = await getPreviewStatus(projectId);
-          console.log('[preview ui] poll', { projectId, attempt, status: statusRes.status });
-          
-          if (!statusRes.ok) {
-            simpleToast('Preview status check failed — retrying…');
-          } else if (statusRes.status === 'ready' && statusRes.preview_url) {
-            console.log('[preview ui] ready', { projectId, hasUrl: !!statusRes.preview_url });
-            if (statusRes.cached) console.log('[preview ui] cached hit');
-            ready = true;
-            previewUrl = statusRes.preview_url;
-            
-            // Update local cache optimistically
-            try {
-              const { data: proj } = await supabase
-                .from('projects')
-                .update({ 
-                  preview_url: previewUrl,
-                  preview_status: 'ready'
-                })
-                .eq('id', projectId)
-                .select()
-                .single();
-              console.log('[preview ui] cache updated', { id: proj?.id });
-            } catch (e) {
-              console.warn('[preview ui] cache update failed', e);
-            }
-            
-            break;
-          }
-          await new Promise(r => setTimeout(r, delay + Math.floor(Math.random() * 250)));
-        }
-        
-        if (!ready) {
-          console.warn('[preview ui] timeout', { projectId, attempts: attempt });
-          simpleToast('Preview still processing — you can view the project now.');
-          setPreviewFailedOrTimeout(true);
-        }
-        
-        setIsPreviewing(false);
-        setPreviewStatusMsg('');
-        
-        // 6) Clear form
-        try {
-          clearingRef.current = true;
-          await clearNewProjectDraft?.();
-          setDraftId(null);
-          setTitle('');
-          setDescription('');
-          setBudget('');
-          setSkillLevel('');
-          setPhotoUri(null);
-          setLastScan(null);
-          lastScanRef.current = null;
-          console.log('[media] cleared after build (with preview)');
-          setTimeout(() => { clearingRef.current = false; }, 0);
-        } catch {}
-        
-        // 7) Navigate to ProjectDetails
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [
-              {
-                name: 'Main',
-                state: {
-                  type: 'tab',
-                  index: 2,
-                  routes: [
-                    { name: 'Home' },
-                    { name: 'NewProject' },
-                    {
-                      name: 'Projects',
-                      state: {
-                        type: 'stack',
-                        index: 1,
-                        routes: [
-                          { name: 'ProjectsList' },
-                          { name: 'ProjectDetails', params: { id: projectId } },
-                        ],
-                      },
-                    },
-                    { name: 'Profile' },
-                  ],
-                },
-              },
-            ],
-          })
-        );
+      }
+    }
+
+    // 5) Link scan to project if available
+    const ls = lastScanRef.current;
+    try {
+      if (ls?.scanId) {
+        await attachScanToProject(ls.scanId, projectId);
       }
     } catch (e) {
-      console.error('[preview ui] error', e);
+      console.warn('[link scan]', e);
+    }
+
+    // 6) Load latest project data to get image + dimensions
+    const { data: projRow, error: projErr } = await supabase
+      .from('projects')
+      .select('id,input_image_url,dimensions_json')
+      .eq('id', projectId)
+      .single();
+    
+    if (projErr || !projRow) {
+      Alert.alert('Project not found', 'Could not load project for preview.');
+      return;
+    }
+
+    const photo_url = projRow.input_image_url || photoUri || '';
+    const measurements = projRow.dimensions_json || (ls?.measure ? {
+      width_in: ls.measure.width_in,
+      height_in: ls.measure.height_in,
+      px_per_in: ls.measure.px_per_in
+    } : null);
+    
+    if (!photo_url) {
+      Alert.alert('Add a photo', 'Please upload a photo before generating a preview.');
+      return;
+    }
+
+    try {
+      setIsPreviewing(true);
+
+      // 7) Call backend /preview with required fields
+      const res = await fetch(`${API_BASE_URL}/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photo_url,
+          prompt: description,
+          measurements
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data?.preview_url) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+
+      // 8) Persist preview to Supabase
+      const { error: upErr } = await supabase
+        .from('projects')
+        .update({
+          preview_url: data.preview_url,
+          preview_status: 'ready',
+          preview_meta: { source: data.source || 'stub|decor8', at: new Date().toISOString() },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectId);
+      if (upErr) throw upErr;
+
+      // 9) Clear form
+      try {
+        clearingRef.current = true;
+        await clearNewProjectDraft?.();
+        setDraftId(null);
+        setTitle('');
+        setDescription('');
+        setBudget('');
+        setSkillLevel('');
+        setPhotoUri(null);
+        setLastScan(null);
+        lastScanRef.current = null;
+        console.log('[media] cleared after build (with preview)');
+        setTimeout(() => { clearingRef.current = false; }, 0);
+      } catch {}
+
+      // 10) Navigate to details screen now that preview is ready
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                type: 'tab',
+                index: 2,
+                routes: [
+                  { name: 'Home' },
+                  { name: 'NewProject' },
+                  {
+                    name: 'Projects',
+                    state: {
+                      type: 'stack',
+                      index: 1,
+                      routes: [
+                        { name: 'ProjectsList' },
+                        { name: 'ProjectDetails', params: { id: projectId } },
+                      ],
+                    },
+                  },
+                  { name: 'Profile' },
+                ],
+              },
+            },
+          ],
+        })
+      );
+    } catch (e: any) {
+      console.error('[preview submit] fail', e);
+      Alert.alert('Could not start preview', String(e?.message || e));
+      setPreviewFailedOrTimeout(true);
+    } finally {
       setIsPreviewing(false);
-      setPreviewStatusMsg('');
-      Alert.alert('Build failed', 'Could not start build. Please try again.');
     }
   }
 
