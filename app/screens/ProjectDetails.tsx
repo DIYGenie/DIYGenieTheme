@@ -31,6 +31,7 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState(true);
   // hide debug actions (manual preview/plan triggers) on this screen
   const SHOW_DEBUG_ACTIONS = false;
+  const ENABLE_RULER_OVERLAY = false; // MVP: off
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string; roi?: any; measureResult?: any } | null>(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
@@ -562,8 +563,8 @@ export default function ProjectDetails() {
                 );
               })()}
               
-              {/* Ruler overlay */}
-              {(showRuler && pxPerIn && heroW > 0) && (
+              {/* Ruler overlay disabled for MVP */}
+              {ENABLE_RULER_OVERLAY && (showRuler && pxPerIn && heroW > 0) && (
                 <RulerOverlay widthPx={heroW} pxPerIn={pxPerIn} />
               )}
               </View>
