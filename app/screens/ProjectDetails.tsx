@@ -176,13 +176,30 @@ export default function ProjectDetails() {
     scan?.imageUrl ||
     null;
   const heroType = project?.preview_url ? 'preview' : project?.input_image_url ? 'input' : scan?.imageUrl ? 'scan' : null;
+
+  // Log candidates once per change
+  useEffect(() => {
+    console.log('[hero:candidates]', {
+      preview: project?.preview_url,
+      input: project?.input_image_url,
+      scan: scan?.imageUrl,
+    });
+  }, [project?.preview_url, project?.input_image_url, scan?.imageUrl]);
+
+  // Fallback if preview fails to load
+  const [heroError, setHeroError] = useState(false);
+  const primary = heroUri;
+  const fallback = project?.input_image_url || scan?.imageUrl || null;
+  const pick = (!heroError && primary) ? primary : fallback;
+  // Add cache-buster so <Image> refetches when URL toggles
+  const resolvedHero = pick ? `${pick}${pick.includes('?') ? '&' : '?'}v=${Date.now()}` : null;
   
   console.log('[details] hero =', heroType ?? 'none');
 
   const handleSaveImage = async () => {
-    if (!heroUri) return;
+    if (!resolvedHero) return;
     console.log('[hero] saved to photos');
-    const result = await saveImageToPhotos(heroUri!);
+    const result = await saveImageToPhotos(resolvedHero!);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
@@ -469,7 +486,7 @@ export default function ProjectDetails() {
       ) : (
         <>
           {/* Single Hero Image - Priority: preview → input → scan → nothing */}
-          {heroUri ? (
+          {resolvedHero ? (
             <View style={{ marginBottom: 20 }}>
               <View 
                 onLayout={onHeroLayout}
@@ -486,9 +503,14 @@ export default function ProjectDetails() {
                   elevation: 3 
                 }}>
                 <Image
-                  source={{ uri: heroUri }}
-                  style={{ width: '100%', height: '100%' }}
+                  key={resolvedHero}
+                  source={{ uri: resolvedHero }}
+                  style={{ width: '100%', height: '100%', minHeight: 220 }}
                   resizeMode="cover"
+                  onError={(e) => {
+                    console.warn('[hero:error]', { url: resolvedHero, err: e?.nativeEvent?.error });
+                    setHeroError(true);
+                  }}
                 />
               
               {/* Measurement badge (only for scan with measureResult) */}
@@ -509,7 +531,7 @@ export default function ProjectDetails() {
               )}
               
               {/* Save to Photos icon button (only shown when image exists) */}
-              {heroUri && (
+              {resolvedHero && (
                 <TouchableOpacity 
                   onPress={handleSaveImage}
                   accessibilityLabel="Save to Photos"
