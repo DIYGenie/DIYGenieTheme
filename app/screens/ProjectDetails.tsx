@@ -10,6 +10,8 @@ import DimensionsCard from '../components/DimensionsCard';
 import { saveImageToPhotos } from '../lib/media';
 import SectionCard from '../components/SectionCard';
 import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -196,16 +198,27 @@ export default function ProjectDetails() {
   
   console.log('[details] hero =', heroType ?? 'none');
 
-  const handleSaveImage = async () => {
-    if (!resolvedHero) return;
-    console.log('[hero] saved to photos');
-    const result = await saveImageToPhotos(resolvedHero!);
-    if (result.success) {
-      setToast({ visible: true, message: result.message, type: 'success' });
-    } else {
-      Alert.alert('Error', result.message);
+  const handleSaveHeroToPhotos = async () => {
+    const uri = heroUri || project?.input_image_url || scan?.imageUrl;
+    if (!uri) { Alert.alert('Nothing to save', 'No image available.'); return; }
+    try {
+      // ask permission once
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed', 'Enable Photos access to save.'); return; }
+
+      // download to app cache first (RN Image cannot save remote URLs directly)
+      const fileName = `diygenie_${project?.id || 'preview'}.jpg`;
+      const tmpPath = ((FileSystem as any).cacheDirectory || (FileSystem as any).documentDirectory) + fileName;
+      const dl = await FileSystem.downloadAsync(uri, tmpPath);
+      if (dl.status !== 200) throw new Error(`Download failed (${dl.status})`);
+
+      // create asset in Photos
+      await MediaLibrary.saveToLibraryAsync(dl.uri);
+      Alert.alert('Saved', 'Image saved to Photos.');
+    } catch (e: any) {
+      console.error('[save:hero]', e);
+      Alert.alert('Save failed', String(e?.message || e));
     }
-    setTimeout(() => setToast({ visible: false, message: '', type: 'success' }), 3000);
   };
 
   const onHeroLayout = useCallback((e: any) => {
@@ -533,7 +546,7 @@ export default function ProjectDetails() {
               {/* Save to Photos icon button (only shown when image exists) */}
               {resolvedHero && (
                 <TouchableOpacity 
-                  onPress={handleSaveImage}
+                  onPress={handleSaveHeroToPhotos}
                   accessibilityLabel="Save to Photos"
                   style={{ 
                     position: 'absolute', 
