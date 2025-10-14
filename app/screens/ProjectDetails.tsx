@@ -247,6 +247,49 @@ export default function ProjectDetails() {
     }
   };
 
+  const generatePlanIfNeeded = async (p: any) => {
+    if (!p) return;
+    if (planLoading) return;
+    if (!p.preview_url) return;           // need preview first
+    if (p.plan_json) return;              // already has plan
+
+    const photo_url = p.input_image_url;
+    const measurements = p.dimensions_json || null;
+    const prompt = p.goal || p.name || 'DIY plan';
+    if (!photo_url || !prompt) return;
+
+    try {
+      setPlanLoading(true);
+      console.log('[plan] generating', { id: p.id });
+      const res = await fetch(`${API_BASE_URL}/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo_url, prompt, measurements })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data?.plan) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+      const { error: upErr } = await supabase
+        .from('projects')
+        .update({
+          plan_json: data.plan,
+          status: 'planned',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', p.id);
+      if (upErr) throw upErr;
+      // reflect locally
+      setProject((prev: any) => ({ ...(prev || p), plan_json: data.plan, status: 'planned' }));
+      console.log('[plan] saved', { id: p.id });
+    } catch (e: any) {
+      console.error('[plan] generate fail', e);
+      Alert.alert('Plan failed', String(e?.message || e));
+    } finally {
+      setPlanLoading(false);
+    }
+  };
+
   const planReady = /ready|active/i.test(project?.status ?? '');
 
   useLayoutEffect(() => {
@@ -278,6 +321,10 @@ export default function ProjectDetails() {
       abortRef.current?.abort();
     };
   }, [load]);
+
+  useEffect(() => {
+    if (project) generatePlanIfNeeded(project);
+  }, [project]);
 
   useFocusEffect(
     useCallback(() => {
@@ -360,7 +407,7 @@ export default function ProjectDetails() {
     };
   }, [projectId, project?.preview_status]);
 
-  const isBuilding = /requested|building|queued|pending/.test(String(project?.plan_status || project?.status || '').toLowerCase());
+  const isBuilding = planLoading || (!project?.plan_json && !!project?.preview_url);
 
   // Log plan state
   const hasPlanContent = counts.materials + counts.tools + counts.cuts + counts.steps > 0;
