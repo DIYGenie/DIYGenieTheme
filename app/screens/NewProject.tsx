@@ -1366,12 +1366,12 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
             )}
             
             <View style={{ gap: 14, marginTop: 12 }}>
-              {/* Primary: Build with visual mockup */}
+              {/* Primary: Generate AI Plan + Preview */}
               <View>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   accessibilityRole="button"
-                  accessibilityLabel="Build with visual mockup"
+                  accessibilityLabel="Generate AI Plan + Preview"
                   disabled={!canSubmit || isBuilding || isPreviewing}
                   onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
                   onPress={handleBuildWithPreview}
@@ -1384,10 +1384,10 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 >
                   <View style={CTA.row}>
                     <Text style={[CTA.title, { color: '#fff' }]}>
-                      Build with visual mockup
+                      Generate AI Plan + Preview
                     </Text>
                     <Text style={[CTA.sub, { color: 'rgba(255,255,255,0.9)' }]} numberOfLines={2}>
-                      Visual mockup of your space + complete build plan
+                      Visual mockup of your space + complete AI plan
                     </Text>
                     {isPreviewing && previewStatusMsg && (
                       <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1480,11 +1480,11 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 )}
               </View>
 
-              {/* Secondary: Build plan only */}
+              {/* Secondary: Create Plan Only (No Preview) */}
               <TouchableOpacity
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel="Build plan only"
+                accessibilityLabel="Create Plan Only (No Preview)"
                 disabled={!canSubmit || isBuilding}
                 onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
                 onPress={onBuildWithoutPreview}
@@ -1495,7 +1495,7 @@ export default function NewProject({ navigation: navProp }: { navigation?: any }
                 ]}
               >
                 <View style={CTA.row}>
-                  <Text style={[CTA.title, { color: '#111827' }]}>Build plan only</Text>
+                  <Text style={[CTA.title, { color: '#111827' }]}>Create Plan Only (No Preview)</Text>
                   <Text style={[CTA.sub, { color: '#374151' }]} numberOfLines={2}>
                     Full DIY plan—steps, materials, tools, cuts, time & cost
                   </Text>
