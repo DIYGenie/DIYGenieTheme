@@ -2,7 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import OpenPlanScreen from '../screens/OpenPlanScreen';
-import ProjectDetailsScreen from '../screens/ProjectDetails';
+import ProjectDetails from '../screens/ProjectDetails';
 import DetailedInstructions from '../screens/DetailedInstructions';
 import { PLAN_SCREEN, PROJECTS_LIST_SCREEN } from './routeNames';
 
@@ -31,7 +31,7 @@ export default function ProjectsNavigator() {
       />
       <Stack.Screen
         name="ProjectDetails"
-        component={ProjectDetailsScreen}
+        component={ProjectDetails}
         options={{ headerShown: true, title: 'Project' }}
       />
       <Stack.Screen
