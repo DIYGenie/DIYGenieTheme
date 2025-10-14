@@ -29,6 +29,8 @@ export default function ProjectDetails() {
   const justBuilt = route.params?.justBuilt;
 
   const [loading, setLoading] = useState(true);
+  // hide debug actions (manual preview/plan triggers) on this screen
+  const SHOW_DEBUG_ACTIONS = false;
   const [project, setProject] = useState<any>(null);
   const [scan, setScan] = useState<{ scanId: string; imageUrl: string; roi?: any; measureResult?: any } | null>(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
@@ -166,16 +168,20 @@ export default function ProjectDetails() {
   const roi = scan?.roi || null;
   const previewStatus = project?.preview_status;
 
-  // Hero priority: preview_url → scan.image_url → nothing (no placeholder)
-  const heroSource = previewUrl ?? scanUrl ?? null;
-  const heroType = previewUrl ? 'preview' : scanUrl ? 'scan' : null;
+  // --- hero image resolver (prefer preview, then uploaded image, then scan image) ---
+  const heroUri =
+    project?.preview_url ||
+    project?.input_image_url ||
+    scan?.imageUrl ||
+    null;
+  const heroType = project?.preview_url ? 'preview' : project?.input_image_url ? 'input' : scan?.imageUrl ? 'scan' : null;
   
   console.log('[details] hero =', heroType ?? 'none');
 
   const handleSaveImage = async () => {
-    if (!heroSource) return;
+    if (!heroUri) return;
     console.log('[hero] saved to photos');
-    const result = await saveImageToPhotos(heroSource!);
+    const result = await saveImageToPhotos(heroUri!);
     if (result.success) {
       setToast({ visible: true, message: result.message, type: 'success' });
     } else {
@@ -461,8 +467,8 @@ export default function ProjectDetails() {
         </View>
       ) : (
         <>
-          {/* Single Hero Image - Priority: preview → scan → nothing */}
-          {heroSource ? (
+          {/* Single Hero Image - Priority: preview → input → scan → nothing */}
+          {heroUri ? (
             <View style={{ marginBottom: 20 }}>
               <View 
                 onLayout={onHeroLayout}
@@ -479,7 +485,7 @@ export default function ProjectDetails() {
                   elevation: 3 
                 }}>
                 <Image
-                  source={{ uri: heroSource }}
+                  source={{ uri: heroUri }}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="cover"
                 />
@@ -502,7 +508,7 @@ export default function ProjectDetails() {
               )}
               
               {/* Save to Photos icon button (only shown when image exists) */}
-              {heroSource && (
+              {heroUri && (
                 <TouchableOpacity 
                   onPress={handleSaveImage}
                   accessibilityLabel="Save to Photos"
@@ -1019,73 +1025,77 @@ export default function ProjectDetails() {
               </TouchableOpacity>
 
               {/* --- Preview (Decor8 stub) --- */}
-              <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#f3f4f6' }}>
-                <Text style={{ fontWeight: '600', marginBottom: 8 }}>Design Preview</Text>
-                <Pressable
-                  onPress={handleGeneratePreview}
-                  disabled={stubPreviewLoading}
-                  style={({ pressed }) => ({
-                    opacity: stubPreviewLoading ? 0.6 : pressed ? 0.8 : 1,
-                    alignSelf: 'flex-start',
-                    paddingVertical: 10,
-                    paddingHorizontal: 14,
-                    borderRadius: 10,
-                    backgroundColor: '#6D28D9',
-                    marginBottom: 10
-                  })}
-                  testID="btn-generate-preview"
-                >
-                  <Text style={{ color: 'white', fontWeight: '600' }}>
-                    {stubPreviewLoading ? 'Generating…' : 'Generate Preview'}
-                  </Text>
-                </Pressable>
-                {stubPreviewLoading && <ActivityIndicator size="small" />}
-                {stubPreviewUrl && (
-                  <Image
-                    source={{ uri: stubPreviewUrl }}
-                    style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 10 }}
-                    resizeMode="cover"
-                    testID="img-preview"
-                  />
-                )}
-              </View>
+              {SHOW_DEBUG_ACTIONS && (
+                <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#f3f4f6' }}>
+                  <Text style={{ fontWeight: '600', marginBottom: 8 }}>Design Preview</Text>
+                  <Pressable
+                    onPress={handleGeneratePreview}
+                    disabled={stubPreviewLoading}
+                    style={({ pressed }) => ({
+                      opacity: stubPreviewLoading ? 0.6 : pressed ? 0.8 : 1,
+                      alignSelf: 'flex-start',
+                      paddingVertical: 10,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                      backgroundColor: '#6D28D9',
+                      marginBottom: 10
+                    })}
+                    testID="btn-generate-preview"
+                  >
+                    <Text style={{ color: 'white', fontWeight: '600' }}>
+                      {stubPreviewLoading ? 'Generating…' : 'Generate Preview'}
+                    </Text>
+                  </Pressable>
+                  {stubPreviewLoading && <ActivityIndicator size="small" />}
+                  {stubPreviewUrl && (
+                    <Image
+                      source={{ uri: stubPreviewUrl }}
+                      style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: 10 }}
+                      resizeMode="cover"
+                      testID="img-preview"
+                    />
+                  )}
+                </View>
+              )}
 
               {/* --- Build Plan (OpenAI stub) --- */}
-              <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#eef2ff' }}>
-                <Text style={{ fontWeight: '600', marginBottom: 8 }}>Build Plan</Text>
-                <Pressable
-                  onPress={handleGeneratePlan}
-                  disabled={planLoading}
-                  style={({ pressed }) => ({
-                    opacity: planLoading ? 0.6 : pressed ? 0.8 : 1,
-                    alignSelf: 'flex-start',
-                    paddingVertical: 10,
-                    paddingHorizontal: 14,
-                    borderRadius: 10,
-                    backgroundColor: '#6D28D9',
-                    marginBottom: 10
-                  })}
-                  testID="btn-generate-plan"
-                >
-                  <Text style={{ color: 'white', fontWeight: '600' }}>
-                    {planLoading ? 'Generating…' : 'Generate Plan'}
-                  </Text>
-                </Pressable>
-                {planLoading && <ActivityIndicator size="small" />}
-                {planJson && (
-                  <View testID="plan-summary" style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: '600' }}>{planJson.overview}</Text>
-                    <Text>Materials: {Array.isArray(planJson.materials) ? planJson.materials.length : 0}</Text>
-                    <Text>Tools: {Array.isArray(planJson.tools) ? planJson.tools.length : 0}</Text>
-                    <Text>Steps: {Array.isArray(planJson.steps) ? planJson.steps.length : 0}</Text>
-                    {planJson.estimation && (
-                      <Text>
-                        Est: ${(planJson.estimation.grand_total ?? 0).toFixed ? planJson.estimation.grand_total.toFixed(2) : planJson.estimation.grand_total}
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </View>
+              {SHOW_DEBUG_ACTIONS && (
+                <View style={{ marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#eef2ff' }}>
+                  <Text style={{ fontWeight: '600', marginBottom: 8 }}>Build Plan</Text>
+                  <Pressable
+                    onPress={handleGeneratePlan}
+                    disabled={planLoading}
+                    style={({ pressed }) => ({
+                      opacity: planLoading ? 0.6 : pressed ? 0.8 : 1,
+                      alignSelf: 'flex-start',
+                      paddingVertical: 10,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                      backgroundColor: '#6D28D9',
+                      marginBottom: 10
+                    })}
+                    testID="btn-generate-plan"
+                  >
+                    <Text style={{ color: 'white', fontWeight: '600' }}>
+                      {planLoading ? 'Generating…' : 'Generate Plan'}
+                    </Text>
+                  </Pressable>
+                  {planLoading && <ActivityIndicator size="small" />}
+                  {planJson && (
+                    <View testID="plan-summary" style={{ gap: 6 }}>
+                      <Text style={{ fontWeight: '600' }}>{planJson.overview}</Text>
+                      <Text>Materials: {Array.isArray(planJson.materials) ? planJson.materials.length : 0}</Text>
+                      <Text>Tools: {Array.isArray(planJson.tools) ? planJson.tools.length : 0}</Text>
+                      <Text>Steps: {Array.isArray(planJson.steps) ? planJson.steps.length : 0}</Text>
+                      {planJson.estimation && (
+                        <Text>
+                          Est: ${(planJson.estimation.grand_total ?? 0).toFixed ? planJson.estimation.grand_total.toFixed(2) : planJson.estimation.grand_total}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
             </>
           )}
         </>
