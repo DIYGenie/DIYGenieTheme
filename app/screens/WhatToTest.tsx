@@ -39,7 +39,7 @@ export default function WhatToTest({ navigation }: any) {
               <Text style={styles.bulletText}>2</Text>
             </View>
             <Text style={styles.stepText}>
-              <Text style={styles.bold}>"Build with visual mockup"</Text> (Decor8) → wait for preview
+              <Text style={styles.bold}>"Generate AI Plan + Preview"</Text> (Decor8) → wait for preview
             </Text>
           </View>
 
