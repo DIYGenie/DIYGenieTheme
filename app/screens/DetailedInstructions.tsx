@@ -10,6 +10,29 @@ import { PlanResponse } from '../types/plan';
 
 type R = RouteProp<Record<'DetailedInstructions', { id: string; section?: string }>, 'DetailedInstructions'>;
 
+// -- Safe text helpers (local to this screen) --
+const notNil = (v: any) => v !== null && v !== undefined;
+
+const joinText = (...parts: (string | null | undefined)[]) =>
+  parts.filter(p => typeof p === 'string' && p.length > 0).join(' ');
+
+const fmtMoney = (n: number | null | undefined) =>
+  notNil(n) ? `$${Number(n).toFixed(2).replace(/\.00$/, '')}` : null;
+
+const fmtQtyUnit = (qty: number | string | null | undefined, unit?: string | null) => {
+  const q = notNil(qty) ? String(qty) : null;
+  const u = unit ? String(unit) : null;
+  return joinText(q, u);
+};
+
+const fmtDim = (w?: number | null, h?: number | null) =>
+  notNil(w) && notNil(h) ? `${w}" x ${h}"` : null;
+
+const TextIf: React.FC<{ style?: any; children?: string | null }> = ({ style, children }) => {
+  if (!children) return null;
+  return <Text style={style}>{children}</Text>;
+};
+
 function RowText({ children, style }: { children: React.ReactNode; style?: any }) {
   return <Text style={[{ fontSize: 14, color: '#374151' }, style]}>{children}</Text>;
 }
