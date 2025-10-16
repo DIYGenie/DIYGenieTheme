@@ -739,3 +739,30 @@ export async function getPreviewStatus(projectId: string): Promise<PreviewStatus
     return { ok: false, status: 'error' };
   }
 }
+
+// --- Demo Project ---
+export async function createOrFetchDemoProject(): Promise<{ ok: boolean; id?: string; error?: string }> {
+  try {
+    // Try to get user id from Supabase (if available)
+    let userId: string | undefined = undefined;
+    try {
+      const { data } = await supabase.auth.getUser();
+      userId = data?.user?.id;
+    } catch {}
+
+    const res = await api('/api/demo-project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userId ? { user_id: userId } : {}),
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: (res as any)?.error || 'Failed to create demo project' };
+    }
+    const id = (res as any)?.data?.item?.id || (res as any)?.data?.id || (res as any)?.id;
+    return id ? { ok: true, id } : { ok: false, error: 'No project id returned' };
+  } catch (e: any) {
+    console.error('[demo-project] exception', e);
+    return { ok: false, error: e?.message || 'Unexpected error' };
+  }
+}
