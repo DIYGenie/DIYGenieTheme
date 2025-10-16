@@ -424,9 +424,9 @@ export default function DetailedInstructions() {
             return (
               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.tools.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
                 <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{toolObj.name}</Text>
-                {toolObj.rentalPrice && (
-                  <Text style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>{`~$${toolObj.rentalPrice}`}</Text>
-                )}
+                <TextIf style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
+                  {toolObj.rentalPrice ? `~${fmtMoney(toolObj.rentalPrice)}` : null}
+                </TextIf>
               </View>
             );
           })
@@ -655,7 +655,7 @@ export default function DetailedInstructions() {
                   {estCost ? 'Estimated Cost' : 'Materials Cost'}
                 </Text>
                 <Text style={{ fontSize: 28, fontWeight: '800', color: '#7C3AED' }}>
-                  {estCost ? `$${estCost}` : `~$${materialsSubtotal.toFixed(2)}`}
+                  {estCost ? fmtMoney(estCost) : `~${fmtMoney(materialsSubtotal)}`}
                 </Text>
               </View>
               {!estCost && materialsSubtotal > 0 && (
