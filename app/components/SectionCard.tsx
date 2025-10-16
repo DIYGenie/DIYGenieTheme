@@ -48,7 +48,7 @@ const styles = {
     paddingVertical: 2,
     borderRadius: 8,
     backgroundColor: "#EFEAFE",
-    color: brand?.purple ?? "#700",
+    color: brand.purple || "#700",
     fontWeight: "600" as const,
     overflow: "hidden" as const,
   },
