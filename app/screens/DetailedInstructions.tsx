@@ -214,8 +214,8 @@ export default function DetailedInstructions() {
         </View>
       )}
 
-      {/* Hero Image */}
-      {planData?.summary?.heroImageUrl && (
+      {/* Hero Image - Disabled: Show Before/After only */}
+      {/* {planData?.summary?.heroImageUrl && (
         <View style={{ marginTop: 16, marginHorizontal: 16, borderRadius: 16, overflow: 'hidden' }}>
           <Image 
             source={{ uri: planData.summary.heroImageUrl }} 
@@ -223,7 +223,7 @@ export default function DetailedInstructions() {
             resizeMode="cover" 
           />
         </View>
-      )}
+      )} */}
 
       {/* Preview Images */}
       {planData?.preview && (planData.preview.beforeUrl || planData.preview.afterUrl) && (
@@ -347,7 +347,7 @@ export default function DetailedInstructions() {
             </View>
           ))
         ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No materials listed.</Text>
+          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No materials yet.</Text>
         )}
       </View>
 
@@ -382,8 +382,18 @@ export default function DetailedInstructions() {
               </>
             )}
             
-            {(!planData.tools.required || planData.tools.required.length === 0) && (!planData.tools.optional || planData.tools.optional.length === 0) && (
-              <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No tools listed.</Text>
+            {(!planData.tools.required || planData.tools.required.length === 0) && (
+              <>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 8 }}>Required</Text>
+                <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
+              </>
+            )}
+            
+            {(!planData.tools.optional || planData.tools.optional.length === 0) && (
+              <>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: 12, marginBottom: 8 }}>Optional</Text>
+                <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
+              </>
             )}
           </>
         ) : plan.tools && plan.tools.length > 0 ? (
@@ -399,63 +409,74 @@ export default function DetailedInstructions() {
             );
           })
         ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No tools listed.</Text>
+          <>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 8 }}>Required</Text>
+            <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
+          </>
         )}
       </View>
 
       {/* Cut List Section */}
-      {((planData?.cutList?.items && planData.cutList.items.length > 0) || (plan.cuts && plan.cuts.length > 0)) && (
-        <View ref={refs.cuts} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <MaterialCommunityIcons name="content-cut" size={24} color="#7C3AED" />
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Cut List</Text>
-          </View>
-          
-          {planData?.cutList?.items ? (
-            <>
-              {/* Table Header */}
-              <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
-              </View>
-              
-              {planData.cutList.items.map((cut, i) => (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.cutList.items!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                  <Text style={{ fontSize: 15, color: '#111827', flex: 2 }}>{cut.board}</Text>
-                  <Text style={{ fontSize: 15, color: '#6B7280', flex: 2, textAlign: 'center' }}>{cut.dims}</Text>
-                  <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', flex: 1, textAlign: 'right' }}>{cut.qty}</Text>
-                </View>
-              ))}
-              
-              {planData.cutList.layoutSvgUrl && (
-                <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 16 }}>
-                  <Image 
-                    source={{ uri: planData.cutList.layoutSvgUrl }} 
-                    style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#F9FAFB' }} 
-                    resizeMode="contain" 
-                  />
-                  <Pressable 
-                    onPress={() => Alert.alert('Cut Layout', planData.cutList.layoutSvgUrl || 'Layout diagram available')}
-                    style={{ marginTop: 12, padding: 10, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' }}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#7C3AED' }}>View full layout</Text>
-                  </Pressable>
-                </View>
-              )}
-            </>
-          ) : plan.cuts ? (
-            plan.cuts.map((cut: any, i: number) => (
-              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < plan.cuts.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part}</Text>
-                <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
-                  {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
-                </Text>
-              </View>
-            ))
-          ) : null}
+      <View ref={refs.cuts} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          <MaterialCommunityIcons name="content-cut" size={24} color="#7C3AED" />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Cut List</Text>
         </View>
-      )}
+        
+        {planData?.cutList?.items && planData.cutList.items.length > 0 ? (
+          <>
+            {/* Table Header */}
+            <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
+            </View>
+            
+            {planData.cutList.items.map((cut, i) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.cutList.items!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
+                <Text style={{ fontSize: 15, color: '#111827', flex: 2 }}>{cut.board}</Text>
+                <Text style={{ fontSize: 15, color: '#6B7280', flex: 2, textAlign: 'center' }}>{cut.dims}</Text>
+                <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', flex: 1, textAlign: 'right' }}>{cut.qty}</Text>
+              </View>
+            ))}
+            
+            {planData.cutList.layoutSvgUrl && (
+              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 16 }}>
+                <Image 
+                  source={{ uri: planData.cutList.layoutSvgUrl }} 
+                  style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#F9FAFB' }} 
+                  resizeMode="contain" 
+                />
+                <Pressable 
+                  onPress={() => Alert.alert('Cut Layout', planData.cutList.layoutSvgUrl || 'Layout diagram available')}
+                  style={{ marginTop: 12, padding: 10, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#7C3AED' }}>View full layout</Text>
+                </Pressable>
+              </View>
+            )}
+          </>
+        ) : plan.cuts && plan.cuts.length > 0 ? (
+          plan.cuts.map((cut: any, i: number) => (
+            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < plan.cuts.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
+              <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part}</Text>
+              <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
+                {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <>
+            {/* Table Header */}
+            <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
+            </View>
+            <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 8 }}>No cuts listed.</Text>
+          </>
+        )}
+      </View>
 
       {/* Build Steps */}
       <View ref={refs.steps} style={{ marginTop: 24, marginHorizontal: 16 }}>
@@ -590,7 +611,7 @@ export default function DetailedInstructions() {
             </View>
           ))
         ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No build steps available.</Text>
+          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No build steps yet.</Text>
         )}
       </View>
 
