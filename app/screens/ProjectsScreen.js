@@ -73,10 +73,18 @@ export default function ProjectsScreen({ navigation }) {
       if (res.ok && res.id) {
         // Navigate to details
         const parent = navigation.getParent?.();
-        parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
+        if (parent?.navigate) {
+          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
+        } else {
+          navigation.navigate('ProjectDetails', { id: res.id });
+        }
       } else {
+        console.log('[demo-project] error', res.error);
         Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
       }
+    } catch (err) {
+      console.log('[demo-project] exception', err);
+      Alert.alert('Demo Unavailable', 'An unexpected error occurred. Please try again.');
     } finally {
       setLaunchingDemo(false);
     }

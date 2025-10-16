@@ -167,8 +167,12 @@ function TemplateCards({ navigation, onTemplateCreate }) {
           navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
         }
       } else {
+        console.log('[demo-project] error', res.error);
         Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
       }
+    } catch (err) {
+      console.log('[demo-project] exception', err);
+      Alert.alert('Demo Unavailable', 'An unexpected error occurred. Please try again.');
     } finally {
       setLaunchingDemo(false);
     }
