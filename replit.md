@@ -33,6 +33,8 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **AR Session Scaffolding**: iOS AR preparation with ARKit permissions and a lightweight AR session facade.
 - **AR Measurement Flow (FEATURE_MEASURE)**: End-to-end measurement system for processing AR scans and displaying dimensions, including API helpers for starting and polling measurement status, and UI states for "Measuring…" and completed measurements.
 - **AR ROI Gesture System**: Enhanced touch handling for a draggable ROI overlay in ScanScreen, with bounds measurement, `pointerEvents` attributes, corner handles for resizing, and full rect dragging for repositioning. Includes a Save Snapshot feature.
+- **Home Screen Enhancement**: Features a 3-slide hero carousel with before/after inspiration images (horizontal scrolling FlatList with pagination dots), slim progress bar showing 4-step process (1 Describe • 2 Scan • 3 Preview • 4 Build), and template cards section (Shelf, Accent Wall, Mudroom Bench) that create prefilled projects on tap. Template selection includes telemetry via `safeLogEvent()`. Dev Supabase ping button removed.
+- **Delete Project Feature**: Complete project deletion system (`app/lib/deleteProject.ts`) with auth-secured API deletion, automatic fallback to direct Supabase deletion, storage cleanup for all media (room-scans, uploads, project_media), dependent record cleanup, confirmation UI with loading states, and event-based list refresh via DeviceEventEmitter.
 
 ## External Dependencies
 
