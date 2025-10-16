@@ -44,7 +44,6 @@ export default function DetailedInstructions() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [previewTab, setPreviewTab] = React.useState<'before'|'after'>('after');
   const scrollViewRef = useRef<ScrollView>(null);
 
   const refs = {
@@ -231,76 +230,12 @@ export default function DetailedInstructions() {
         </View>
       )}
 
-      {/* Hero Image - Disabled: Show Before/After only */}
-      {/* {planData?.summary?.heroImageUrl && (
-        <View style={{ marginTop: 16, marginHorizontal: 16, borderRadius: 16, overflow: 'hidden' }}>
-          <Image 
-            source={{ uri: planData.summary.heroImageUrl }} 
-            style={{ width: '100%', height: 220 }} 
-            resizeMode="cover" 
-          />
+      {/* Preview block removed - now shown in ProjectDetails screen */}
+      {false && (
+        <View style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
+          <Text>Preview removed</Text>
         </View>
-      )} */}
-
-      {/* Preview with Before/After Toggle */}
-      {(() => {
-        const beforeUri = project?.before || planData?.preview?.beforeUrl;
-        const afterUri = project?.preview || planData?.preview?.afterUrl || plan?.preview_image_url;
-        
-        if (!beforeUri && !afterUri) return null;
-        
-        return (
-          <View style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <Ionicons name="images-outline" size={24} color="#7C3AED" />
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Preview</Text>
-            </View>
-            
-            {/* Toggle Bar */}
-            <View style={{ flexDirection: 'row', backgroundColor: '#F1EEFF', borderRadius: 10, padding: 4, marginBottom: 12 }}>
-              {(['before', 'after'] as const).map(tab => (
-                <Pressable 
-                  key={tab} 
-                  onPress={() => setPreviewTab(tab)} 
-                  style={{ 
-                    flex: 1, 
-                    paddingVertical: 10, 
-                    borderRadius: 8, 
-                    backgroundColor: previewTab === tab ? 'white' : 'transparent' 
-                  }}
-                >
-                  <Text style={{ 
-                    textAlign: 'center', 
-                    fontWeight: previewTab === tab ? '700' : '500', 
-                    color: '#3A2EB0' 
-                  }}>
-                    {tab === 'before' ? 'Before' : 'After'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            
-            {/* Single Image Display */}
-            {(() => {
-              const activeUri = previewTab === 'before' ? beforeUri : afterUri;
-              if (activeUri) {
-                return (
-                  <Image 
-                    source={{ uri: activeUri }} 
-                    style={{ width: '100%', height: 220, borderRadius: 16, backgroundColor: '#EEE' }} 
-                    resizeMode="cover" 
-                  />
-                );
-              }
-              return (
-                <Text style={{ color: '#777', fontSize: 15, textAlign: 'center', paddingVertical: 40 }}>
-                  No {previewTab} image available.
-                </Text>
-              );
-            })()}
-          </View>
-        );
-      })()}
+      )}
 
       {/* Overview Section */}
       <View ref={refs.overview} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
