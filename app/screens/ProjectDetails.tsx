@@ -20,6 +20,7 @@ import { simpleToast } from '../lib/ui';
 import { formatPlanText } from '../lib/planFormat';
 import { enableLayoutAnimOnce, animateSection } from '../lib/anim';
 import { deleteProjectDeep } from '../lib/deleteProject';
+import { brand } from '../../theme/colors';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -795,7 +796,7 @@ export default function ProjectDetails() {
             <>
               {/* 1. Overview */}
               <SectionCard
-                icon={<Ionicons name="information-circle-outline" size={22} color="#6D28D9" />}
+                icon={<Ionicons name="information-circle-outline" size={16} color={brand.primary} />}
                 title="Overview"
                 summary="Project summary"
                 isOpen={openSections.includes('overview')}
@@ -859,7 +860,7 @@ export default function ProjectDetails() {
 
               {/* 2. Materials + Tools (combined shopping list) */}
               <SectionCard
-                icon={<MaterialCommunityIcons name="cart-outline" size={22} color="#6D28D9" />}
+                icon={<Ionicons name="cart-outline" size={16} color={brand.primary} />}
                 title="Materials + Tools"
                 countBadge={materials.length + tools.length}
                 summary="Shopping list"
@@ -912,7 +913,7 @@ export default function ProjectDetails() {
               {/* 3. Cut List */}
               {cuts.length > 0 && (
                 <SectionCard
-                  icon={<MaterialCommunityIcons name="content-cut" size={22} color="#6D28D9" />}
+                  icon={<MaterialCommunityIcons name="content-cut" size={16} color={brand.primary} />}
                   title="Cut List"
                   countBadge={cuts.length}
                   summary="Cutting guide"
@@ -940,7 +941,7 @@ export default function ProjectDetails() {
 
               {/* 4. Build Steps (with checkboxes and progress) */}
               <SectionCard
-                icon={<Feather name="check-square" size={22} color="#6D28D9" />}
+                icon={<Ionicons name="checkmark-done-outline" size={16} color={brand.primary} />}
                 title="Build Steps"
                 countBadge={steps.length}
                 summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (steps.length || 1)) * 100)}% complete` : `${steps.length} steps`}
@@ -1047,7 +1048,7 @@ export default function ProjectDetails() {
               {/* 5. Finishing (only if applicable) */}
               {finishing.length > 0 && (
                 <SectionCard
-                  icon={<MaterialCommunityIcons name="shimmer" size={22} color="#6D28D9" />}
+                  icon={<Ionicons name="sparkles-outline" size={16} color={brand.primary} />}
                   title="Finishing"
                   summary="Final touches"
                   isOpen={openSections.includes('finishing')}
