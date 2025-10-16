@@ -43,6 +43,7 @@ export default function ProjectDetails() {
   const [showRuler, setShowRuler] = useState(false);
   const [heroW, setHeroW] = useState(0);
   const [openSections, setOpenSections] = useState<string[]>([]);
+  const [previewTab, setPreviewTab] = useState<'before'|'after'>('after');
   const abortRef = useRef<AbortController | null>(null);
   const scanId = project?.last_scan_id || project?.scan_id || project?.scan?.id;
   
@@ -171,12 +172,13 @@ export default function ProjectDetails() {
   const roi = scan?.roi || null;
   const previewStatus = project?.preview_status;
 
-  // --- hero image resolver (prefer preview, then uploaded image, then scan image) ---
-  const heroUri =
-    project?.preview_url ||
-    project?.input_image_url ||
-    scan?.imageUrl ||
-    null;
+  // --- Before/After image URIs ---
+  const beforeUri = project?.before || project?.plan_json?.preview?.before || project?.input_image_url || scan?.imageUrl;
+  const afterUri = project?.preview_url || project?.plan_json?.preview?.after || project?.plan?.preview_image_url;
+  const activeUri = previewTab === 'before' ? beforeUri : afterUri;
+
+  // --- hero image resolver (use activeUri based on toggle) ---
+  const heroUri = activeUri || null;
   const heroType = project?.preview_url ? 'preview' : project?.input_image_url ? 'input' : scan?.imageUrl ? 'scan' : null;
 
   // Log candidates once per change
@@ -199,8 +201,9 @@ export default function ProjectDetails() {
   console.log('[details] hero =', heroType ?? 'none');
 
   const handleSaveHeroToPhotos = async () => {
-    const uri = heroUri || project?.input_image_url || scan?.imageUrl;
-    if (!uri) { Alert.alert('Nothing to save', 'No image available.'); return; }
+    // Always save the After image only
+    const uri = afterUri;
+    if (!uri) { Alert.alert('Nothing to save', 'No after image available.'); return; }
     try {
       // ask permission once
       const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -501,6 +504,32 @@ export default function ProjectDetails() {
           {/* Single Hero Image - Priority: preview → input → scan → nothing */}
           {resolvedHero ? (
             <View style={{ marginBottom: 20 }}>
+              {/* Before/After Toggle */}
+              {(beforeUri || afterUri) && (
+                <View style={{ flexDirection: 'row', backgroundColor: '#F1EEFF', borderRadius: 10, padding: 4, marginBottom: 8 }}>
+                  {(['before', 'after'] as const).map(tab => (
+                    <Pressable 
+                      key={tab} 
+                      onPress={() => setPreviewTab(tab)} 
+                      style={{ 
+                        flex: 1, 
+                        paddingVertical: 8, 
+                        borderRadius: 8, 
+                        backgroundColor: previewTab === tab ? 'white' : 'transparent' 
+                      }}
+                    >
+                      <Text style={{ 
+                        textAlign: 'center', 
+                        fontWeight: previewTab === tab ? '700' : '500', 
+                        color: '#3A2EB0' 
+                      }}>
+                        {tab === 'before' ? 'Before' : 'After'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              
               <View 
                 onLayout={onHeroLayout}
                 style={{ 
@@ -603,6 +632,11 @@ export default function ProjectDetails() {
                 <RulerOverlay widthPx={heroW} pxPerIn={pxPerIn} />
               )}
               </View>
+              
+              {/* Caption */}
+              <Text style={{ color: '#666', fontSize: 12, marginTop: 6 }}>
+                Before and after preview of your space.
+              </Text>
               
               {/* AR measurements badge row & mode display */}
               <View style={{ paddingVertical: 8 }}>
