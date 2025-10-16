@@ -10,6 +10,19 @@ import { PlanResponse } from '../types/plan';
 
 type R = RouteProp<Record<'DetailedInstructions', { id: string; section?: string }>, 'DetailedInstructions'>;
 
+function RowText({ children, style }: { children: React.ReactNode; style?: any }) {
+  return <Text style={[{ fontSize: 14, color: '#374151' }, style]}>{children}</Text>;
+}
+
+function Pill({ icon, label, style }: { icon?: React.ReactNode; label: string; style?: any }) {
+  return (
+    <View style={[{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4 }, style]}>
+      {icon}
+      <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>{label}</Text>
+    </View>
+  );
+}
+
 export default function DetailedInstructions() {
   const { params } = useRoute<R>();
   const [project, setProject] = React.useState<any>(null);
@@ -167,28 +180,16 @@ export default function DetailedInstructions() {
         {/* Quick stats */}
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
           {plan.skill_level && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-              <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>🎯 {plan.skill_level}</Text>
-            </View>
+            <Pill label={`🎯 ${plan.skill_level}`} />
           )}
           {(planData?.summary?.estTimeHours || plan.time_estimate_hours) && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-              <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
-                ⏱ {planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs
-              </Text>
-            </View>
+            <Pill label={`⏱ ${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`} />
           )}
           {planData?.summary?.estCostUsd && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-              <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
-                💰 ${planData.summary.estCostUsd}
-              </Text>
-            </View>
+            <Pill label={`💰 $${planData.summary.estCostUsd}`} />
           )}
           {totalSteps > 0 && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-              <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>{totalSteps} steps</Text>
-            </View>
+            <Pill label={`${totalSteps} steps`} />
           )}
         </View>
       </View>
@@ -312,12 +313,12 @@ export default function DetailedInstructions() {
               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#111827' }}>
-                    {m.qty} {m.unit} · {m.name}
+                    {`${m.qty} ${m.unit} · ${m.name}`}
                   </Text>
                 </View>
                 {m.subtotalUsd !== undefined && (
                   <Text style={{ fontSize: 15, fontWeight: '600', color: '#059669', marginLeft: 12 }}>
-                    ${m.subtotalUsd.toFixed(2)}
+                    {`$${m.subtotalUsd.toFixed(2)}`}
                   </Text>
                 )}
               </View>
@@ -329,7 +330,7 @@ export default function DetailedInstructions() {
                 return (
                   <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#E5E7EB', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>Materials Subtotal</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>${subtotal.toFixed(2)}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>{`$${subtotal.toFixed(2)}`}</Text>
                   </View>
                 );
               }
@@ -341,9 +342,9 @@ export default function DetailedInstructions() {
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.materials.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, color: '#111827' }}>{m.name}</Text>
-                {m.qty && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{m.qty}{m.unit ? ' ' + m.unit : ''}</Text>}
+                {m.qty && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{`${m.qty}${m.unit ? ' ' + m.unit : ''}`}</Text>}
               </View>
-              {m.price && <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>${m.price}</Text>}
+              {m.price && <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>{`$${m.price}`}</Text>}
             </View>
           ))
         ) : (
@@ -403,7 +404,7 @@ export default function DetailedInstructions() {
               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.tools.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
                 <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{toolObj.name}</Text>
                 {toolObj.rentalPrice && (
-                  <Text style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>~${toolObj.rentalPrice}</Text>
+                  <Text style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>{`~$${toolObj.rentalPrice}`}</Text>
                 )}
               </View>
             );
@@ -461,7 +462,7 @@ export default function DetailedInstructions() {
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < plan.cuts.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
               <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part}</Text>
               <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
-                {cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×{cut.qty ?? 1}
+                {`${cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×${cut.qty ?? 1}`}
               </Text>
             </View>
           ))
