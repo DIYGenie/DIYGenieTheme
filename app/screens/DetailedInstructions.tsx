@@ -248,11 +248,11 @@ export default function DetailedInstructions() {
         </View>
       )}
 
-      {/* Overview Section */}
+      {/* Before You Begin Section */}
       <View ref={refs.overview} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           <Ionicons name="information-circle" size={24} color="#7C3AED" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Overview</Text>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Before You Begin</Text>
         </View>
         
         {plan.overview ? (
