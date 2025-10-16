@@ -191,29 +191,51 @@ export default function DetailedInstructions() {
 
   return (
     <ScrollView ref={scrollViewRef} style={{ flex: 1, backgroundColor: '#FAFAFA' }} contentContainerStyle={{ paddingBottom: 100, paddingTop: 60 }}>
-      {/* Summary Card - Clean Header */}
-      <View style={{ backgroundColor: '#F7F7FB', borderRadius: 12, padding: 14, marginHorizontal: 16, marginTop: 8 }}>
-        <Text style={{ fontSize: 20, fontWeight: '600', color: '#1A1A1A' }}>
+      {/* Purple Branded Header */}
+      <View
+        style={{
+          backgroundColor: '#6D28D9',
+          borderRadius: 12,
+          marginHorizontal: 16,
+          marginTop: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: '700',
+            color: 'white',
+          }}
+        >
           {cleanTitle}
         </Text>
-        <Text style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
+
+        <Text
+          style={{
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.8)',
+            marginTop: 3,
+          }}
+        >
           Step-by-step builder&apos;s guide
         </Text>
-        
-        {/* Quick stats row */}
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
-          {typeof (planData?.summary?.estTimeHours ?? plan?.time_estimate_hours) !== 'undefined' && (
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+          {typeof (planData?.summary?.estTimeHours ?? plan?.time_estimate_hours) !==
+            'undefined' && (
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
               {(planData?.summary?.estTimeHours ?? plan?.time_estimate_hours) || 0} hrs
             </Text>
           )}
           {typeof planData?.summary?.estCostUsd !== 'undefined' && (
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
               ${planData?.summary?.estCostUsd || 0}
             </Text>
           )}
           {totalSteps > 0 && (
-            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+            <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
               {totalSteps} steps
             </Text>
           )}
