@@ -1,3 +1,5 @@
+Replace app/components/SectionCard.tsx with the following implementation. Do not modify any other files.
+
 // app/components/SectionCard.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
