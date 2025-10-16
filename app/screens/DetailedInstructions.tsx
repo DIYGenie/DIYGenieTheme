@@ -353,55 +353,131 @@ export default function DetailedInstructions() {
         )}
       </View>
 
-      {/* Tools Section - Refreshed */}
+      {/* Tools Section - Polished */}
       <View ref={refs.tools} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: '#3A2EB0', marginBottom: 8 }}>Tools</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#3A2EB0', marginBottom: 12 }}>Tools</Text>
         
         {planData?.tools ? (
           <>
+            {/* Required Tools Card */}
             {planData.tools.required && planData.tools.required.length > 0 && (
-              <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-                {planData.tools.optional && planData.tools.optional.length > 0 && (
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 6 }}>Required</Text>
-                )}
+              <View style={{ 
+                backgroundColor: '#FFFFFF', 
+                borderRadius: 12, 
+                padding: 16, 
+                marginBottom: 12, 
+                shadowColor: '#000', 
+                shadowOpacity: 0.08, 
+                shadowRadius: 8, 
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: '#F3F4F6'
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <Ionicons name="hammer-outline" size={18} color="#6D28D9" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#1F2937', fontFamily: 'Manrope_600SemiBold' }}>
+                    Required Tools
+                  </Text>
+                </View>
                 {planData.tools.required.map((tool, i) => (
-                  <Text key={`req-${i}`} style={{ fontSize: 15, color: '#222', marginBottom: 4 }}>• {tool}</Text>
+                  <View 
+                    key={`req-${i}`} 
+                    style={{ 
+                      paddingVertical: 8,
+                      borderBottomWidth: i < planData.tools.required.length - 1 ? 0.5 : 0,
+                      borderBottomColor: '#E5E7EB'
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, color: '#374151', fontFamily: 'Inter_400Regular' }}>
+                      • {tool}
+                    </Text>
+                  </View>
                 ))}
               </View>
             )}
             
+            {/* Optional Tools Card */}
             {planData.tools.optional && planData.tools.optional.length > 0 && (
-              <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-                {planData.tools.required && planData.tools.required.length > 0 && (
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 6 }}>Optional</Text>
-                )}
+              <View style={{ 
+                backgroundColor: '#FFFFFF', 
+                borderRadius: 12, 
+                padding: 16, 
+                marginBottom: 8, 
+                shadowColor: '#000', 
+                shadowOpacity: 0.08, 
+                shadowRadius: 8, 
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: '#F3F4F6'
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <Ionicons name="build-outline" size={18} color="#6D28D9" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#1F2937', fontFamily: 'Manrope_600SemiBold' }}>
+                    Optional Tools
+                  </Text>
+                </View>
                 {planData.tools.optional.map((tool, i) => (
-                  <Text key={`opt-${i}`} style={{ fontSize: 15, color: '#222', marginBottom: 4 }}>• {tool}</Text>
+                  <View 
+                    key={`opt-${i}`} 
+                    style={{ 
+                      paddingVertical: 8,
+                      borderBottomWidth: i < planData.tools.optional.length - 1 ? 0.5 : 0,
+                      borderBottomColor: '#E5E7EB'
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, color: '#374151', fontFamily: 'Inter_400Regular' }}>
+                      • {tool}
+                    </Text>
+                  </View>
                 ))}
               </View>
             )}
             
-            {(!planData.tools.required || planData.tools.required.length === 0) && (
-              <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 6 }}>Required</Text>
-                <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
-              </View>
-            )}
-            
-            {(!planData.tools.optional || planData.tools.optional.length === 0) && (
-              <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 6 }}>Optional</Text>
-                <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
-              </View>
+            {/* Empty state if no tools at all */}
+            {(!planData.tools.required || planData.tools.required.length === 0) && 
+             (!planData.tools.optional || planData.tools.optional.length === 0) && (
+              <Text style={{ fontSize: 14, color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', paddingVertical: 12 }}>
+                No tools listed for this project.
+              </Text>
             )}
           </>
         ) : plan.tools && plan.tools.length > 0 ? (
-          <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+          <View style={{ 
+            backgroundColor: '#FFFFFF', 
+            borderRadius: 12, 
+            padding: 16, 
+            shadowColor: '#000', 
+            shadowOpacity: 0.08, 
+            shadowRadius: 8, 
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 3,
+            borderWidth: 1,
+            borderColor: '#F3F4F6'
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="hammer-outline" size={18} color="#6D28D9" style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#1F2937', fontFamily: 'Manrope_600SemiBold' }}>
+                Required Tools
+              </Text>
+            </View>
             {plan.tools.map((tool: any, i: number) => {
               const toolObj = typeof tool === 'string' ? { name: tool } : tool;
               return (
-                <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 15, color: '#222', flex: 1 }}>• {toolObj.name}</Text>
+                <View 
+                  key={i} 
+                  style={{ 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    paddingVertical: 8,
+                    borderBottomWidth: i < plan.tools.length - 1 ? 0.5 : 0,
+                    borderBottomColor: '#E5E7EB'
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: '#374151', flex: 1, fontFamily: 'Inter_400Regular' }}>
+                    • {toolObj.name}
+                  </Text>
                   <TextIf style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
                     {toolObj.rentalPrice ? `~${fmtMoney(toolObj.rentalPrice)}` : null}
                   </TextIf>
@@ -410,10 +486,9 @@ export default function DetailedInstructions() {
             })}
           </View>
         ) : (
-          <View style={{ backgroundColor: '#F9F8FF', borderRadius: 12, padding: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 6 }}>Required</Text>
-            <Text style={{ fontSize: 15, color: '#9CA3AF' }}>None listed.</Text>
-          </View>
+          <Text style={{ fontSize: 14, color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', paddingVertical: 12 }}>
+            No tools listed for this project.
+          </Text>
         )}
       </View>
 
