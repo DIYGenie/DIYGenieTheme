@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId, createOrFetchDemoProject } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
@@ -123,6 +123,7 @@ const TEMPLATES = [
 // Template cards section
 function TemplateCards({ navigation, onTemplateCreate }) {
   const [creating, setCreating] = useState(null);
+  const [launchingDemo, setLaunchingDemo] = useState(false);
 
   const handleCreateTemplate = async (template) => {
     setCreating(template.key);
@@ -152,9 +153,57 @@ function TemplateCards({ navigation, onTemplateCreate }) {
     }
   };
 
+  const handleTrySample = async () => {
+    if (launchingDemo) return;
+    try {
+      setLaunchingDemo(true);
+      const res = await createOrFetchDemoProject();
+      if (res.ok && res.id) {
+        // Navigate to details
+        const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
+        if (parent?.navigate) {
+          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
+        } else {
+          navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
+        }
+      } else {
+        Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
+      }
+    } finally {
+      setLaunchingDemo(false);
+    }
+  };
+
   return (
     <View style={templateStyles.section}>
       <Text style={templateStyles.header}>Start with a template</Text>
+      
+      {/* Demo Project CTA */}
+      <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
+        <Pressable
+          onPress={handleTrySample}
+          style={{
+            backgroundColor: '#6E2EF5',
+            borderRadius: 12,
+            paddingVertical: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          accessibilityRole="button"
+        >
+          {launchingDemo ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+              Try a Sample Project
+            </Text>
+          )}
+        </Pressable>
+        <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12 }}>
+          Loads a ready-to-view plan that doesn't count against your monthly limits.
+        </Text>
+      </View>
+
       {TEMPLATES.map((template) => (
         <View key={template.key} style={templateStyles.card}>
           <View style={templateStyles.cardContent}>
