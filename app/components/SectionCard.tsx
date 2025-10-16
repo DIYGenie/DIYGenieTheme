@@ -22,6 +22,7 @@ type Props = {
 };
 
 function asIconEl(icon: IconInput): ReactNode {
+  // Catch null, undefined, false, 0, empty string
   if (!icon) return null;
 
   // Already a valid React element? use as-is
@@ -32,8 +33,8 @@ function asIconEl(icon: IconInput): ReactNode {
     return <Ionicons name={icon as any} size={16} color={brand.primary} />;
   }
 
-  // Object with { name, size?, color? }
-  if (typeof icon === 'object' && 'name' in icon) {
+  // Object form: must be an object AND have a 'name' property
+  if (typeof icon === 'object' && icon !== null && 'name' in icon && typeof (icon as any).name === 'string') {
     const cfg = icon as { name: string; size?: number; color?: string };
     return (
       <Ionicons
@@ -44,7 +45,8 @@ function asIconEl(icon: IconInput): ReactNode {
     );
   }
 
-  // Anything else -> ignore to prevent crashes
+  // Anything else (empty objects, arrays, etc.) -> ignore safely
+  console.warn('[SectionCard] Invalid icon format:', icon);
   return null;
 }
 
