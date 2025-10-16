@@ -1,58 +1,50 @@
-// app/components/SectionCard.tsx
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { brand } from '../../theme/colors';
 
-type IconArg =
-  | React.ReactNode
+type IconInput =
+  | ReactNode
   | string
-  | { name?: string; size?: number; color?: string }
+  | { name: string; size?: number; color?: string }
   | null
   | undefined;
 
 type Props = {
-  icon?: IconArg;
-  title: string;
-  summary?: string;
-  countBadge?: number | string;
-  children?: React.ReactNode;
+  icon?: IconInput;
+  title: ReactNode;                // allow string or <Text/>
+  summary?: string | ReactNode;    // optional subtext
+  countBadge?: number | string | ReactNode;
+  children?: ReactNode;
   isOpen?: boolean;
-  onToggle?: () => void;
+  defaultOpen?: boolean;
+  onToggle?: (open: boolean) => void;
 };
 
-function renderIcon(icon?: IconArg) {
+function asIconEl(icon: IconInput): ReactNode {
   if (!icon) return null;
 
-  // Already a valid React element? Render as-is.
+  // Already a valid React element? use as-is
   if (React.isValidElement(icon)) return icon;
 
-  // Icon specified by name string
+  // String => treat as Ionicons name
   if (typeof icon === 'string') {
+    return <Ionicons name={icon as any} size={16} color={brand.primary} />;
+  }
+
+  // Object with { name, size?, color? }
+  if (typeof icon === 'object' && 'name' in icon) {
+    const cfg = icon as { name: string; size?: number; color?: string };
     return (
       <Ionicons
-        name={icon as any}
-        size={18}
-        color={brand.primary ?? '#6C3EF2'}
+        name={cfg.name as any}
+        size={cfg.size ?? 16}
+        color={cfg.color ?? brand.primary}
       />
     );
   }
 
-  // Object form: { name, size?, color? }
-  if (typeof icon === 'object') {
-    const { name, size, color } = icon as any;
-    if (typeof name === 'string') {
-      return (
-        <Ionicons
-          name={name as any}
-          size={size ?? 18}
-          color={color ?? brand.primary ?? '#6C3EF2'}
-        />
-      );
-    }
-  }
-
-  // Anything else → ignore safely
+  // Anything else -> ignore to prevent crashes
   return null;
 }
 
@@ -63,83 +55,70 @@ export default function SectionCard({
   countBadge,
   children,
 }: Props) {
-  const iconElement = renderIcon(icon);
-  
+  const iconEl = asIconEl(icon);
+
   return (
     <View
       style={{
         backgroundColor: 'white',
-        marginHorizontal: 16,
-        marginVertical: 8,
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 16,
+        marginHorizontal: 16,
+        marginTop: 12,
         shadowColor: '#000',
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.05,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
         elevation: 2,
       }}
     >
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: summary ? 6 : 0,
-        }}
-      >
-        {iconElement && <View>{iconElement}</View>}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {iconEl ? <View style={{ marginRight: 8 }}>{iconEl}</View> : null}
 
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '700',
-            color: '#1A1A1A',
-            flexShrink: 1,
-          }}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
+        {/* Title */}
+        {typeof title === 'string' ? (
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#14181F' }}>
+            {title}
+          </Text>
+        ) : (
+          title
+        )}
 
-        {countBadge !== undefined && countBadge !== null && (
+        {/* Count badge (optional) */}
+        {countBadge != null ? (
           <View
             style={{
               marginLeft: 'auto',
-              backgroundColor: '#F2EDFF',
-              borderRadius: 999,
+              backgroundColor: '#F1EEFF',
               paddingHorizontal: 8,
               paddingVertical: 2,
+              borderRadius: 999,
             }}
           >
-            <Text
-              style={{
-                color: brand.primary ?? '#6C3EF2',
-                fontSize: 12,
-                fontWeight: '600',
-              }}
-            >
-              {String(countBadge)}
-            </Text>
+            {typeof countBadge === 'string' || typeof countBadge === 'number' ? (
+              <Text style={{ color: brand.primary, fontWeight: '600' }}>
+                {String(countBadge)}
+              </Text>
+            ) : (
+              countBadge
+            )}
           </View>
-        )}
+        ) : null}
       </View>
 
+      {/* Summary (optional) */}
       {summary ? (
-        <Text
-          style={{
-            color: '#6B7280',
-            fontSize: 14,
-            marginBottom: 8,
-          }}
-        >
-          {summary}
-        </Text>
+        <View style={{ marginTop: 6 }}>
+          {typeof summary === 'string' ? (
+            <Text style={{ color: '#6B7280' }}>{summary}</Text>
+          ) : (
+            summary
+          )}
+        </View>
       ) : null}
 
       {/* Body */}
-      {children ? <View style={{ marginTop: 4 }}>{children}</View> : null}
+      {children ? <View style={{ marginTop: 12 }}>{children}</View> : null}
     </View>
   );
 }
