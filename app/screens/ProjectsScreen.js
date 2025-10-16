@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator, InteractionManager, DeviceEventEmitter } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator, InteractionManager, DeviceEventEmitter, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown, createOrFetchDemoProject } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation }) {
@@ -15,6 +15,7 @@ export default function ProjectsScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [launchingDemo, setLaunchingDemo] = useState(false);
 
   // Unified loader
   const fetchProjects = useCallback(async () => {
@@ -62,6 +63,23 @@ export default function ProjectsScreen({ navigation }) {
 
   const handleStartProject = () => {
     navigation.navigate('NewProject');
+  };
+
+  const handleTrySample = async () => {
+    if (launchingDemo) return;
+    try {
+      setLaunchingDemo(true);
+      const res = await createOrFetchDemoProject();
+      if (res.ok && res.id) {
+        // Navigate to details
+        const parent = navigation.getParent?.();
+        parent?.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
+      } else {
+        Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
+      }
+    } finally {
+      setLaunchingDemo(false);
+    }
   };
 
   const filteredProjects = projects.filter(project => {
@@ -132,6 +150,33 @@ export default function ProjectsScreen({ navigation }) {
             </View>
             <Text style={styles.emptyTitle}>No projects yet</Text>
             <Text style={styles.emptySubtitle}>Start by scanning your room or uploading a photo.</Text>
+            
+            {/* Demo Project CTA */}
+            <View style={{ width: '100%', marginBottom: 16 }}>
+              <Pressable
+                onPress={handleTrySample}
+                style={{
+                  backgroundColor: '#6E2EF5',
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                accessibilityRole="button"
+              >
+                {launchingDemo ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+                    Try a Sample Project
+                  </Text>
+                )}
+              </Pressable>
+              <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12, textAlign: 'center' }}>
+                Loads a ready-to-view plan that doesn't count against your monthly limits.
+              </Text>
+            </View>
+
             <TouchableOpacity style={styles.startProjectButton} onPress={handleStartProject}>
               <Text style={styles.startProjectText}>Start Your First Project</Text>
             </TouchableOpacity>
