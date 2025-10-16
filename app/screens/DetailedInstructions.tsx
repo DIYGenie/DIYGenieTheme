@@ -83,7 +83,7 @@ export default function DetailedInstructions() {
     }
   }, [params.section, planData, project]);
 
-  const plan = planData ? null : (project?.plan ?? {});
+  const plan = project?.plan ?? {};
 
   async function saveSection(ref: React.RefObject<View>, name: string) {
     try {
