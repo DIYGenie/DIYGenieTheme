@@ -14,15 +14,6 @@ function RowText({ children, style }: { children: React.ReactNode; style?: any }
   return <Text style={[{ fontSize: 14, color: '#374151' }, style]}>{children}</Text>;
 }
 
-function Pill({ icon, label, style }: { icon?: React.ReactNode; label: string; style?: any }) {
-  return (
-    <View style={[{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4 }, style]}>
-      {icon}
-      <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>{label}</Text>
-    </View>
-  );
-}
-
 export default function DetailedInstructions() {
   const { params } = useRoute<R>();
   const [project, setProject] = React.useState<any>(null);
@@ -180,16 +171,24 @@ export default function DetailedInstructions() {
         {/* Quick stats */}
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
           {plan.skill_level && (
-            <Pill label={plan.skill_level} />
+            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+              {plan.skill_level}
+            </Text>
           )}
           {(planData?.summary?.estTimeHours || plan.time_estimate_hours) && (
-            <Pill label={`${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`} />
+            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+              {`${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`}
+            </Text>
           )}
           {planData?.summary?.estCostUsd && (
-            <Pill label={`$${planData.summary.estCostUsd}`} />
+            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+              {`$${planData.summary.estCostUsd}`}
+            </Text>
           )}
           {totalSteps > 0 && (
-            <Pill label={`${totalSteps} steps`} />
+            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+              {`${totalSteps} steps`}
+            </Text>
           )}
         </View>
       </View>
