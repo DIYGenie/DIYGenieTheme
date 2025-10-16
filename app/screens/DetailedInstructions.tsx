@@ -180,13 +180,13 @@ export default function DetailedInstructions() {
         {/* Quick stats */}
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
           {plan.skill_level && (
-            <Pill label={`🎯 ${plan.skill_level}`} />
+            <Pill label={plan.skill_level} />
           )}
           {(planData?.summary?.estTimeHours || plan.time_estimate_hours) && (
-            <Pill label={`⏱ ${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`} />
+            <Pill label={`${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`} />
           )}
           {planData?.summary?.estCostUsd && (
-            <Pill label={`💰 $${planData.summary.estCostUsd}`} />
+            <Pill label={`$${planData.summary.estCostUsd}`} />
           )}
           {totalSteps > 0 && (
             <Pill label={`${totalSteps} steps`} />
