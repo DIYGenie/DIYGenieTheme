@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch, Share } from 'react-native';
+import { View, Image, ActivityIndicator, Pressable, Text, ScrollView, Alert, TouchableOpacity, Platform, Switch, Share, DeviceEventEmitter } from 'react-native';
 import { useRoute, useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeBack } from '../lib/useSafeBack';
@@ -19,6 +19,7 @@ import RulerOverlay from '../components/RulerOverlay';
 import { simpleToast } from '../lib/ui';
 import { formatPlanText } from '../lib/planFormat';
 import { enableLayoutAnimOnce, animateSection } from '../lib/anim';
+import { deleteProjectDeep } from '../lib/deleteProject';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -54,6 +55,7 @@ export default function ProjectDetails() {
   
   const [planJson, setPlanJson] = useState(null);
   const [planLoading, setPlanLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   enableLayoutAnimOnce();
 
@@ -285,6 +287,55 @@ export default function ProjectDetails() {
     } finally {
       setPlanLoading(false);
     }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectId) return;
+
+    Alert.alert(
+      'Delete Project?',
+      'This action is permanent and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              const res = await deleteProjectDeep(projectId);
+              
+              if (!res.ok) {
+                setToast({
+                  visible: true,
+                  message: res.message || 'Could not delete project. Please try again.',
+                  type: 'error',
+                });
+                return;
+              }
+
+              setToast({
+                visible: true,
+                message: 'Project deleted',
+                type: 'success',
+              });
+
+              // Navigate back and emit refresh event
+              navigation.goBack();
+              DeviceEventEmitter.emit('projects:refresh');
+            } catch (err) {
+              setToast({
+                visible: true,
+                message: 'Could not delete project. Please try again.',
+                type: 'error',
+              });
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const generatePlanIfNeeded = async (p: any) => {
@@ -1093,6 +1144,36 @@ export default function ProjectDetails() {
                   <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Share Plan</Text>
                 </View>
               </TouchableOpacity>
+
+              {/* Delete Project Button */}
+              <View style={{ marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+                <TouchableOpacity
+                  onPress={handleDeleteProject}
+                  disabled={deleting}
+                  style={{ 
+                    backgroundColor: deleting ? '#FCA5A5' : '#EF4444',
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: 'center',
+                    opacity: deleting ? 0.6 : 1,
+                  }}
+                >
+                  {deleting ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <ActivityIndicator size="small" color="white" />
+                      <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Deleting...</Text>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="trash-outline" size={20} color="white" />
+                      <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>Delete Project</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 8, textAlign: 'center' }}>
+                  This action is permanent
+                </Text>
+              </View>
 
               {/* --- Preview (Decor8 stub) --- */}
               {SHOW_DEBUG_ACTIONS && (

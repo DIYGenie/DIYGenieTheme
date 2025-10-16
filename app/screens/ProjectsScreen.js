@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, RefreshControl, Image, ActivityIndicator, InteractionManager, DeviceEventEmitter } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,6 +31,18 @@ export default function ProjectsScreen({ navigation }) {
 
   useEffect(() => {
     fetchProjects();
+  }, [fetchProjects]);
+
+  // Listen for project deletion events
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('projects:refresh', () => {
+      console.log('[projects] delete event → refetch');
+      fetchProjects();
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, [fetchProjects]);
 
   // Auto-refresh list whenever this screen gains focus
