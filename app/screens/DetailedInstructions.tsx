@@ -192,27 +192,24 @@ export default function DetailedInstructions() {
         </Text>
         
         {/* Quick stats */}
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-          {plan.skill_level && (
-            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
-              {plan.skill_level}
-            </Text>
-          )}
-          {(planData?.summary?.estTimeHours || plan.time_estimate_hours) && (
-            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
-              {`${planData?.summary?.estTimeHours || plan.time_estimate_hours} hrs`}
-            </Text>
-          )}
-          {planData?.summary?.estCostUsd && (
-            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
-              {`$${planData.summary.estCostUsd}`}
-            </Text>
-          )}
-          {totalSteps > 0 && (
-            <Text style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
-              {`${totalSteps} steps`}
-            </Text>
-          )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+            {typeof plan?.skill_level === 'string' ? plan.skill_level : null}
+          </TextIf>
+
+          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+            {notNil(planData?.summary?.estTimeHours) ? `${planData!.summary!.estTimeHours} hrs`
+             : notNil(plan?.time_estimate_hours) ? `${plan!.time_estimate_hours} hrs`
+             : null}
+          </TextIf>
+
+          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+            {fmtMoney(planData?.summary?.estCostUsd)}
+          </TextIf>
+
+          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+            {totalSteps > 0 ? `${totalSteps} steps` : null}
+          </TextIf>
         </View>
       </View>
 
