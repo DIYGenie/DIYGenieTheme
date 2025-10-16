@@ -63,6 +63,8 @@ export default function SectionCard({
   countBadge,
   children,
 }: Props) {
+  const iconElement = renderIcon(icon);
+  
   return (
     <View
       style={{
@@ -87,7 +89,7 @@ export default function SectionCard({
           marginBottom: summary ? 6 : 0,
         }}
       >
-        <View>{renderIcon(icon)}</View>
+        {iconElement && <View>{iconElement}</View>}
 
         <Text
           style={{
