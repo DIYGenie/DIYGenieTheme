@@ -33,7 +33,7 @@ function renderIcon(icon?: IconArg) {
       <Ionicons
         name={icon as any}
         size={18}
-        color={brand.purple ?? '#6C3EF2'}
+        color={brand.primary ?? '#6C3EF2'}
       />
     );
   }
@@ -46,7 +46,7 @@ function renderIcon(icon?: IconArg) {
         <Ionicons
           name={name as any}
           size={size ?? 18}
-          color={color ?? brand.purple ?? '#6C3EF2'}
+          color={color ?? brand.primary ?? '#6C3EF2'}
         />
       );
     }
@@ -113,7 +113,7 @@ export default function SectionCard({
           >
             <Text
               style={{
-                color: brand.purple ?? '#6C3EF2',
+                color: brand.primary ?? '#6C3EF2',
                 fontSize: 12,
                 fontWeight: '600',
               }}
