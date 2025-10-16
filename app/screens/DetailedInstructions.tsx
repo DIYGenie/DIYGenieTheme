@@ -280,7 +280,7 @@ export default function DetailedInstructions() {
             </View>
             {(planData?.safety?.notes || plan.safety_warnings || []).map((warning: string, i: number) => (
               <Text key={i} style={{ fontSize: 14, color: '#7F1D1D', lineHeight: 20, marginTop: 4 }}>
-                • {warning}
+                {warning}
               </Text>
             ))}
           </View>
@@ -313,7 +313,7 @@ export default function DetailedInstructions() {
               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#111827' }}>
-                    {`${m.qty} ${m.unit} · ${m.name}`}
+                    {`${m.qty} ${m.unit} ${m.name}`}
                   </Text>
                 </View>
                 {m.subtotalUsd !== undefined && (
@@ -366,7 +366,7 @@ export default function DetailedInstructions() {
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 8 }}>Required</Text>
                 {planData.tools.required.map((tool, i) => (
                   <View key={`req-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
-                    <Text style={{ fontSize: 15, color: '#111827' }}>• {tool}</Text>
+                    <Text style={{ fontSize: 15, color: '#111827' }}>{tool}</Text>
                   </View>
                 ))}
               </>
@@ -377,7 +377,7 @@ export default function DetailedInstructions() {
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: planData.tools.required && planData.tools.required.length > 0 ? 12 : 0, marginBottom: 8 }}>Optional</Text>
                 {planData.tools.optional.map((tool, i) => (
                   <View key={`opt-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
-                    <Text style={{ fontSize: 15, color: '#6B7280' }}>• {tool}</Text>
+                    <Text style={{ fontSize: 15, color: '#6B7280' }}>{tool}</Text>
                   </View>
                 ))}
               </>
