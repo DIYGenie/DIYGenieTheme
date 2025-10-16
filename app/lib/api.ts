@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
+import { PlanResponse } from '../types/plan';
 
 function trimSlash(s?: string){ return (s || '').replace(/\/+$/,''); }
 function stripApiSuffix(s?: string){ return (s || '').replace(/\/api\/?$/,''); }
@@ -229,6 +230,50 @@ export async function fetchLatestScanForProject(projectId: string) {
     roi: data.roi || null,
     measureResult: data.measure_result || null
   };
+}
+
+export async function fetchProjectPlan(projectId: string): Promise<PlanResponse> {
+  const base =
+    (global as any).__API_BASE_URL__ ??
+    process.env.EXPO_PUBLIC_WEBHOOKS_BASE_URL ??
+    process.env.EXPO_PUBLIC_BASE_URL ??
+    process.env.API_BASE ??
+    'https://diy-genie-webhooks-tyekowalski.replit.app';
+
+  const cacheBuster = `?t=${Date.now()}`;
+  const url = `${base}/api/projects/${projectId}/plan${cacheBuster}`;
+  
+  try {
+    const res = await fetch(url, { 
+      method: 'GET', 
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store' 
+    } as any);
+    
+    if (res.status === 404) {
+      console.log('[plan api] 404 not found', projectId);
+      return { ok: false, error: 'Plan not found' };
+    }
+    
+    if (res.status === 409) {
+      console.log('[plan api] 409 plan not ready', projectId);
+      return { ok: false, error: 'Plan is being generated' };
+    }
+    
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.log('[plan api error]', res.status, text);
+      return { ok: false, error: `Failed to fetch plan: ${res.status}` };
+    }
+    
+    const data = await res.json();
+    console.log('[plan api] success', { projectId, hasSummary: !!data.summary });
+    
+    return { ok: true, ...data };
+  } catch (err) {
+    console.error('[plan api] exception', err);
+    return { ok: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
 }
 
 export async function fetchProjectPlanMarkdown(
