@@ -1,88 +1,120 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import React, { useState, isValidElement } from "react";
+import { View, Text, Pressable } from "react-native";
+import { brand } from "../../theme/colors";
 
 type Props = {
-  icon: React.ReactNode;
-  title: string;
-  summary?: string;
-  countBadge?: number;
+  icon?: React.ReactNode; // must be a React element if provided
+  title: string; // rendered inside <Text>
+  summary?: string | number | React.ReactNode; // string/number -> Text, node -> View
+  countBadge?: string | number; // rendered as Text (stringified)
   defaultOpen?: boolean;
-  onNavigate?: () => void;
-  children: React.ReactNode;
   isOpen?: boolean;
-  onToggle?: () => void;
-  headerAction?: React.ReactNode;
+  onToggle?: (open: boolean) => void;
+  children?: React.ReactNode;
 };
 
+const styles = {
+  card: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  headRow: { flexDirection: "row", alignItems: "center" as const },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F2EDFF",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 10,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#121212",
+    flex: 1,
+  },
+  badge: {
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: "#EFEAFE",
+    color: brand?.purple ?? "#700",
+    fontWeight: "600" as const,
+    overflow: "hidden" as const,
+    color: brand?.purple ?? "#700",
+    fontWeight: "600" as const,
+    overflow: "hidden" as const,
+  },
+  summaryText: { marginTop: 6, color: "#6B7280" },
+  divider: { height: 12 },
+};
+
+function Summary({ value }: { value?: Props["summary"] }) {
+  if (value === null || value === undefined) return null;
+
+  // Strings / numbers -> render in <Text>
+  if (typeof value === "string" || typeof value === "number") {
+    return <Text style={styles.summaryText}>{String(value)}</Text>;
+  }
+
+  // React elements -> render directly in a View
+  if (isValidElement(value)) {
+    return <View style={{ marginTop: 6 }}>{value}</View>;
+  }
+
+  // Anything else (plain objects, arrays of non-elements) -> ignore safely
+  return null;
+}
+
 export default function SectionCard({
-  icon, title, summary, countBadge, defaultOpen, onNavigate, children, isOpen, onToggle, headerAction,
+  icon,
+  title,
+  summary,
+  countBadge,
+  defaultOpen = true,
+  isOpen,
+  onToggle,
+  children,
 }: Props) {
-  const [internalOpen, setInternalOpen] = useState(!!defaultOpen);
-  const controlled = isOpen !== undefined && onToggle !== undefined;
-  const open = controlled ? isOpen : internalOpen;
-  
-  const toggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (controlled && onToggle) {
-      onToggle();
-    } else {
-      setInternalOpen(v => {
-        const newState = !v;
-        console.log(`[details] toggle=${title.toLowerCase()} open=${newState}`);
-        return newState;
-      });
-    }
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+
+  const handleToggle = () => {
+    const next = !open;
+    setInternalOpen(next);
+    onToggle?.(next);
   };
 
+  const showIcon = isValidElement(icon) ? icon : null;
+
   return (
-    <View
-      style={{
-        backgroundColor: '#F8F7FF',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 14,
-        shadowColor: '#000',
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 6,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={toggle}
-          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-        >
-          <View style={{ marginRight: 12 }}>{icon}</View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: '700' }}>{title}</Text>
-            {!!summary && <Text style={{ marginTop: 2, color: '#6B7280' }}>{summary}</Text>}
-          </View>
+    <View style={styles.card}>
+      <Pressable onPress={handleToggle} style={styles.headRow}>
+        {showIcon ? <View style={styles.iconWrap}>{showIcon}</View> : null}
+        <Text style={styles.title}>{title}</Text>
+        {countBadge !== undefined && countBadge !== null ? (
+          <Text style={styles.badge}>{String(countBadge)}</Text>
+        ) : null}
+      </Pressable>
 
-          {!!countBadge && (
-            <View style={{
-              backgroundColor: '#EDE9FE', paddingHorizontal: 8, paddingVertical: 4,
-              borderRadius: 10, marginRight: 8,
-            }}>
-              <Text style={{ color: '#6D28D9', fontWeight: '700' }}>{countBadge}</Text>
-            </View>
-          )}
+      <Summary value={summary} />
 
-          <Ionicons name="chevron-down" size={22} color="#6D28D9" style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }} />
-        </TouchableOpacity>
-        
-        {headerAction && (
-          <View style={{ marginLeft: 8 }}>{headerAction}</View>
-        )}
-      </View>
-
-      {open && <View style={{ marginTop: 12 }}>{children}</View>}
+      {open ? (
+        <>
+          <View style={styles.divider} />
+          {children}
+        </>
+      ) : null}
     </View>
   );
 }
