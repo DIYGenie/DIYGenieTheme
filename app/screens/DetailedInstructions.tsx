@@ -112,6 +112,15 @@ export default function DetailedInstructions() {
 
   const plan = project?.plan ?? {};
 
+  // Derive a clean, human title (strip any trailing datetime)
+  const rawTitle =
+    planData?.summary?.title ||
+    plan?.title ||
+    project?.name ||
+    'Project Plan';
+
+  const cleanTitle = rawTitle.replace(/\s*\d{4}-\d{2}-\d{2}.*$/, '');
+
   async function saveSection(ref: React.RefObject<View>, name: string) {
     try {
       const uri = await captureRef(ref, { format: 'png', quality: 1 });
@@ -182,30 +191,32 @@ export default function DetailedInstructions() {
 
   return (
     <ScrollView ref={scrollViewRef} style={{ flex: 1, backgroundColor: '#FAFAFA' }} contentContainerStyle={{ paddingBottom: 100, paddingTop: 60 }}>
-      {/* Summary Card - Smaller & Calmer */}
-      <View style={{ backgroundColor: 'white', padding: 12, borderRadius: 16, margin: 12 }}>
-        <Text style={{ fontSize: 22, fontWeight: '600', color: '#1A1A1A' }}>
-          {planData?.summary?.title || plan?.title || 'Project Plan'}
+      {/* Summary Card - Clean Header */}
+      <View style={{ backgroundColor: '#F7F7FB', borderRadius: 12, padding: 14, marginHorizontal: 16, marginTop: 8 }}>
+        <Text style={{ fontSize: 20, fontWeight: '600', color: '#1A1A1A' }}>
+          {cleanTitle}
         </Text>
-        <Text style={{ fontSize: 14, color: '#666', marginTop: 2 }}>
+        <Text style={{ fontSize: 13, color: '#666', marginTop: 4 }}>
           Step-by-step builder&apos;s guide
         </Text>
         
-        {/* Stats row */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
-            {notNil(planData?.summary?.estTimeHours) ? `${planData!.summary!.estTimeHours} hrs`
-             : notNil(plan?.time_estimate_hours) ? `${plan!.time_estimate_hours} hrs`
-             : null}
-          </TextIf>
-
-          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
-            {fmtMoney(planData?.summary?.estCostUsd)}
-          </TextIf>
-
-          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
-            {totalSteps > 0 ? `${totalSteps} steps` : null}
-          </TextIf>
+        {/* Quick stats row */}
+        <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>
+          {typeof (planData?.summary?.estTimeHours ?? plan?.time_estimate_hours) !== 'undefined' && (
+            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+              {(planData?.summary?.estTimeHours ?? plan?.time_estimate_hours) || 0} hrs
+            </Text>
+          )}
+          {typeof planData?.summary?.estCostUsd !== 'undefined' && (
+            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+              ${planData?.summary?.estCostUsd || 0}
+            </Text>
+          )}
+          {totalSteps > 0 && (
+            <Text style={{ fontSize: 12, color: '#6B7280' }}>
+              {totalSteps} steps
+            </Text>
+          )}
         </View>
       </View>
 
