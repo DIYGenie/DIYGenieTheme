@@ -307,17 +307,35 @@ export default function DetailedInstructions() {
         </View>
         
         {planData?.materials && planData.materials.length > 0 ? (
-          planData.materials.map((m, i) => (
-            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, color: '#111827' }}>{m.name}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
-                  {m.qty} {m.unit}
-                </Text>
+          <>
+            {planData.materials.map((m, i) => (
+              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, color: '#111827' }}>
+                    {m.qty} {m.unit} · {m.name}
+                  </Text>
+                </View>
+                {m.subtotalUsd !== undefined && (
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#059669', marginLeft: 12 }}>
+                    ${m.subtotalUsd.toFixed(2)}
+                  </Text>
+                )}
               </View>
-              {m.subtotalUsd && <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>${m.subtotalUsd.toFixed(2)}</Text>}
-            </View>
-          ))
+            ))}
+            
+            {(() => {
+              const subtotal = planData.materials.reduce((sum, m) => sum + (m.subtotalUsd || 0), 0);
+              if (subtotal > 0) {
+                return (
+                  <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#E5E7EB', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>Materials Subtotal</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>${subtotal.toFixed(2)}</Text>
+                  </View>
+                );
+              }
+              return null;
+            })()}
+          </>
         ) : plan.materials && plan.materials.length > 0 ? (
           plan.materials.map((m: any, i: number) => (
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.materials.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
@@ -340,29 +358,35 @@ export default function DetailedInstructions() {
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Tools</Text>
         </View>
         
-        {planData?.tools?.required && planData.tools.required.length > 0 && (
+        {planData?.tools ? (
           <>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 8 }}>Required</Text>
-            {planData.tools.required.map((tool, i) => (
-              <View key={`req-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
-                <Text style={{ fontSize: 15, color: '#111827' }}>• {tool}</Text>
-              </View>
-            ))}
+            {planData.tools.required && planData.tools.required.length > 0 && (
+              <>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 8 }}>Required</Text>
+                {planData.tools.required.map((tool, i) => (
+                  <View key={`req-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
+                    <Text style={{ fontSize: 15, color: '#111827' }}>• {tool}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            
+            {planData.tools.optional && planData.tools.optional.length > 0 && (
+              <>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: planData.tools.required && planData.tools.required.length > 0 ? 12 : 0, marginBottom: 8 }}>Optional</Text>
+                {planData.tools.optional.map((tool, i) => (
+                  <View key={`opt-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
+                    <Text style={{ fontSize: 15, color: '#6B7280' }}>• {tool}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            
+            {(!planData.tools.required || planData.tools.required.length === 0) && (!planData.tools.optional || planData.tools.optional.length === 0) && (
+              <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No tools listed.</Text>
+            )}
           </>
-        )}
-        
-        {planData?.tools?.optional && planData.tools.optional.length > 0 && (
-          <>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#6B7280', marginTop: 12, marginBottom: 8 }}>Optional</Text>
-            {planData.tools.optional.map((tool, i) => (
-              <View key={`opt-${i}`} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
-                <Text style={{ fontSize: 15, color: '#6B7280' }}>• {tool}</Text>
-              </View>
-            ))}
-          </>
-        )}
-        
-        {!planData?.tools && plan.tools && plan.tools.length > 0 ? (
+        ) : plan.tools && plan.tools.length > 0 ? (
           plan.tools.map((tool: any, i: number) => {
             const toolObj = typeof tool === 'string' ? { name: tool } : tool;
             return (
@@ -374,9 +398,9 @@ export default function DetailedInstructions() {
               </View>
             );
           })
-        ) : !planData?.tools ? (
+        ) : (
           <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No tools listed.</Text>
-        ) : null}
+        )}
       </View>
 
       {/* Cut List Section */}
@@ -389,22 +413,35 @@ export default function DetailedInstructions() {
           
           {planData?.cutList?.items ? (
             <>
+              {/* Table Header */}
+              <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
+              </View>
+              
               {planData.cutList.items.map((cut, i) => (
-                <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < planData.cutList.items!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                  <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.board}</Text>
-                  <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
-                    {cut.dims} × {cut.qty}
-                  </Text>
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.cutList.items!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
+                  <Text style={{ fontSize: 15, color: '#111827', flex: 2 }}>{cut.board}</Text>
+                  <Text style={{ fontSize: 15, color: '#6B7280', flex: 2, textAlign: 'center' }}>{cut.dims}</Text>
+                  <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', flex: 1, textAlign: 'right' }}>{cut.qty}</Text>
                 </View>
               ))}
               
               {planData.cutList.layoutSvgUrl && (
-                <Pressable 
-                  onPress={() => Alert.alert('Cut Layout', 'Opening layout diagram...')}
-                  style={{ marginTop: 12, padding: 12, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#7C3AED' }}>View Cut Layout Diagram</Text>
-                </Pressable>
+                <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 16 }}>
+                  <Image 
+                    source={{ uri: planData.cutList.layoutSvgUrl }} 
+                    style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#F9FAFB' }} 
+                    resizeMode="contain" 
+                  />
+                  <Pressable 
+                    onPress={() => Alert.alert('Cut Layout', planData.cutList.layoutSvgUrl || 'Layout diagram available')}
+                    style={{ marginTop: 12, padding: 10, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#7C3AED' }}>View full layout</Text>
+                  </Pressable>
+                </View>
               )}
             </>
           ) : plan.cuts ? (
@@ -422,7 +459,18 @@ export default function DetailedInstructions() {
 
       {/* Build Steps */}
       <View ref={refs.steps} style={{ marginTop: 24, marginHorizontal: 16 }}>
-        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 20, letterSpacing: -0.5 }}>Build Steps</Text>
+        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 12, letterSpacing: -0.5 }}>Build Steps</Text>
+        
+        {/* Progress Bar */}
+        <View style={{ marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#6B7280' }}>Progress</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#7C3AED' }}>0/{totalSteps}</Text>
+          </View>
+          <View style={{ height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ height: '100%', width: '0%', backgroundColor: '#7C3AED' }} />
+          </View>
+        </View>
         
         {planData?.steps && planData.steps.length > 0 ? (
           planData.steps.map((step, i) => (
@@ -545,6 +593,34 @@ export default function DetailedInstructions() {
           <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No build steps available.</Text>
         )}
       </View>
+
+      {/* Totals Footer */}
+      {(() => {
+        const materialsSubtotal = planData?.materials?.reduce((sum, m) => sum + (m.subtotalUsd || 0), 0) || 0;
+        const estCost = planData?.summary?.estCostUsd;
+        
+        if (estCost || materialsSubtotal > 0) {
+          return (
+            <View style={{ backgroundColor: 'white', marginTop: 24, marginHorizontal: 16, borderRadius: 16, padding: 20, borderWidth: 2, borderColor: '#7C3AED' }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 12 }}>Total Estimate</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Text style={{ fontSize: 15, color: '#6B7280' }}>
+                  {estCost ? 'Estimated Cost' : 'Materials Cost'}
+                </Text>
+                <Text style={{ fontSize: 28, fontWeight: '800', color: '#7C3AED' }}>
+                  {estCost ? `$${estCost}` : `~$${materialsSubtotal.toFixed(2)}`}
+                </Text>
+              </View>
+              {!estCost && materialsSubtotal > 0 && (
+                <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4, fontStyle: 'italic' }}>
+                  ~ Based on materials only
+                </Text>
+              )}
+            </View>
+          );
+        }
+        return null;
+      })()}
 
       {/* Save All Button */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 24 }}>
