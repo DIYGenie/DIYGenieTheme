@@ -332,14 +332,12 @@ export default function DetailedInstructions() {
               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#111827' }}>
-                    {`${m.qty} ${m.unit} ${m.name}`}
+                    {joinText(fmtQtyUnit(m.qty, m.unit), m.name)}
                   </Text>
                 </View>
-                {m.subtotalUsd !== undefined && (
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#059669', marginLeft: 12 }}>
-                    {`$${m.subtotalUsd.toFixed(2)}`}
-                  </Text>
-                )}
+                <TextIf style={{ fontSize: 15, fontWeight: '600', color: '#059669', marginLeft: 12 }}>
+                  {fmtMoney(m.subtotalUsd)}
+                </TextIf>
               </View>
             ))}
             
@@ -349,7 +347,7 @@ export default function DetailedInstructions() {
                 return (
                   <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#E5E7EB', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>Materials Subtotal</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>{`$${subtotal.toFixed(2)}`}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>{fmtMoney(subtotal)}</Text>
                   </View>
                 );
               }
@@ -361,9 +359,13 @@ export default function DetailedInstructions() {
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.materials.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, color: '#111827' }}>{m.name}</Text>
-                {m.qty && <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{`${m.qty}${m.unit ? ' ' + m.unit : ''}`}</Text>}
+                <TextIf style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
+                  {fmtQtyUnit(m.qty, m.unit)}
+                </TextIf>
               </View>
-              {m.price && <Text style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>{`$${m.price}`}</Text>}
+              <TextIf style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>
+                {fmtMoney(m.price)}
+              </TextIf>
             </View>
           ))
         ) : (
