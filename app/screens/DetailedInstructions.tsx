@@ -462,7 +462,7 @@ export default function DetailedInstructions() {
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < plan.cuts.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
               <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part}</Text>
               <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
-                {`${cut.width && cut.height ? `${cut.width}" × ${cut.height}"` : cut.size} ×${cut.qty ?? 1}`}
+                {`${cut.width && cut.height ? `${cut.width}" x ${cut.height}"` : cut.size} x${cut.qty ?? 1}`}
               </Text>
             </View>
           ))
