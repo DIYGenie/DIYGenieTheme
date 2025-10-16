@@ -277,11 +277,10 @@ export default function DetailedInstructions() {
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Before You Begin</Text>
         </View>
         
-        {plan.overview ? (
+        {plan.overview && (
           <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22 }}>{plan.overview}</Text>
-        ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No overview available.</Text>
         )}
+        {/* Removed "No overview available" placeholder text */}
 
         {/* Safety Warnings - Lighter */}
         {(planData?.safety?.notes && planData.safety.notes.length > 0) || (plan.safety_warnings && plan.safety_warnings.length > 0) ? (
