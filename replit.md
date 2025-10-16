@@ -14,6 +14,9 @@ The application uses a component-based React Native architecture with React Navi
 ### Visual Design
 The design is modern and clean, utilizing white backgrounds, dark text, and a purple brand primary color (#7C3AED / purple-600) for CTAs and gradients. A centralized UI kit (`app/ui/`) provides reusable components, theme tokens, and a unified button system. Layouts use `SafeAreaView` and consistent spacing with `Ionicons` for iconography.
 
+### UI Components
+- **SectionCard**: Enhanced flexible component with smart icon handling. Accepts icons in multiple formats: React element (e.g., `<Ionicons />`), string icon name (e.g., `"construct-outline"`), object with customization (e.g., `{ name: "hammer", size: 20, color: "#..." }`), or null/undefined to hide. Also supports ReactNode for title, summary, and countBadge for maximum flexibility. All icon rendering is crash-safe with defensive checks.
+
 ### Core Features & Technical Implementations
 - **Navigation**: Structured with `AppNavigator` (root stack), `RootTabs` (bottom tab navigator), and `ProjectsNavigator` (nested stack).
 - **Backend Integration**: Uses an Express.js backend for project and entitlement management, with direct fetch calls.
