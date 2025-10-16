@@ -26,7 +26,7 @@ const styles = {
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  headRow: { flexDirection: "row", alignItems: "center" as const },
+  headRow: { flexDirection: "row" as const, alignItems: "center" as const },
   iconWrap: {
     width: 28,
     height: 28,
@@ -48,7 +48,7 @@ const styles = {
     paddingVertical: 2,
     borderRadius: 8,
     backgroundColor: "#EFEAFE",
-    color: brand.purple || "#700",
+    color: brand.primary700,
     fontWeight: "600" as const,
     overflow: "hidden" as const,
   },

@@ -800,10 +800,6 @@ export default function ProjectDetails() {
                 summary="Project summary"
                 isOpen={openSections.includes('overview')}
                 onToggle={() => toggleSection('overview')}
-                onNavigate={() => {
-                  console.log('[details] nav section=overview');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'overview' });
-                }}
               >
                 <Text style={{ fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 12 }}>
                   {overview?.text || overview || 'No overview yet.'}
@@ -869,21 +865,6 @@ export default function ProjectDetails() {
                 summary="Shopping list"
                 isOpen={openSections.includes('materials')}
                 onToggle={() => toggleSection('materials')}
-                headerAction={
-                  <TouchableOpacity onPress={() => {
-                    const combined = [
-                      ...materials.map((m: any) => `${m.name || m.item}${m.quantity ? ` (${m.quantity})` : ''}`),
-                      ...tools.map((t: any) => typeof t === 'string' ? t : t.name)
-                    ];
-                    copyList('materials', combined);
-                  }}>
-                    <Ionicons name="copy-outline" size={20} color="#6D28D9" />
-                  </TouchableOpacity>
-                }
-                onNavigate={() => {
-                  console.log('[details] nav section=shopping');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'shopping' });
-                }}
               >
                 {/* Materials section */}
                 {materials.length > 0 && (
@@ -937,21 +918,6 @@ export default function ProjectDetails() {
                   summary="Cutting guide"
                   isOpen={openSections.includes('cuts')}
                   onToggle={() => toggleSection('cuts')}
-                  headerAction={
-                    <TouchableOpacity onPress={() => {
-                      copyList('cuts', cuts, (c: any) => {
-                        const qty = c.quantity || c.qty || '';
-                        const dims = c.dimensions || c.size || '';
-                        return `${qty ? `${qty}x ` : ''}${c.name || c.item || c.description}${dims ? ` - ${dims}` : ''}`;
-                      });
-                    }}>
-                      <Ionicons name="copy-outline" size={20} color="#6D28D9" />
-                    </TouchableOpacity>
-                  }
-                  onNavigate={() => {
-                    console.log('[details] nav section=cuts');
-                    (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'cuts' });
-                  }}
                 >
                   <View>
                     {cuts.map((cut: any, i: number) => (
@@ -980,10 +946,6 @@ export default function ProjectDetails() {
                 summary={completedSteps.length > 0 ? `${Math.round((completedSteps.length / (steps.length || 1)) * 100)}% complete` : `${steps.length} steps`}
                 isOpen={openSections.includes('steps')}
                 onToggle={() => toggleSection('steps')}
-                onNavigate={() => {
-                  console.log('[details] nav section=steps');
-                  (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'steps' });
-                }}
               >
                 {steps.length ? (
                   <>
@@ -1090,10 +1052,6 @@ export default function ProjectDetails() {
                   summary="Final touches"
                   isOpen={openSections.includes('finishing')}
                   onToggle={() => toggleSection('finishing')}
-                  onNavigate={() => {
-                    console.log('[details] nav section=finishing');
-                    (navigation as any).navigate('DetailedInstructions', { id: projectId, section: 'finishing' });
-                  }}
                 >
                   <View>
                     {finishing.map((item: any, i: number) => (
