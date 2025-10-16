@@ -197,7 +197,7 @@ export default function DetailedInstructions() {
           backgroundColor: '#6D28D9',
           borderRadius: 12,
           marginHorizontal: 16,
-          marginTop: 12,
+          marginTop: 0,
           paddingVertical: 12,
           paddingHorizontal: 16,
         }}
