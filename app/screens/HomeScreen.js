@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert, InteractionManager, RefreshControl } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platform, Alert, InteractionManager, RefreshControl, FlatList, Image, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,104 +7,174 @@ import { useFocusEffect } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId } from '../lib/api';
 import { useUser } from '../lib/useUser';
-import HowItWorksTile from '../components/HowItWorksTile';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { useCameraPermission } from '../hooks/useCameraPermission';
-import PrePermissionSheet from '../components/modals/PrePermissionSheet';
-import { supabase } from '../lib/supabase';
+import { safeLogEvent } from '../lib/deleteProject';
 
-function HowItWorks({ navigation }) {
-  const { checkStatus, request } = useCameraPermission();
-  const [showPermissionSheet, setShowPermissionSheet] = useState(false);
-  const [permissionDenied, setPermissionDenied] = useState(false);
+// Hero carousel data
+const HERO_SLIDES = [
+  {
+    id: '1',
+    image: 'https://picsum.photos/seed/diygenie1/1200/800',
+    caption: 'See your space transform',
+  },
+  {
+    id: '2',
+    image: 'https://picsum.photos/seed/diygenie2/1200/800',
+    caption: 'Measure with your iPhone',
+  },
+  {
+    id: '3',
+    image: 'https://picsum.photos/seed/diygenie3/1200/800',
+    caption: 'Get a build plan in minutes',
+  },
+];
 
-  const handleScanPress = async () => {
-    const status = await checkStatus();
-    
-    if (status === 'granted') {
-      navigation.navigate('Scan');
-    } else {
-      setPermissionDenied(false);
-      setShowPermissionSheet(true);
+// Hero carousel component
+function HeroCarousel() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const { width: winW } = useWindowDimensions();
+  const carouselWidth = winW - 32; // Account for marginHorizontal 16
+
+  const renderSlide = ({ item }) => (
+    <View style={[heroStyles.slide, { width: carouselWidth }]}>
+      <Image source={{ uri: item.image }} style={heroStyles.slideImage} />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.6)']}
+        style={heroStyles.gradient}
+      >
+        <Text style={heroStyles.caption}>{item.caption}</Text>
+      </LinearGradient>
+    </View>
+  );
+
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setActiveSlide(viewableItems[0].index || 0);
     }
-  };
+  }).current;
 
-  const handleContinue = async () => {
-    const result = await request();
-    
-    if (result === 'granted') {
-      setShowPermissionSheet(false);
-      setPermissionDenied(false);
-      navigation.navigate('Scan');
-    } else {
-      setPermissionDenied(true);
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
+  return (
+    <View style={heroStyles.container}>
+      <FlatList
+        data={HERO_SLIDES}
+        renderItem={renderSlide}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        snapToInterval={carouselWidth}
+        decelerationRate="fast"
+      />
+      <View style={heroStyles.pagination}>
+        {HERO_SLIDES.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              heroStyles.dot,
+              activeSlide === index && heroStyles.dotActive,
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Progress bar component
+function ProgressBar() {
+  return (
+    <View style={progressStyles.container}>
+      <Text style={progressStyles.text}>
+        1 Describe • 2 Scan • 3 Preview • 4 Build
+      </Text>
+    </View>
+  );
+}
+
+// Template cards data
+const TEMPLATES = [
+  {
+    key: 'shelf',
+    name: 'Shelf',
+    blurb: 'Clean, modern storage',
+  },
+  {
+    key: 'accent_wall',
+    name: 'Accent Wall',
+    blurb: 'Add depth and contrast',
+  },
+  {
+    key: 'mudroom_bench',
+    name: 'Mudroom Bench',
+    blurb: 'Entryway organization',
+  },
+];
+
+// Template cards section
+function TemplateCards({ navigation, onTemplateCreate }) {
+  const [creating, setCreating] = useState(null);
+
+  const handleCreateTemplate = async (template) => {
+    setCreating(template.key);
+    safeLogEvent('template_selected', { template: template.key });
+
+    try {
+      // Create project with template data
+      const projectId = await createProjectAndReturnId({
+        name: template.name,
+        description: template.blurb,
+        budget: '',
+        skill_level: 'beginner',
+      });
+
+      // Navigate to Project Details
+      const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
+      if (parent?.navigate) {
+        parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
+      } else {
+        navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
+      }
+    } catch (err) {
+      console.log('[template create error]', err);
+      Alert.alert('Error', 'Could not create project. Please try again.');
+    } finally {
+      setCreating(null);
     }
-  };
-
-  const handleOpenSettings = () => {
-    if (Platform.OS === 'ios') {
-      Linking.openSettings();
-    } else {
-      Linking.openSettings();
-    }
-    setShowPermissionSheet(false);
-  };
-
-  const handleClose = () => {
-    setShowPermissionSheet(false);
-    setPermissionDenied(false);
   };
 
   return (
-    <>
-      <View style={hiwStyles.section}>
-        <Text style={hiwStyles.title}>How it works</Text>
-        <View style={hiwStyles.grid}>
-          <HowItWorksTile
-            icon="create-outline"
-            label="Describe"
-            stepNumber={1}
-            onPress={() => navigation.navigate('NewProject', { section: 'desc' })}
-          />
-          <HowItWorksTile
-            icon="scan-outline"
-            label="Scan"
-            stepNumber={2}
-            onPress={handleScanPress}
-          />
-          <HowItWorksTile
-            icon="sparkles-outline"
-            label="Preview"
-            stepNumber={3}
-            onPress={() => navigation.navigate('NewProject', { section: 'preview' })}
-          />
-          <HowItWorksTile
-            icon="hammer-outline"
-            label="Build"
-            stepNumber={4}
-            onPress={() => navigation.navigate('NewProject', { section: 'plan' })}
-          />
+    <View style={templateStyles.section}>
+      <Text style={templateStyles.header}>Start with a template</Text>
+      {TEMPLATES.map((template) => (
+        <View key={template.key} style={templateStyles.card}>
+          <View style={templateStyles.cardContent}>
+            <Text style={templateStyles.cardTitle}>{template.name}</Text>
+            <Text style={templateStyles.cardBlurb}>{template.blurb}</Text>
+          </View>
+          <Pressable
+            onPress={() => handleCreateTemplate(template)}
+            disabled={creating === template.key}
+            style={templateStyles.createButton}
+          >
+            {creating === template.key ? (
+              <ActivityIndicator size="small" color={colors.brand} />
+            ) : (
+              <Text style={templateStyles.createText}>Create</Text>
+            )}
+          </Pressable>
         </View>
-      </View>
-
-      <PrePermissionSheet
-        visible={showPermissionSheet}
-        title={permissionDenied ? "Camera access needed" : "Use your camera to scan the room"}
-        subtitle={permissionDenied 
-          ? "Camera access was denied. Please enable it in Settings to use the room scanner."
-          : "We'll measure and place your project preview. We never store video without your OK."
-        }
-        iconName="camera-outline"
-        primaryLabel={permissionDenied ? "Open Settings" : "Continue"}
-        secondaryLabel={permissionDenied ? "Close" : "Not now"}
-        onPrimary={permissionDenied ? handleOpenSettings : handleContinue}
-        onSecondary={handleClose}
-      />
-    </>
+      ))}
+    </View>
   );
 }
 
@@ -157,27 +227,6 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('NewProject');
   };
 
-  const handlePingSupabase = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from('room_scans').select('id').limit(1);
-
-      if (error) {
-        Alert.alert('Supabase ERROR', error.message);
-        console.error('Supabase error:', error);
-        return;
-      }
-
-      const userId = user?.id || 'none';
-      const message = `Supabase OK • user: ${userId} • room_scans sample loaded`;
-      Alert.alert('Supabase Connection', message);
-      console.log('Supabase ping result:', { user, data });
-    } catch (err) {
-      Alert.alert('Supabase ERROR', err.message || 'Unknown error');
-      console.error('Supabase ping failed:', err);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -192,8 +241,14 @@ export default function HomeScreen({ navigation }) {
         <Text style={[styles.welcomeTitle, { fontSize: isVeryNarrow ? 26 : 28 }]}>Welcome back, Tye</Text>
         <Text style={styles.welcomeSubtitle}>Ready to start your next DIY project?</Text>
 
-        {/* How it works grid */}
-        <HowItWorks navigation={navigation} />
+        {/* Hero Carousel */}
+        <HeroCarousel />
+
+        {/* Progress Bar */}
+        <ProgressBar />
+
+        {/* Template Cards */}
+        <TemplateCards navigation={navigation} />
 
         {/* CTA Button */}
         <PressableScale
@@ -207,21 +262,6 @@ export default function HomeScreen({ navigation }) {
         >
           <Text style={styles.startProjectText}>Start a New Project</Text>
         </PressableScale>
-
-        {/* Dev-only Supabase Ping Button */}
-        {__DEV__ && (
-          <PressableScale
-            testID="ping-supabase"
-            onPress={handlePingSupabase}
-            haptic="light"
-            scaleTo={0.98}
-            accessibilityRole="button"
-            accessibilityLabel="Ping Supabase (dev)"
-            style={styles.devButton}
-          >
-            <Text style={styles.devButtonText}>Ping Supabase (dev)</Text>
-          </PressableScale>
-        )}
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -428,22 +468,124 @@ const styles = StyleSheet.create({
   },
 });
 
-const hiwStyles = StyleSheet.create({
-  section: { 
-    marginTop: 8, 
-    marginBottom: 20, 
-    paddingHorizontal: 16,
+// Hero carousel styles
+const heroStyles = StyleSheet.create({
+  container: {
+    marginTop: 8,
+    marginBottom: 8,
   },
-  title: { 
-    fontSize: 16, 
-    fontWeight: '700', 
-    color: '#1B133C', 
-    marginBottom: 10,
+  slide: {
+    height: 200,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    overflow: 'hidden',
   },
-  grid: {
+  slideImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  caption: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: typography.fontFamily.manropeBold,
+  },
+  pagination: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#D1D5DB',
+  },
+  dotActive: {
+    backgroundColor: colors.brand,
+    width: 20,
+  },
+});
+
+// Progress bar styles
+const progressStyles = StyleSheet.create({
+  container: {
+    marginTop: 8,
+    marginHorizontal: 16,
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: typography.fontFamily.inter,
+  },
+});
+
+// Template cards styles
+const templateStyles = StyleSheet.create({
+  section: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  header: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#3A2EB0',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    fontFamily: typography.fontFamily.manropeBold,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 2,
+    fontFamily: typography.fontFamily.manropeBold,
+  },
+  cardBlurb: {
+    fontSize: 14,
+    color: '#64748B',
+    fontFamily: typography.fontFamily.inter,
+  },
+  createButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  createText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.brand,
+    fontFamily: typography.fontFamily.manropeBold,
   },
 });
