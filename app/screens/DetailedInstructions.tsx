@@ -182,28 +182,28 @@ export default function DetailedInstructions() {
 
   return (
     <ScrollView ref={scrollViewRef} style={{ flex: 1, backgroundColor: '#FAFAFA' }} contentContainerStyle={{ paddingBottom: 100, paddingTop: 60 }}>
-      {/* Summary Card - Tighter */}
-      <View style={{ backgroundColor: '#6F42F5', padding: 12, borderRadius: 16, margin: 12 }}>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: 'white', lineHeight: 26, marginBottom: 4 }}>
-          {planData?.summary?.title || project?.name || 'DIY Project'}
+      {/* Summary Card - Smaller & Calmer */}
+      <View style={{ backgroundColor: 'white', padding: 12, borderRadius: 16, margin: 12 }}>
+        <Text style={{ fontSize: 22, fontWeight: '600', color: '#1A1A1A' }}>
+          {planData?.summary?.title || plan?.title || 'Project Plan'}
         </Text>
-        <Text style={{ fontSize: 13, color: 'white', opacity: 0.8, marginTop: 2 }}>
-          Step-by-step builder's guide
+        <Text style={{ fontSize: 14, color: '#666', marginTop: 2 }}>
+          Step-by-step builder&apos;s guide
         </Text>
         
         {/* Stats row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
             {notNil(planData?.summary?.estTimeHours) ? `${planData!.summary!.estTimeHours} hrs`
              : notNil(plan?.time_estimate_hours) ? `${plan!.time_estimate_hours} hrs`
              : null}
           </TextIf>
 
-          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
             {fmtMoney(planData?.summary?.estCostUsd)}
           </TextIf>
 
-          <TextIf style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>
+          <TextIf style={{ color: '#666', fontSize: 14, fontWeight: '600' }}>
             {totalSteps > 0 ? `${totalSteps} steps` : null}
           </TextIf>
         </View>
@@ -250,30 +250,24 @@ export default function DetailedInstructions() {
           <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No overview available.</Text>
         )}
 
-        {/* Safety Warnings - Ribbon Banner */}
+        {/* Safety Warnings - Lighter */}
         {(planData?.safety?.notes && planData.safety.notes.length > 0) || (plan.safety_warnings && plan.safety_warnings.length > 0) ? (
-          <View style={{ marginTop: 8, backgroundColor: '#FFD9D9', borderLeftWidth: 2, borderLeftColor: '#EF4444', padding: 6, borderRadius: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Ionicons name="warning" size={16} color="#DC2626" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#991B1B', marginLeft: 4 }}>Safety First</Text>
-            </View>
+          <View style={{ backgroundColor: '#FFF6F6', borderLeftWidth: 3, borderLeftColor: '#FF5C5C', padding: 10, borderRadius: 8, marginBottom: 8 }}>
+            <Text style={{ color: '#CC0000', fontWeight: '700', fontSize: 13 }}>Safety First</Text>
             {(planData?.safety?.notes || plan.safety_warnings || []).map((warning: string, i: number) => (
-              <Text key={i} style={{ fontSize: 13, color: '#7F1D1D', lineHeight: 18, marginTop: 2 }}>
+              <Text key={i} style={{ color: '#444', fontSize: 12, marginTop: 4 }}>
                 {warning}
               </Text>
             ))}
           </View>
         ) : null}
 
-        {/* Permits - Ribbon Banner */}
+        {/* Permits - Lighter */}
         {planData?.permits && (planData.permits.needed || planData.permits.note) && (
-          <View style={{ marginTop: 8, backgroundColor: '#FFF6CC', borderLeftWidth: 2, borderLeftColor: '#F59E0B', padding: 6, borderRadius: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Ionicons name="document-text" size={16} color="#D97706" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E', marginLeft: 4 }}>Permits Required</Text>
-            </View>
-            <Text style={{ fontSize: 13, color: '#78350F', lineHeight: 18 }}>
-              {planData.permits.note || 'Check with your local building department before starting this project.'}
+          <View style={{ backgroundColor: '#FFFBEA', borderLeftWidth: 3, borderLeftColor: '#FBC02D', padding: 10, borderRadius: 8 }}>
+            <Text style={{ color: '#A67C00', fontWeight: '700', fontSize: 13 }}>Permits Required</Text>
+            <Text style={{ color: '#444', fontSize: 12, marginTop: 4 }}>
+              {planData.permits.note || 'Check local building codes for structural modifications.'}
             </Text>
           </View>
         )}
