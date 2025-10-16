@@ -84,7 +84,6 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Health Check**: Non-blocking startup health check (`app/lib/health.ts`) with automatic fallback from `/health/full` to `/api/health/full` if 404, measures API ping latency. Gracefully handles missing endpoints.
 - **Console Management**: Production mode silences debug logs while preserving warnings and errors.
 - **Diagnostics Screen**: Hidden diagnostics screen (`app/screens/Diagnostics.tsx`) accessible via 7-tap reveal on version label in Profile. Shows app version, environment, API base, build/ping/modes metadata row, and manual health check trigger. Includes "Contact Support" mailto link with prefilled metadata for TestFlight feedback.
-- **First Launch Guide**: One-time "What to Test" modal (`app/screens/WhatToTest.tsx`) auto-appears on first app launch. Shows 4 test steps with "Got it" (dismiss forever) and "Open Diagnostics" buttons. Uses AsyncStorage flag (`wt_seen`) for persistence via `app/lib/storage.ts` helpers.
 
 ### API Configuration
 - **Runtime Environment**: Uses `Constants.expoConfig.extra` to read API bases from app.config.js.
