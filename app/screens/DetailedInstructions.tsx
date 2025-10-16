@@ -344,23 +344,18 @@ export default function DetailedInstructions() {
         )}
       </View>
 
-      {/* Materials Section */}
-      <View ref={refs.materials} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-          <MaterialCommunityIcons name="package-variant" size={24} color="#7C3AED" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Materials</Text>
-        </View>
+      {/* Materials Section - Receipt Style */}
+      <View ref={refs.materials} style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginHorizontal: 12, marginTop: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#3A2EB0', marginBottom: 8 }}>Materials</Text>
         
         {planData?.materials && planData.materials.length > 0 ? (
           <>
             {planData.materials.map((m, i) => (
-              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.materials!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, color: '#111827' }}>
-                    {joinText(fmtQtyUnit(m.qty, m.unit), m.name)}
-                  </Text>
-                </View>
-                <TextIf style={{ fontSize: 15, fontWeight: '600', color: '#059669', marginLeft: 12 }}>
+              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: '#EEE' }}>
+                <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>
+                  {joinText(fmtQtyUnit(m.qty, m.unit), '·', m.name)}
+                </Text>
+                <TextIf style={{ fontSize: 15, fontWeight: '500', color: '#111827', marginLeft: 12 }}>
                   {fmtMoney(m.subtotalUsd)}
                 </TextIf>
               </View>
@@ -370,9 +365,9 @@ export default function DetailedInstructions() {
               const subtotal = planData.materials.reduce((sum, m) => sum + (m.subtotalUsd || 0), 0);
               if (subtotal > 0) {
                 return (
-                  <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 2, borderTopColor: '#E5E7EB', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>Materials Subtotal</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#059669' }}>{fmtMoney(subtotal)}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8 }}>
+                    <Text style={{ fontWeight: '700', color: '#111827' }}>Subtotal</Text>
+                    <Text style={{ fontWeight: '700', color: '#0a8f5b' }}>{fmtMoney(subtotal)}</Text>
                   </View>
                 );
               }
@@ -380,21 +375,20 @@ export default function DetailedInstructions() {
             })()}
           </>
         ) : plan.materials && plan.materials.length > 0 ? (
-          plan.materials.map((m: any, i: number) => (
-            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < plan.materials.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, color: '#111827' }}>{m.name}</Text>
-                <TextIf style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
-                  {fmtQtyUnit(m.qty, m.unit)}
+          <>
+            {plan.materials.map((m: any, i: number) => (
+              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: '#EEE' }}>
+                <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>
+                  {joinText(fmtQtyUnit(m.qty, m.unit), '·', m.name || 'Material')}
+                </Text>
+                <TextIf style={{ fontSize: 15, fontWeight: '500', color: '#111827', marginLeft: 12 }}>
+                  {fmtMoney(m.price)}
                 </TextIf>
               </View>
-              <TextIf style={{ fontSize: 16, fontWeight: '600', color: '#059669' }}>
-                {fmtMoney(m.price)}
-              </TextIf>
-            </View>
-          ))
+            ))}
+          </>
         ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No materials yet.</Text>
+          <Text style={{ fontSize: 15, color: '#777' }}>No materials yet.</Text>
         )}
       </View>
 
@@ -462,206 +456,119 @@ export default function DetailedInstructions() {
         )}
       </View>
 
-      {/* Cut List Section */}
-      <View ref={refs.cuts} style={{ backgroundColor: 'white', marginTop: 16, marginHorizontal: 16, borderRadius: 16, padding: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-          <MaterialCommunityIcons name="content-cut" size={24} color="#7C3AED" />
-          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', marginLeft: 8 }}>Cut List</Text>
-        </View>
+      {/* Cut List Section - 3-Column Table */}
+      <View ref={refs.cuts} style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginHorizontal: 12, marginTop: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#3A2EB0', marginBottom: 8 }}>Cut List</Text>
         
         {planData?.cutList?.items && planData.cutList.items.length > 0 ? (
           <>
-            {/* Table Header */}
-            <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
+            {/* Column Headers */}
+            <View style={{ flexDirection: 'row', paddingVertical: 6, marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1 }}>Part</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1, textAlign: 'center' }}>Dimensions</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', width: 40, textAlign: 'right' }}>Qty</Text>
             </View>
             
             {planData.cutList.items.map((cut, i) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < planData.cutList.items!.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                <Text style={{ fontSize: 15, color: '#111827', flex: 2 }}>{cut.board}</Text>
-                <Text style={{ fontSize: 15, color: '#6B7280', flex: 2, textAlign: 'center' }}>{cut.dims}</Text>
-                <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', flex: 1, textAlign: 'right' }}>{cut.qty}</Text>
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, backgroundColor: i % 2 === 0 ? 'transparent' : '#FAFAFF' }}>
+                <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.board || 'Part'}</Text>
+                <Text style={{ fontSize: 15, color: '#6B7280', flex: 1, textAlign: 'center' }}>{cut.dims || '—'}</Text>
+                <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', width: 40, textAlign: 'right' }}>{cut.qty || '1'}</Text>
               </View>
             ))}
             
             {planData.cutList.layoutSvgUrl && (
-              <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 16 }}>
-                <Image 
-                  source={{ uri: planData.cutList.layoutSvgUrl }} 
-                  style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#F9FAFB' }} 
-                  resizeMode="contain" 
-                />
-                <Pressable 
-                  onPress={() => Alert.alert('Cut Layout', planData.cutList.layoutSvgUrl || 'Layout diagram available')}
-                  style={{ marginTop: 12, padding: 10, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#7C3AED' }}>View full layout</Text>
-                </Pressable>
-              </View>
+              <Pressable 
+                onPress={() => Alert.alert('Cut Layout', planData.cutList.layoutSvgUrl || 'Layout diagram available')}
+                style={{ marginTop: 8, padding: 8, backgroundColor: '#F3F4F6', borderRadius: 6, alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#7C3AED' }}>View layout</Text>
+              </Pressable>
             )}
           </>
         ) : plan.cuts && plan.cuts.length > 0 ? (
-          plan.cuts.map((cut: any, i: number) => {
-            const dimOrSize = fmtDim(cut.width, cut.height) ?? (cut.size ?? null);
-            const qty = notNil(cut.qty) ? String(cut.qty) : '1';
-            return (
-              <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: i < plan.cuts.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part}</Text>
-                <Text style={{ fontSize: 15, color: '#6B7280', fontWeight: '500' }}>
-                  {joinText(dimOrSize, `x${qty}`)}
-                </Text>
-              </View>
-            );
-          })
+          <>
+            {/* Column Headers */}
+            <View style={{ flexDirection: 'row', paddingVertical: 6, marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1 }}>Part</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1, textAlign: 'center' }}>Dimensions</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', width: 40, textAlign: 'right' }}>Qty</Text>
+            </View>
+            
+            {plan.cuts.map((cut: any, i: number) => {
+              const dimOrSize = fmtDim(cut.width, cut.height) ?? (cut.size ?? '—');
+              const qty = notNil(cut.qty) ? String(cut.qty) : '1';
+              return (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, backgroundColor: i % 2 === 0 ? 'transparent' : '#FAFAFF' }}>
+                  <Text style={{ fontSize: 15, color: '#111827', flex: 1 }}>{cut.part || 'Part'}</Text>
+                  <Text style={{ fontSize: 15, color: '#6B7280', flex: 1, textAlign: 'center' }}>{dimOrSize}</Text>
+                  <Text style={{ fontSize: 15, color: '#111827', fontWeight: '600', width: 40, textAlign: 'right' }}>{qty}</Text>
+                </View>
+              );
+            })}
+          </>
         ) : (
           <>
-            {/* Table Header */}
-            <View style={{ flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: '#E5E7EB', marginBottom: 4 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2 }}>BOARD</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 2, textAlign: 'center' }}>DIMENSIONS</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#6B7280', flex: 1, textAlign: 'right' }}>QTY</Text>
+            {/* Column Headers */}
+            <View style={{ flexDirection: 'row', paddingVertical: 6, marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1 }}>Part</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', flex: 1, textAlign: 'center' }}>Dimensions</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#666', width: 40, textAlign: 'right' }}>Qty</Text>
             </View>
-            <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 8 }}>No cuts listed.</Text>
+            <Text style={{ fontSize: 15, color: '#777', marginTop: 4 }}>No cuts listed.</Text>
           </>
         )}
       </View>
 
-      {/* Build Steps */}
-      <View ref={refs.steps} style={{ marginTop: 24, marginHorizontal: 16 }}>
-        <Text style={{ fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 12, letterSpacing: -0.5 }}>Build Steps</Text>
-        
-        {/* Progress Bar */}
-        <View style={{ marginBottom: 20 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#6B7280' }}>Progress</Text>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: '#7C3AED' }}>0/{totalSteps}</Text>
-          </View>
-          <View style={{ height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
-            <View style={{ height: '100%', width: '0%', backgroundColor: '#7C3AED' }} />
-          </View>
+      {/* Build Steps - Numbered Cards */}
+      <View ref={refs.steps} style={{ marginTop: 12, marginHorizontal: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#3A2EB0' }}>Build Steps</Text>
+          {totalSteps > 0 && (
+            <Text style={{ fontSize: 13, color: '#666' }}>0/{totalSteps}</Text>
+          )}
         </View>
         
         {planData?.steps && planData.steps.length > 0 ? (
           planData.steps.map((step, i) => (
-            <View key={i} style={{ marginBottom: 20 }}>
-              <View style={{ 
-                backgroundColor: 'white', 
-                borderRadius: 20, 
-                overflow: 'hidden', 
-                shadowColor: '#7C3AED', 
-                shadowOpacity: 0.1, 
-                shadowRadius: 16, 
-                shadowOffset: { width: 0, height: 4 }, 
-                elevation: 5,
-                borderWidth: 1,
-                borderColor: '#F3F4F6'
-              }}>
-                {/* Step Header */}
-                <View style={{ backgroundColor: '#FAFAFA', padding: 18, borderBottomWidth: 2, borderBottomColor: '#F3F4F6' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                    <View style={{ 
-                      width: 40, 
-                      height: 40, 
-                      borderRadius: 20, 
-                      backgroundColor: '#7C3AED', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      shadowColor: '#7C3AED',
-                      shadowOpacity: 0.4,
-                      shadowRadius: 8,
-                      shadowOffset: { width: 0, height: 2 }
-                    }}>
-                      <Text style={{ color: 'white', fontSize: 18, fontWeight: '800' }}>{i + 1}</Text>
-                    </View>
-                    <Text style={{ 
-                      fontSize: 17, 
-                      fontWeight: '700', 
-                      color: '#111827', 
-                      flex: 1, 
-                      lineHeight: 24,
-                      letterSpacing: -0.2
-                    }}>
-                      {step.title}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Diagram if available */}
-                {step.diagramUrl && (
-                  <Image source={{ uri: step.diagramUrl }} style={{ width: '100%', height: 220 }} resizeMode="cover" />
-                )}
-
-                {/* Step Content */}
-                <View style={{ padding: 16 }}>
-                  <Text style={{ fontSize: 15, color: '#1F2937', lineHeight: 24 }}>{step.text}</Text>
-                </View>
-              </View>
+            <View key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginVertical: 6, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                {`${i + 1}. ${step.title || 'Step'}`}
+              </Text>
+              <Text style={{ fontSize: 15, color: '#374151', lineHeight: 20, marginTop: 4 }}>
+                {step.text}
+              </Text>
+              {step.diagramUrl && (
+                <Image 
+                  source={{ uri: step.diagramUrl }} 
+                  style={{ width: '100%', height: 160, borderRadius: 10, marginTop: 8 }} 
+                  resizeMode="cover" 
+                />
+              )}
             </View>
           ))
         ) : plan.steps && plan.steps.length > 0 ? (
           plan.steps.map((step: any, i: number) => (
-            <View key={i} style={{ marginBottom: 20 }}>
-              <View style={{ 
-                backgroundColor: 'white', 
-                borderRadius: 20, 
-                overflow: 'hidden', 
-                shadowColor: '#7C3AED', 
-                shadowOpacity: 0.1, 
-                shadowRadius: 16, 
-                shadowOffset: { width: 0, height: 4 }, 
-                elevation: 5,
-                borderWidth: 1,
-                borderColor: '#F3F4F6'
-              }}>
-                <View style={{ backgroundColor: '#FAFAFA', padding: 18, borderBottomWidth: 2, borderBottomColor: '#F3F4F6' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
-                      <View style={{ 
-                        width: 40, 
-                        height: 40, 
-                        borderRadius: 20, 
-                        backgroundColor: '#7C3AED', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        shadowColor: '#7C3AED',
-                        shadowOpacity: 0.4,
-                        shadowRadius: 8,
-                        shadowOffset: { width: 0, height: 2 },
-                        marginTop: 2
-                      }}>
-                        <Text style={{ color: 'white', fontSize: 18, fontWeight: '800' }}>{i + 1}</Text>
-                      </View>
-                      <Text style={{ 
-                        fontSize: 17, 
-                        fontWeight: '700', 
-                        color: '#111827', 
-                        marginLeft: 14, 
-                        flex: 1, 
-                        lineHeight: 24,
-                        letterSpacing: -0.2
-                      }}>
-                        {step.title || `Step ${i + 1}`}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {step.photo_url && (
-                  <Image source={{ uri: step.photo_url }} style={{ width: '100%', height: 220 }} resizeMode="cover" />
-                )}
-
-                <View style={{ padding: 16 }}>
-                  {step.body && (
-                    <Text style={{ fontSize: 15, color: '#1F2937', lineHeight: 24 }}>{step.body}</Text>
-                  )}
-                </View>
-              </View>
+            <View key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginVertical: 6, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+                {`${i + 1}. ${step.title || 'Step'}`}
+              </Text>
+              {step.body && (
+                <Text style={{ fontSize: 15, color: '#374151', lineHeight: 20, marginTop: 4 }}>
+                  {step.body}
+                </Text>
+              )}
+              {step.photo_url && (
+                <Image 
+                  source={{ uri: step.photo_url }} 
+                  style={{ width: '100%', height: 160, borderRadius: 10, marginTop: 8 }} 
+                  resizeMode="cover" 
+                />
+              )}
             </View>
           ))
         ) : (
-          <Text style={{ fontSize: 15, color: '#9CA3AF' }}>No build steps yet.</Text>
+          <Text style={{ fontSize: 15, color: '#777' }}>No build steps yet.</Text>
         )}
       </View>
 
