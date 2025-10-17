@@ -7,7 +7,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId } from '../lib/api';
+import { fetchProjectCards, fetchProjectPlanMarkdown, createProjectAndReturnId } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
@@ -207,16 +207,22 @@ export default function HomeScreen({ navigation }) {
 
   // Use the same unified loader and then slice to "recent"
   const load = useCallback(async () => {
+    if (!userId) {
+      console.log('[home] no userId, skipping fetch');
+      return;
+    }
+    
     setLoading(true);
     try {
-      const items = await fetchMyProjects();
+      const items = await fetchProjectCards(userId);
       setRecent(items.slice(0, 5)); // show top 5 newest
     } catch (e) {
       console.log('[home recent load error]', String(e?.message || e));
+      setRecent([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => { load(); }, [load]);
 

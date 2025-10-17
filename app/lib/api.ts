@@ -373,6 +373,51 @@ export async function waitForPlanReady(
   return null; // timed out still not ready
 }
 
+// Lightweight project cards type
+export type ProjectCard = {
+  id: string;
+  name: string;
+  status: string | null;
+  preview_url?: string | null;
+  preview_thumb_url?: string | null;
+  updated_at?: string | null;
+};
+
+// Fetch lightweight project cards from webhooks service
+export async function fetchProjectCards(userId: string): Promise<ProjectCard[]> {
+  const base = process.env.EXPO_PUBLIC_BASE_URL || 'https://diy-genie-webhooks-tyekowalski.replit.app';
+  const url = `${base}/api/projects/cards?user_id=${encodeURIComponent(userId)}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`[cards] endpoint failed: ${res.status}`);
+    }
+
+    const json = await res.json();
+    
+    if (json.ok === true && Array.isArray(json.items)) {
+      return json.items;
+    }
+
+    return [];
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    console.log('[projects] cards endpoint failed →', err?.message || err);
+    return [];
+  }
+}
+
 // Unified loader for the user's projects — Webhooks (tries both userId & user_id), newest first
 export async function fetchMyProjects(): Promise<any[]> {
   const { data: sess } = await supabase.auth.getSession();
@@ -740,29 +785,3 @@ export async function getPreviewStatus(projectId: string): Promise<PreviewStatus
   }
 }
 
-// --- Demo Project ---
-export async function createOrFetchDemoProject(): Promise<{ ok: boolean; id?: string; error?: string }> {
-  try {
-    // Try to get user id from Supabase (if available)
-    let userId: string | undefined = undefined;
-    try {
-      const { data } = await supabase.auth.getUser();
-      userId = data?.user?.id;
-    } catch {}
-
-    const res = await api('/api/demo-project', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userId ? { user_id: userId } : {}),
-    });
-
-    if (!res.ok) {
-      return { ok: false, error: (res as any)?.error || 'Failed to create demo project' };
-    }
-    const id = (res as any)?.data?.item?.id || (res as any)?.data?.id || (res as any)?.id;
-    return id ? { ok: true, id } : { ok: false, error: 'No project id returned' };
-  } catch (e: any) {
-    console.error('[demo-project] exception', e);
-    return { ok: false, error: e?.message || 'Unexpected error' };
-  }
-}

@@ -60,6 +60,7 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 - **Supabase (@supabase/supabase-js, @supabase/functions-js)**: Database, authentication, and storage.
 - **Node.js/Express**: Backend API server with progress tracking endpoints and project status management.
 - **Project Status Management**: Automatic status promotion from draft to 'active' when plan is ready, with frontend filtering on ProjectsScreen (All/Active/Completed tabs).
+- **Lightweight Project Cards API**: Projects tab and Home screen use optimized `GET /api/projects/cards?user_id=...` endpoint from webhooks service (`EXPO_PUBLIC_BASE_URL`) for fast listing with 5s timeout. Returns minimal data (id, name, status, preview_thumb_url, preview_url, updated_at). Image priority: preview_thumb_url → preview_url → placeholder.
 
 ### Database Schema (Supabase)
 - **projects table**: Includes `completed_steps` (integer array) and `current_step_index` (integer) for progress tracking.

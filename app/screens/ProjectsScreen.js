@@ -7,7 +7,7 @@ import { Screen, Card, Badge, ui, space } from '../ui/components';
 import { brand, colors } from '../../theme/colors';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown, createOrFetchDemoProject } from '../lib/api';
+import { fetchProjectCards, fetchProjectPlanMarkdown } from '../lib/api';
 import { useUser } from '../lib/useUser';
 
 export default function ProjectsScreen({ navigation }) {
@@ -15,20 +15,26 @@ export default function ProjectsScreen({ navigation }) {
   const [activeFilter, setActiveFilter] = useState('All');
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [launchingDemo, setLaunchingDemo] = useState(false);
 
-  // Unified loader
+  // Unified loader using new cards endpoint
   const fetchProjects = useCallback(async () => {
+    if (!userId) {
+      console.log('[projects] no userId, skipping fetch');
+      return;
+    }
+
     setLoading(true);
     try {
-      const items = await fetchMyProjects();
+      const items = await fetchProjectCards(userId);
       setProjects(items);
+      console.log('[projects] fetched cards', items.length);
     } catch (e) {
-      console.log('[projects load error]', String(e?.message || e));
+      console.log('[projects] cards endpoint failed → fallback empty', String(e?.message || e));
+      setProjects([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchProjects();
@@ -63,31 +69,6 @@ export default function ProjectsScreen({ navigation }) {
 
   const handleStartProject = () => {
     navigation.navigate('NewProject');
-  };
-
-  const handleTrySample = async () => {
-    if (launchingDemo) return;
-    try {
-      setLaunchingDemo(true);
-      const res = await createOrFetchDemoProject();
-      if (res.ok && res.id) {
-        // Navigate to details
-        const parent = navigation.getParent?.();
-        if (parent?.navigate) {
-          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
-        } else {
-          navigation.navigate('ProjectDetails', { id: res.id });
-        }
-      } else {
-        console.log('[demo-project] error', res.error);
-        Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
-      }
-    } catch (err) {
-      console.log('[demo-project] exception', err);
-      Alert.alert('Demo Unavailable', 'An unexpected error occurred. Please try again.');
-    } finally {
-      setLaunchingDemo(false);
-    }
   };
 
   const filteredProjects = projects.filter(project => {
@@ -158,32 +139,6 @@ export default function ProjectsScreen({ navigation }) {
             </View>
             <Text style={styles.emptyTitle}>No projects yet</Text>
             <Text style={styles.emptySubtitle}>Start by scanning your room or uploading a photo.</Text>
-            
-            {/* Demo Project CTA */}
-            <View style={{ width: '100%', marginBottom: 16 }}>
-              <Pressable
-                onPress={handleTrySample}
-                style={{
-                  backgroundColor: '#6E2EF5',
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                accessibilityRole="button"
-              >
-                {launchingDemo ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-                    Try a Sample Project
-                  </Text>
-                )}
-              </Pressable>
-              <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12, textAlign: 'center' }}>
-                Loads a ready-to-view plan that doesn't count against your monthly limits.
-              </Text>
-            </View>
 
             <TouchableOpacity style={styles.startProjectButton} onPress={handleStartProject}>
               <Text style={styles.startProjectText}>Start Your First Project</Text>
@@ -203,11 +158,9 @@ export default function ProjectsScreen({ navigation }) {
 }
 
 function ProjectCard({ project, navigation }) {
-  const projectName = project.name || project.title || 'Untitled Project';
+  const projectName = project.name || 'Untitled Project';
   const status = project.status;
-  const previewStatus = project.preview_status;
-  const hasInputImage = !!project.input_image_url;
-  const hasPreviewImage = !!project.preview_url;
+  const imageSource = project.preview_thumb_url ?? project.preview_url ?? null;
   
   const handlePress = async () => {
     try {
@@ -226,38 +179,16 @@ function ProjectCard({ project, navigation }) {
   return (
     <Card onPress={handlePress} style={{ marginBottom: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        {/* Thumbnail with optional preview status badge */}
+        {/* Thumbnail */}
         <View style={{ position: 'relative' }}>
-          {hasPreviewImage ? (
+          {imageSource ? (
             <Image 
-              source={{ uri: project.preview_url }} 
+              source={{ uri: imageSource }} 
               style={styles.thumbnailImage}
               resizeMode="cover"
             />
-          ) : hasInputImage ? (
-            <Image 
-              source={{ uri: project.input_image_url }} 
-              style={styles.thumbnailImage}
-              resizeMode="cover"
-            />
-          ) : status === 'preview_requested' ? (
-            <View style={styles.thumbnailSkeleton}>
-              <ActivityIndicator size="small" color={brand.primary} />
-            </View>
           ) : (
             <View style={styles.thumbnailPlaceholder} />
-          )}
-          
-          {/* Preview status badge overlay */}
-          {previewStatus === 'queued' && (
-            <View style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(109,40,217,0.9)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
-              <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>Preview: queued</Text>
-            </View>
-          )}
-          {previewStatus === 'ready' && !hasPreviewImage && (
-            <View style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(5,150,105,0.9)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 }}>
-              <Text style={{ fontSize: 10, color: '#fff', fontWeight: '600' }}>Preview: ready</Text>
-            </View>
           )}
         </View>
         
@@ -372,20 +303,17 @@ const styles = StyleSheet.create({
     height: 64,
     backgroundColor: '#E5E7EB',
     borderRadius: 12,
-    marginRight: spacing.md,
   },
   thumbnailImage: {
     width: 64,
     height: 64,
     borderRadius: 12,
-    marginRight: spacing.md,
   },
   thumbnailSkeleton: {
     width: 64,
     height: 64,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
-    marginRight: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
