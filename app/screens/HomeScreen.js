@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Linking, Platf
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { brand, colors } from '../../theme/colors.ts';
 import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId, createOrFetchDemoProject } from '../lib/api';
+import { fetchMyProjects, fetchProjectPlanMarkdown, createProjectAndReturnId } from '../lib/api';
 import { useUser } from '../lib/useUser';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
@@ -123,7 +123,6 @@ const TEMPLATES = [
 // Template cards section
 function TemplateCards({ navigation, onTemplateCreate }) {
   const [creating, setCreating] = useState(null);
-  const [launchingDemo, setLaunchingDemo] = useState(false);
 
   const handleCreateTemplate = async (template) => {
     setCreating(template.key);
@@ -153,63 +152,10 @@ function TemplateCards({ navigation, onTemplateCreate }) {
     }
   };
 
-  const handleTrySample = async () => {
-    if (launchingDemo) return;
-    try {
-      setLaunchingDemo(true);
-      const res = await createOrFetchDemoProject();
-      if (res.ok && res.id) {
-        // Navigate to details
-        const parent = navigation.getParent?.('root-tabs') || navigation.getParent?.();
-        if (parent?.navigate) {
-          parent.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
-        } else {
-          navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: res.id } });
-        }
-      } else {
-        console.log('[demo-project] error', res.error);
-        Alert.alert('Demo Unavailable', res.error || 'Please try again in a moment.');
-      }
-    } catch (err) {
-      console.log('[demo-project] exception', err);
-      Alert.alert('Demo Unavailable', 'An unexpected error occurred. Please try again.');
-    } finally {
-      setLaunchingDemo(false);
-    }
-  };
-
   return (
     <View style={templateStyles.section}>
       <Text style={templateStyles.header}>Start with a template</Text>
       
-      {/* Demo Project CTA - Temporarily disabled */}
-      {false && (
-        <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-          <Pressable
-            onPress={handleTrySample}
-            style={{
-              backgroundColor: '#6E2EF5',
-              borderRadius: 12,
-              paddingVertical: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            accessibilityRole="button"
-          >
-            {launchingDemo ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-                Try a Sample Project
-              </Text>
-            )}
-          </Pressable>
-          <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12 }}>
-            Loads a ready-to-view plan that doesn't count against your monthly limits.
-          </Text>
-        </View>
-      )}
-
       {TEMPLATES.map((template) => (
         <View key={template.key} style={templateStyles.card}>
           <View style={templateStyles.cardContent}>
@@ -217,12 +163,12 @@ function TemplateCards({ navigation, onTemplateCreate }) {
             <Text style={templateStyles.cardBlurb}>{template.blurb}</Text>
           </View>
           <Pressable
-            onPress={() => handleCreateTemplate(template)}
+            onPress={() => navigation.navigate('NewProject')}
             disabled={creating === template.key}
             style={templateStyles.createButton}
           >
             {creating === template.key ? (
-              <ActivityIndicator size="small" color={colors.brand} />
+              <ActivityIndicator size="small" color="white" />
             ) : (
               <Text style={templateStyles.createText}>Create</Text>
             )}
@@ -306,17 +252,15 @@ export default function HomeScreen({ navigation }) {
         <TemplateCards navigation={navigation} />
 
         {/* CTA Button */}
-        <PressableScale
+        <Pressable
           testID="home-cta"
           onPress={handleNewProject}
-          haptic="medium"
-          scaleTo={0.97}
           accessibilityRole="button"
           accessibilityLabel="Start a New Project"
           style={styles.startProjectButton}
         >
           <Text style={styles.startProjectText}>Start a New Project</Text>
-        </PressableScale>
+        </Pressable>
 
         {/* Section Header */}
         <Text style={styles.sectionHeader}>Recent Projects</Text>
@@ -431,45 +375,25 @@ const styles = StyleSheet.create({
   },
   startProjectButton: {
     height: 56,
-    borderRadius: 14,
-    backgroundColor: colors.brand,
+    borderRadius: 16,
+    backgroundColor: brand.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.ctaShadow,
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
-    width: '100%',
-    paddingHorizontal: 32,
+    marginHorizontal: 16,
+    marginTop: 16,
   },
   startProjectText: {
-    color: colors.onBrand,
+    color: 'white',
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: 0.2,
     fontFamily: typography.fontFamily.manropeBold,
   },
-  devButton: {
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    width: '100%',
-  },
-  devButtonText: {
-    color: '#6B7280',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: typography.fontFamily.inter,
-  },
   sectionHeader: {
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#0F172A',
-    marginTop: 22,
+    marginTop: 8,
     marginBottom: 16,
   },
   projectsSection: {
@@ -530,8 +454,8 @@ const heroStyles = StyleSheet.create({
     marginBottom: 8,
   },
   slide: {
-    height: 200,
-    borderRadius: 12,
+    height: 184,
+    borderRadius: 16,
     marginHorizontal: 16,
     overflow: 'hidden',
   },
@@ -567,10 +491,12 @@ const heroStyles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: '#D1D5DB',
+    opacity: 0.3,
   },
   dotActive: {
     backgroundColor: colors.brand,
-    width: 20,
+    width: 16,
+    opacity: 1,
   },
 });
 
@@ -604,14 +530,15 @@ const templateStyles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginHorizontal: 16,
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
@@ -621,26 +548,27 @@ const templateStyles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#0F172A',
     marginBottom: 2,
     fontFamily: typography.fontFamily.manropeBold,
   },
   cardBlurb: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#6B7280',
     fontFamily: typography.fontFamily.inter,
   },
   createButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minWidth: 70,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    backgroundColor: brand.primary,
     alignItems: 'center',
   },
   createText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.brand,
+    color: 'white',
     fontFamily: typography.fontFamily.manropeBold,
   },
 });
