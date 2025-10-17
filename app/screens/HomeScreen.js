@@ -12,7 +12,6 @@ import { useUser } from '../lib/useUser';
 import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { safeLogEvent } from '../lib/deleteProject';
 import { track } from '../lib/track';
 import { log } from '../lib/logger';
 
@@ -145,7 +144,6 @@ function TemplateCards({ navigation, onTemplateCreate, userId }) {
 
   const handleCreateTemplate = async (template) => {
     setCreating(template.key);
-    safeLogEvent('template_selected', { template: template.key });
 
     try {
       // Create project with template data
