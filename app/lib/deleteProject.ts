@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { API_BASE } from './api';
 import { log } from './logger';
+import { deleteProjectStorage } from './storageCleanup';
 
 /**
  * Lightweight telemetry helper - logs events best-effort
@@ -96,78 +97,14 @@ export async function deleteProjectDeep(
   try {
     log('[delete] using Supabase fallback');
 
-    // Fetch the project directly from Supabase to get media paths
-    const { data: project, error: fetchError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single();
-    
-    if (fetchError || !project) {
-      log('[delete] project not found', fetchError);
-      return { ok: false, usedApi: false, message: 'Project not found' };
-    }
+    // Get userId from session for storage cleanup
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id || null;
 
-    // Step 2a: Delete media from storage buckets (best-effort)
-    const mediaPaths = [
-      project.image,
-      project.preview_url,
-      project.scan_url,
-      project.scan?.image_url,
-    ].filter(Boolean);
+    // Step 2a: Storage cleanup (best-effort)
+    await deleteProjectStorage({ supabase, projectId, userId });
 
-    for (const path of mediaPaths) {
-      if (!path || typeof path !== 'string') continue;
-
-      try {
-        let bucket: string | null = null;
-        let filePath = path;
-
-        // Determine bucket based on path
-        if (path.includes('/uploads/')) {
-          bucket = process.env.EXPO_PUBLIC_UPLOADS_BUCKET || 'uploads';
-          // Extract just the filename after /uploads/
-          const match = path.match(/\/uploads\/(.+)$/);
-          if (match) filePath = match[1];
-        } else if (path.includes('/room-scans/')) {
-          bucket = 'room-scans';
-          // Extract just the filename after /room-scans/
-          const match = path.match(/\/room-scans\/(.+)$/);
-          if (match) filePath = match[1];
-        }
-
-        if (bucket) {
-          log('[delete] removing from storage', { bucket, filePath });
-          await supabase.storage.from(bucket).remove([filePath]);
-        }
-      } catch (storageErr) {
-        log('[delete] storage error (non-fatal)', storageErr);
-      }
-    }
-
-    // Step 2b: Delete dependent rows (best-effort)
-    try {
-      // Delete from project_media if table exists
-      await supabase.from('project_media').delete().eq('project_id', projectId);
-    } catch {
-      log('[delete] project_media table not found (ok)');
-    }
-
-    try {
-      // Delete from room_scans if table exists
-      await supabase.from('room_scans').delete().eq('project_id', projectId);
-    } catch {
-      log('[delete] room_scans table not found (ok)');
-    }
-
-    try {
-      // Delete from progress tracking if exists
-      await supabase.from('project_progress').delete().eq('project_id', projectId);
-    } catch {
-      log('[delete] project_progress table not found (ok)');
-    }
-
-    // Step 2c: Delete the main project record
+    // Step 2b: Delete DB row (FKs/ON DELETE CASCADE will handle children)
     const { error: deleteError } = await supabase
       .from('projects')
       .delete()

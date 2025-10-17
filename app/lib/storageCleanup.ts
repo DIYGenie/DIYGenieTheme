@@ -12,43 +12,37 @@ async function deleteByPrefix(
   prefix: string
 ) {
   try {
-    // Recursively list up to a few thousand; our app won't hit huge volumes
     const toRemove: string[] = [];
-    let next: string | null = null;
 
-    do {
-      const { data, error } = await supabase
-        .storage
-        .from(bucket)
-        .list(prefix, { limit: 1000, token: next });
+    // List files at this prefix (limit 1000)
+    const { data, error } = await supabase
+      .storage
+      .from(bucket)
+      .list(prefix, { limit: 1000 });
 
-      if (error) break;
-      if (!data) break;
+    if (error || !data) return;
 
-      for (const f of data) {
-        if (f.name === '.' || f.name === '..') continue;
-        // If it's a folder, recurse
-        if (f.id === null && f.name && f.created_at === null) {
-          // nested folder – call again
-          await deleteByPrefix(supabase, bucket, `${prefix}/${f.name}`);
-        } else {
-          toRemove.push(`${prefix}/${f.name}`);
-        }
+    for (const f of data) {
+      if (f.name === '.' || f.name === '..') continue;
+      
+      // If it's a folder, recurse
+      if (f.id === null && f.name && f.created_at === null) {
+        // nested folder – call again
+        await deleteByPrefix(supabase, bucket, `${prefix}/${f.name}`);
+      } else {
+        toRemove.push(`${prefix}/${f.name}`);
       }
+    }
 
-      // remove in batches of 100
-      while (toRemove.length) {
-        const batch = toRemove.splice(0, 100);
-        const { error: remErr } = await supabase.storage.from(bucket).remove(batch);
-        if (remErr) {
-          // swallow; best-effort cleanup
-          break;
-        }
+    // remove in batches of 100
+    while (toRemove.length) {
+      const batch = toRemove.splice(0, 100);
+      const { error: remErr } = await supabase.storage.from(bucket).remove(batch);
+      if (remErr) {
+        // swallow; best-effort cleanup
+        break;
       }
-
-      // no pageable token exposed by supabase-js list(); exit loop
-      next = null;
-    } while (next);
+    }
   } catch {
     // best-effort; never throw
   }
