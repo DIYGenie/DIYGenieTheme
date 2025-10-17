@@ -73,7 +73,7 @@ The design is modern and clean, utilizing white backgrounds, dark text, and a pu
 ## Production Configuration
 
 ### Build & Deployment
-- **App Configuration**: Environment-aware `app.config.js` with runtime extras for API base URLs (`apiBase`, `previewApiBase`). Supports automatic dark mode via `userInterfaceStyle: "automatic"`.
+- **App Configuration**: Environment-aware `app.config.js` with runtime extras for API base URLs (`apiBase`, `previewApiBase`) sourced from `EXPO_PUBLIC_BASE_URL` environment variable. Supports automatic dark mode via `userInterfaceStyle: "automatic"`.
 - **EAS Build Profiles**: Configured in `eas.json` with development, preview, and production profiles. Production profile auto-increments version.
 - **Version Management**: Automated version bumping via `npm run version:bump` script that updates `package.json` and propagates to iOS buildNumber and Android versionCode.
 - **Bundle Identifiers**: iOS (`com.diygenie.app`) and Android (`com.diygenie.app`) configured for store submission.
