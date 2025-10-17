@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { API_BASE } from './api';
+import { log } from './logger';
 
 /**
  * Lightweight telemetry helper - logs events best-effort
@@ -8,7 +9,7 @@ export async function safeLogEvent(name: string, props?: any) {
   try {
     // Best-effort telemetry - could insert into a telemetry table if it exists
     // For now, just console log
-    console.log(`[event:${name}]`, props || {});
+    log(`[event:${name}]`, props || {});
     
     // Optional: Insert into telemetry table if it exists
     try {
@@ -40,7 +41,7 @@ export async function deleteProjectDeep(
   // Step 1: Try to delete via backend API
   try {
     const url = `${API_BASE}/api/projects/${encodeURIComponent(projectId)}`;
-    console.log('[delete] trying API', url);
+    log('[delete] trying API', url);
     
     // Get auth token from Supabase session
     const { data: sessionData } = await supabase.auth.getSession();
@@ -54,30 +55,46 @@ export async function deleteProjectDeep(
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers,
-    });
+    // Use 10s timeout for delete
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    try {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (res.ok || res.status === 204) {
-      console.log('[delete] API success');
-      usedApi = true;
-      await safeLogEvent('project_deleted', { projectId, usedApi: true });
-      return { ok: true, usedApi: true };
-    }
+      if (res.ok || res.status === 204) {
+        log('[delete] API success');
+        usedApi = true;
+        await safeLogEvent('project_deleted', { projectId, usedApi: true });
+        return { ok: true, usedApi: true };
+      }
 
-    if (res.status === 404) {
-      console.log('[delete] API 404, falling back to Supabase');
-    } else {
-      console.log('[delete] API failed with status', res.status);
+      if (res.status === 404) {
+        log('[delete] API 404, falling back to Supabase');
+      } else {
+        log('[delete] API failed with status', res.status);
+      }
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      if (fetchErr?.name === 'AbortError') {
+        log('[delete] API timeout (10s), falling back to Supabase');
+      } else {
+        throw fetchErr;
+      }
     }
   } catch (e) {
-    console.log('[delete] API error, falling back to Supabase', e);
+    log('[delete] API error, falling back to Supabase', e);
   }
 
   // Step 2: Fallback to Supabase direct deletion
   try {
-    console.log('[delete] using Supabase fallback');
+    log('[delete] using Supabase fallback');
 
     // Fetch the project directly from Supabase to get media paths
     const { data: project, error: fetchError } = await supabase
@@ -87,7 +104,7 @@ export async function deleteProjectDeep(
       .single();
     
     if (fetchError || !project) {
-      console.log('[delete] project not found', fetchError);
+      log('[delete] project not found', fetchError);
       return { ok: false, usedApi: false, message: 'Project not found' };
     }
 
@@ -120,11 +137,11 @@ export async function deleteProjectDeep(
         }
 
         if (bucket) {
-          console.log('[delete] removing from storage', { bucket, filePath });
+          log('[delete] removing from storage', { bucket, filePath });
           await supabase.storage.from(bucket).remove([filePath]);
         }
       } catch (storageErr) {
-        console.log('[delete] storage error (non-fatal)', storageErr);
+        log('[delete] storage error (non-fatal)', storageErr);
       }
     }
 
@@ -133,21 +150,21 @@ export async function deleteProjectDeep(
       // Delete from project_media if table exists
       await supabase.from('project_media').delete().eq('project_id', projectId);
     } catch {
-      console.log('[delete] project_media table not found (ok)');
+      log('[delete] project_media table not found (ok)');
     }
 
     try {
       // Delete from room_scans if table exists
       await supabase.from('room_scans').delete().eq('project_id', projectId);
     } catch {
-      console.log('[delete] room_scans table not found (ok)');
+      log('[delete] room_scans table not found (ok)');
     }
 
     try {
       // Delete from progress tracking if exists
       await supabase.from('project_progress').delete().eq('project_id', projectId);
     } catch {
-      console.log('[delete] project_progress table not found (ok)');
+      log('[delete] project_progress table not found (ok)');
     }
 
     // Step 2c: Delete the main project record
@@ -165,7 +182,7 @@ export async function deleteProjectDeep(
       };
     }
 
-    console.log('[delete] Supabase success');
+    log('[delete] Supabase success');
     await safeLogEvent('project_deleted', { projectId, usedApi: false });
     return { ok: true, usedApi: false };
   } catch (e: any) {
