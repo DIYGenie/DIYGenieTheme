@@ -12,8 +12,8 @@ type IconInput =
 
 type Props = {
   icon?: IconInput;
-  title: ReactNode;                // allow string or <Text/>
-  summary?: string | ReactNode;    // optional subtext
+  title: ReactNode;
+  summary?: string | ReactNode;
   countBadge?: number | string | ReactNode;
   children?: ReactNode;
   isOpen?: boolean;
@@ -22,18 +22,13 @@ type Props = {
 };
 
 function asIconEl(icon: IconInput): ReactNode {
-  // Catch null, undefined, false, 0, empty string
   if (!icon) return null;
-
-  // Already a valid React element? use as-is
   if (React.isValidElement(icon)) return icon;
-
-  // String => treat as Ionicons name
+  
   if (typeof icon === 'string') {
     return <Ionicons name={icon as any} size={16} color={brand.primary} />;
   }
-
-  // Object form: must be an object AND have a 'name' property
+  
   if (typeof icon === 'object' && icon !== null && 'name' in icon && typeof (icon as any).name === 'string') {
     const cfg = icon as { name: string; size?: number; color?: string };
     return (
@@ -44,9 +39,20 @@ function asIconEl(icon: IconInput): ReactNode {
       />
     );
   }
-
-  // Anything else (empty objects, arrays, etc.) -> ignore safely
+  
   console.warn('[SectionCard] Invalid icon format:', icon);
+  return null;
+}
+
+function safeRenderNode(node: ReactNode): ReactNode {
+  if (node == null) return null;
+  if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
+    return node;
+  }
+  if (React.isValidElement(node)) return node;
+  if (Array.isArray(node)) return node;
+  
+  console.warn('[SectionCard] Invalid ReactNode (likely empty object):', node);
   return null;
 }
 
@@ -58,6 +64,9 @@ export default function SectionCard({
   children,
 }: Props) {
   const iconEl = asIconEl(icon);
+  const safeTitle = safeRenderNode(title);
+  const safeSummary = safeRenderNode(summary);
+  const safeBadge = safeRenderNode(countBadge);
 
   return (
     <View
@@ -78,16 +87,16 @@ export default function SectionCard({
         {iconEl ? <View style={{ marginRight: 8 }}>{iconEl}</View> : null}
 
         {/* Title */}
-        {typeof title === 'string' ? (
+        {typeof safeTitle === 'string' ? (
           <Text style={{ fontSize: 18, fontWeight: '700', color: '#14181F' }}>
-            {title}
+            {safeTitle}
           </Text>
         ) : (
-          title
+          safeTitle
         )}
 
-        {/* Count badge (optional) */}
-        {countBadge != null ? (
+        {/* Count badge */}
+        {safeBadge != null ? (
           <View
             style={{
               marginLeft: 'auto',
@@ -97,24 +106,24 @@ export default function SectionCard({
               borderRadius: 999,
             }}
           >
-            {typeof countBadge === 'string' || typeof countBadge === 'number' ? (
+            {typeof safeBadge === 'string' || typeof safeBadge === 'number' ? (
               <Text style={{ color: brand.primary, fontWeight: '600' }}>
-                {String(countBadge)}
+                {String(safeBadge)}
               </Text>
             ) : (
-              countBadge
+              safeBadge
             )}
           </View>
         ) : null}
       </View>
 
-      {/* Summary (optional) */}
-      {summary ? (
+      {/* Summary */}
+      {safeSummary ? (
         <View style={{ marginTop: 6 }}>
-          {typeof summary === 'string' ? (
-            <Text style={{ color: '#6B7280' }}>{summary}</Text>
+          {typeof safeSummary === 'string' ? (
+            <Text style={{ color: '#6B7280' }}>{safeSummary}</Text>
           ) : (
-            summary
+            safeSummary
           )}
         </View>
       ) : null}
