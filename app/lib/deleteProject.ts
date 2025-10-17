@@ -1,18 +1,17 @@
 import { supabase } from './supabase';
 import { WEBHOOKS_BASE } from './env';
-import { track } from './track';
 
 /**
  * Delete a project via API only
+ * Telemetry should be handled by the caller after successful deletion
  */
 export async function deleteProjectDeep(
   projectId: string
 ): Promise<{ ok: boolean; message?: string }> {
   try {
-    // Get auth token and userId from Supabase session
+    // Get auth token from Supabase session
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
-    const userId = sessionData?.session?.user?.id;
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -36,10 +35,6 @@ export async function deleteProjectDeep(
       clearTimeout(timeoutId);
 
       if (res.ok || res.status === 204) {
-        // Track successful deletion
-        if (userId) {
-          await track({ userId, event: 'delete_project', projectId });
-        }
         return { ok: true };
       }
 
