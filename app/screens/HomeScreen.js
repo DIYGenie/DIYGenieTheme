@@ -182,31 +182,33 @@ function TemplateCards({ navigation, onTemplateCreate }) {
     <View style={templateStyles.section}>
       <Text style={templateStyles.header}>Start with a template</Text>
       
-      {/* Demo Project CTA */}
-      <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
-        <Pressable
-          onPress={handleTrySample}
-          style={{
-            backgroundColor: '#6E2EF5',
-            borderRadius: 12,
-            paddingVertical: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          accessibilityRole="button"
-        >
-          {launchingDemo ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
-              Try a Sample Project
-            </Text>
-          )}
-        </Pressable>
-        <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12 }}>
-          Loads a ready-to-view plan that doesn't count against your monthly limits.
-        </Text>
-      </View>
+      {/* Demo Project CTA - Temporarily disabled */}
+      {false && (
+        <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
+          <Pressable
+            onPress={handleTrySample}
+            style={{
+              backgroundColor: '#6E2EF5',
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            accessibilityRole="button"
+          >
+            {launchingDemo ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+                Try a Sample Project
+              </Text>
+            )}
+          </Pressable>
+          <Text style={{ marginTop: 6, color: '#7A7F87', fontSize: 12 }}>
+            Loads a ready-to-view plan that doesn't count against your monthly limits.
+          </Text>
+        </View>
+      )}
 
       {TEMPLATES.map((template) => (
         <View key={template.key} style={templateStyles.card}>
