@@ -14,6 +14,23 @@ import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { safeLogEvent } from '../lib/deleteProject';
 
+// Shadow helpers for depth and polish
+const shadow16 = {
+  shadowColor: '#000',
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 4,
+};
+
+const shadow24 = {
+  shadowColor: '#000',
+  shadowOpacity: 0.10,
+  shadowRadius: 16,
+  shadowOffset: { width: 0, height: 10 },
+  elevation: 6,
+};
+
 // Hero carousel data
 const HERO_SLIDES = [
   {
@@ -40,7 +57,7 @@ function HeroCarousel() {
   const carouselWidth = winW - 32; // Account for marginHorizontal 16
 
   const renderSlide = ({ item }) => (
-    <View style={[heroStyles.slide, { width: carouselWidth }]}>
+    <View style={[heroStyles.heroCard, { width: carouselWidth }]}>
       <Image source={{ uri: item.image }} style={heroStyles.slideImage} />
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.6)']}
@@ -165,12 +182,13 @@ function TemplateCards({ navigation, onTemplateCreate }) {
           <Pressable
             onPress={() => navigation.navigate('NewProject')}
             disabled={creating === template.key}
-            style={templateStyles.createButton}
+            style={templateStyles.createChip}
+            activeOpacity={0.9}
           >
             {creating === template.key ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={templateStyles.createText}>Create</Text>
+              <Text style={templateStyles.createChipText}>Create</Text>
             )}
           </Pressable>
         </View>
@@ -366,6 +384,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
+    letterSpacing: 0.2,
   },
   welcomeSubtitle: {
     fontSize: 16,
@@ -381,6 +400,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 16,
     marginTop: 16,
+    ...shadow24,
   },
   startProjectText: {
     color: 'white',
@@ -393,7 +413,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: typography.fontFamily.manropeBold,
     color: '#0F172A',
-    marginTop: 8,
+    marginTop: 20,
     marginBottom: 16,
   },
   projectsSection: {
@@ -406,15 +426,7 @@ const styles = StyleSheet.create({
     minHeight: 88,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 2,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+    ...shadow16,
   },
   thumbnailPlaceholder: {
     width: 56,
@@ -450,14 +462,16 @@ const styles = StyleSheet.create({
 // Hero carousel styles
 const heroStyles = StyleSheet.create({
   container: {
-    marginTop: 8,
+    marginTop: 14,
     marginBottom: 8,
   },
-  slide: {
-    height: 184,
-    borderRadius: 16,
+  heroCard: {
+    height: 210,
+    borderRadius: 14,
     marginHorizontal: 16,
     overflow: 'hidden',
+    backgroundColor: '#eee',
+    ...shadow24,
   },
   slideImage: {
     width: '100%',
@@ -475,41 +489,40 @@ const heroStyles = StyleSheet.create({
   },
   caption: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: typography.fontFamily.manropeBold,
+    textShadow: '0px 1px 6px rgba(0,0,0,0.35)',
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
     gap: 6,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#D1D5DB',
-    opacity: 0.3,
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
   dotActive: {
-    backgroundColor: colors.brand,
+    backgroundColor: brand.primary,
     width: 16,
-    opacity: 1,
   },
 });
 
 // Progress bar styles
 const progressStyles = StyleSheet.create({
   container: {
-    marginTop: 8,
+    marginTop: 6,
     marginHorizontal: 16,
     alignItems: 'center',
   },
   text: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#6f7380',
     fontFamily: typography.fontFamily.inter,
   },
 });
@@ -517,15 +530,15 @@ const progressStyles = StyleSheet.create({
 // Template cards styles
 const templateStyles = StyleSheet.create({
   section: {
-    marginTop: 24,
+    marginTop: 18,
     marginBottom: 16,
   },
   header: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#3A2EB0',
+    color: brand.primary,
     marginHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 10,
     fontFamily: typography.fontFamily.manropeBold,
   },
   card: {
@@ -534,41 +547,39 @@ const templateStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...shadow16,
   },
   cardContent: {
     flex: 1,
+    paddingRight: 12,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#17181d',
+    marginBottom: 4,
     fontFamily: typography.fontFamily.manropeBold,
   },
   cardBlurb: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 14.5,
+    color: '#7a7f89',
     fontFamily: typography.fontFamily.inter,
   },
-  createButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-    backgroundColor: brand.primary,
+  createChip: {
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 999,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: brand.primary,
   },
-  createText: {
-    fontSize: 14,
-    fontWeight: '600',
+  createChipText: {
     color: 'white',
+    fontWeight: '700',
+    fontSize: 14.5,
     fontFamily: typography.fontFamily.manropeBold,
   },
 });
