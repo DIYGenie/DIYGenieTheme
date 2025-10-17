@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
 import { PlanResponse } from '../types/plan';
+import { warn } from './logger';
 
 function trimSlash(s?: string){ return (s || '').replace(/\/+$/,''); }
 function stripApiSuffix(s?: string){ return (s || '').replace(/\/api\/?$/,''); }
@@ -17,6 +18,27 @@ export const PREVIEW_API_BASE = stripApiSuffix(trimSlash(RAW_PREVIEW)) || API_BA
 
 export const BASE = API_BASE;
 
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const res = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return res;
+  } catch (err: any) {
+    clearTimeout(id);
+    if (err?.name === 'AbortError') {
+      warn('[api] timeout', { url, timeoutMs });
+      throw new Error('timeout');
+    }
+    throw err;
+  }
+}
+
 export async function api(path: string, init: RequestInit = {}) {
   const url = `${BASE}${path}`;
   const method = (init.method || 'GET').toUpperCase();
@@ -26,10 +48,12 @@ export async function api(path: string, init: RequestInit = {}) {
   const defaultHeaders = isFormData ? {} : { 'Content-Type': 'application/json' };
   const headers = { ...defaultHeaders, ...(init.headers || {}) };
   
-  const res = await fetch(url, {
+  const timeout = method === 'GET' ? 8000 : 12000;
+  
+  const res = await fetchWithTimeout(url, {
     headers,
     ...init,
-  });
+  }, timeout);
   
   if (!res.ok) {
     let payload: any = null;
@@ -70,8 +94,11 @@ export async function api(path: string, init: RequestInit = {}) {
 export async function apiRaw(path: string, init: RequestInit = {}) {
   const base = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:3001';
   const url = path.startsWith('http') ? path : `${base}${path}`;
+  
+  const method = (init.method || 'GET').toUpperCase();
+  const timeout = method === 'GET' ? 8000 : 12000;
 
-  const res = await fetch(url, init); // no default headers here
+  const res = await fetchWithTimeout(url, init, timeout);
 
   if (!res.ok) {
     let payloadText = '<no body>';

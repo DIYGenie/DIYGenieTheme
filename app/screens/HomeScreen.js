@@ -350,6 +350,8 @@ function ProjectCard({ project, navigation }) {
     : project.status === 'preview_ready' 
       ? 'Preview ready' 
       : 'In progress';
+  
+  const imageSource = project.preview_thumb_url ?? project.preview_url ?? null;
 
   return (
     <PressableScale
@@ -360,8 +362,12 @@ function ProjectCard({ project, navigation }) {
       accessibilityLabel={`${project.name || 'Untitled Project'}, ${statusText}`}
       style={styles.projectCard}
     >
-      {/* Thumbnail Placeholder */}
-      <View style={styles.thumbnailPlaceholder} />
+      {/* Thumbnail */}
+      {imageSource ? (
+        <Image source={{ uri: imageSource }} style={styles.thumbnailImage} resizeMode="cover" />
+      ) : (
+        <View style={styles.thumbnailPlaceholder} />
+      )}
       
       {/* Content */}
       <View style={styles.cardContent}>
@@ -443,6 +449,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     backgroundColor: colors.muted,
+    borderRadius: 12,
+    marginRight: spacing.md,
+  },
+  thumbnailImage: {
+    width: 56,
+    height: 56,
     borderRadius: 12,
     marginRight: spacing.md,
   },
