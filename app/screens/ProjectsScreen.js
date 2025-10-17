@@ -9,6 +9,7 @@ import { spacing, layout } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { fetchProjectCards, fetchProjectPlanMarkdown } from '../lib/api';
 import { useUser } from '../lib/useUser';
+import { log } from '../lib/logger';
 
 export default function ProjectsScreen({ navigation }) {
   const { userId } = useUser();
@@ -19,7 +20,7 @@ export default function ProjectsScreen({ navigation }) {
   // Unified loader using new cards endpoint
   const fetchProjects = useCallback(async () => {
     if (!userId) {
-      console.log('[projects] no userId, skipping fetch');
+      log('[projects] no userId, skipping fetch');
       return;
     }
 
@@ -27,9 +28,9 @@ export default function ProjectsScreen({ navigation }) {
     try {
       const items = await fetchProjectCards(userId);
       setProjects(items);
-      console.log('[projects] fetched cards', items.length);
+      log('[projects] fetched cards', items.length);
     } catch (e) {
-      console.log('[projects] cards endpoint failed → fallback empty', String(e?.message || e));
+      log('[projects] cards endpoint failed → fallback empty', String(e?.message || e));
       setProjects([]);
     } finally {
       setLoading(false);
@@ -43,7 +44,7 @@ export default function ProjectsScreen({ navigation }) {
   // Listen for project deletion events
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener('projects:refresh', () => {
-      console.log('[projects] delete event → refetch');
+      log('[projects] delete event → refetch');
       fetchProjects();
     });
 
@@ -56,7 +57,7 @@ export default function ProjectsScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       if (typeof fetchProjects === 'function') {
-        console.log('[projects] focus → refetch');
+        log('[projects] focus → refetch');
         fetchProjects();
       }
       return () => {};

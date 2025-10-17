@@ -7,6 +7,7 @@ import { fetchProjectById, fetchProjectPlan, fetchProjectPlanMarkdown } from '..
 import { parsePlanMarkdown } from '../lib/plan';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { PlanResponse } from '../types/plan';
+import { log } from '../lib/logger';
 
 type R = RouteProp<Record<'DetailedInstructions', { id: string; section?: string }>, 'DetailedInstructions'>;
 
@@ -68,10 +69,10 @@ export default function DetailedInstructions() {
         const apiPlan = await fetchProjectPlan(params.id);
         
         if (apiPlan.ok) {
-          console.log('[detailed instructions] API plan loaded');
+          log('[detailed instructions] API plan loaded');
           setPlanData(apiPlan);
         } else {
-          console.log('[detailed instructions] API plan failed, trying fallback', apiPlan.error);
+          log('[detailed instructions] API plan failed, trying fallback', apiPlan.error);
           
           // Fallback to markdown plan if API fails
           if (!p?.plan) {
@@ -81,7 +82,7 @@ export default function DetailedInstructions() {
                 setProject((prev: any) => ({ ...(prev || {}), plan: parsePlanMarkdown(md) }));
               }
             } catch (e) {
-              console.log('[detailed instructions] fallback error', e);
+              log('[detailed instructions] fallback error', e);
               setError(apiPlan.error || 'Failed to load plan');
             }
           }

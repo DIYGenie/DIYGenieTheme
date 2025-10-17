@@ -14,6 +14,7 @@ import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { safeLogEvent } from '../lib/deleteProject';
 import { track } from '../lib/track';
+import { log } from '../lib/logger';
 
 // Shadow helpers for depth and polish
 const shadow16 = {
@@ -163,7 +164,7 @@ function TemplateCards({ navigation, onTemplateCreate, userId }) {
         navigation.navigate('Projects', { screen: 'ProjectDetails', params: { id: projectId } });
       }
     } catch (err) {
-      console.log('[template create error]', err);
+      log('[template create error]', err);
       Alert.alert('Error', 'Could not create project. Please try again.');
     } finally {
       setCreating(null);
@@ -212,7 +213,7 @@ export default function HomeScreen({ navigation }) {
   // Use the same unified loader and then slice to "recent"
   const load = useCallback(async () => {
     if (!userId) {
-      console.log('[home] no userId, skipping fetch');
+      log('[home] no userId, skipping fetch');
       return;
     }
     
@@ -221,7 +222,7 @@ export default function HomeScreen({ navigation }) {
       const items = await fetchProjectCards(userId);
       setRecent(items.slice(0, 5)); // show top 5 newest
     } catch (e) {
-      console.log('[home recent load error]', String(e?.message || e));
+      log('[home recent load error]', String(e?.message || e));
       setRecent([]);
     } finally {
       setLoading(false);
@@ -245,7 +246,7 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       if (typeof load === 'function') {
-        console.log('[home] focus → refetch recent projects');
+        log('[home] focus → refetch recent projects');
         load();
       }
       return () => {};

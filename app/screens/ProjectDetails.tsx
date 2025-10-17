@@ -23,6 +23,7 @@ import { deleteProjectDeep } from '../lib/deleteProject';
 import { brand } from '../../theme/colors';
 import { useUser } from '../lib/useUser';
 import { track } from '../lib/track';
+import { log, warn } from '../lib/logger';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -70,7 +71,7 @@ export default function ProjectDetails() {
         const stored = await AsyncStorage.getItem(`sections:${projectId}`);
         if (stored) setOpenSections(JSON.parse(stored));
       } catch (e) {
-        console.log('[ui] load sections error', e);
+        log('[ui] load sections error', e);
       }
     })();
   }, [projectId]);
@@ -83,9 +84,9 @@ export default function ProjectDetails() {
     setOpenSections(next);
     try {
       await AsyncStorage.setItem(`sections:${projectId}`, JSON.stringify(next));
-      console.log('[ui] toggle', { name, open: next.includes(name) });
+      log('[ui] toggle', { name, open: next.includes(name) });
     } catch (e) {
-      console.log('[ui] save sections error', e);
+      log('[ui] save sections error', e);
     }
   }, [openSections, projectId]);
 
@@ -96,7 +97,7 @@ export default function ProjectDetails() {
     const txt = arr.map(format).filter(Boolean).join('\n');
     await Clipboard.setStringAsync(txt);
     simpleToast(`Copied ${arr.length} items`);
-    console.log('[ui] copy', { name, count: arr.length });
+    log('[ui] copy', { name, count: arr.length });
   }, []);
 
   // Poll for measurement once on mount
@@ -122,7 +123,7 @@ export default function ProjectDetails() {
   const finishing = Array.isArray(plan?.finishing) ? plan.finishing : [];
   const counts = { materials: materials.length, tools: tools.length, cuts: cuts.length, steps: steps.length };
   
-  console.log('[details] plan counts', counts);
+  log('[details] plan counts', counts);
 
   // Derive AR scale/dimensions with safe defaults
   const pxPerIn = typeof project?.scale_px_per_in === 'number' ? project.scale_px_per_in : null;
@@ -131,7 +132,7 @@ export default function ProjectDetails() {
   const heightIn = typeof dims?.height_in === 'number' ? dims.height_in : null;
   const depthIn  = typeof dims?.depth_in === 'number'  ? dims.depth_in  : null;
   const diagIn   = typeof dims?.diagonal_in === 'number' ? dims.diagonal_in : null;
-  console.log('[details] ar', { pxPerIn, widthIn, heightIn, depthIn, diagIn });
+  log('[details] ar', { pxPerIn, widthIn, heightIn, depthIn, diagIn });
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -154,7 +155,7 @@ export default function ProjectDetails() {
         setCompletedSteps(prog.completed_steps || []);
         setCurrentStepIndex(prog.current_step_index || 0);
         
-        console.log('[details] loaded', {
+        log('[details] loaded', {
           id: p?.id,
           status: p?.status,
           has_plan_json: !!p?.plan_json
@@ -162,7 +163,7 @@ export default function ProjectDetails() {
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
-        console.log('[ProjectDetails load error]', String(e));
+        log('[ProjectDetails load error]', String(e));
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -189,7 +190,7 @@ export default function ProjectDetails() {
 
   // Log candidates once per change
   useEffect(() => {
-    console.log('[hero:candidates]', {
+    log('[hero:candidates]', {
       preview: project?.preview_url,
       input: project?.input_image_url,
       scan: scan?.imageUrl,
@@ -204,7 +205,7 @@ export default function ProjectDetails() {
   // Add cache-buster so <Image> refetches when URL toggles
   const resolvedHero = pick ? `${pick}${pick.includes('?') ? '&' : '?'}v=${Date.now()}` : null;
   
-  console.log('[details] hero =', heroType ?? 'none');
+  log('[details] hero =', heroType ?? 'none');
 
   const handleSaveHeroToPhotos = async () => {
     // Always save the After image only
@@ -358,7 +359,7 @@ export default function ProjectDetails() {
 
     try {
       setPlanLoading(true);
-      console.log('[plan] generating', { id: p.id });
+      log('[plan] generating', { id: p.id });
       const res = await fetch(`${API_BASE_URL}/plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -379,7 +380,7 @@ export default function ProjectDetails() {
       if (upErr) throw upErr;
       // reflect locally
       setProject((prev: any) => ({ ...(prev || p), plan_json: data.plan, status: 'planned' }));
-      console.log('[plan] saved', { id: p.id });
+      log('[plan] saved', { id: p.id });
     } catch (e: any) {
       console.error('[plan] generate fail', e);
       Alert.alert('Plan failed', String(e?.message || e));
@@ -442,7 +443,7 @@ export default function ProjectDetails() {
   // Refetch if plan is empty after active status (handles webhook race)
   useEffect(() => {
     if (planReady && counts.materials + counts.tools + counts.cuts + counts.steps === 0) {
-      console.log('[details] empty plan after active → refetch in 2s');
+      log('[details] empty plan after active → refetch in 2s');
       const t = setTimeout(() => load(), 2000);
       return () => clearTimeout(t);
     }
@@ -466,7 +467,7 @@ export default function ProjectDetails() {
         const user_id = u?.data?.session?.user?.id;
         
         while (polling && !abortController.signal.aborted) {
-          console.log('[preview] polling…');
+          log('[preview] polling…');
           
           const r = await fetch(`https://api.diygenieapp.com/api/projects/${projectId}/preview/status?user_id=${user_id}`, {
             signal: abortController.signal
@@ -475,14 +476,14 @@ export default function ProjectDetails() {
           if (r.status === 200) {
             const result = await r.json();
             if (result.status === 'done' && result.url) {
-              console.log('[preview] ready', { url: result.url });
+              log('[preview] ready', { url: result.url });
               setProject((prev: any) => ({
                 ...prev,
                 preview_status: 'done',
                 preview_url: result.url
               }));
               polling = false;
-              console.log('[preview] stop');
+              log('[preview] stop');
               break;
             }
           }
@@ -491,7 +492,7 @@ export default function ProjectDetails() {
         }
       } catch (err) {
         if ((err as any)?.name !== 'AbortError') {
-          console.log('[preview] poll error', err);
+          log('[preview] poll error', err);
         }
       }
     };
@@ -501,7 +502,7 @@ export default function ProjectDetails() {
     return () => {
       polling = false;
       abortController.abort();
-      console.log('[preview] stop');
+      log('[preview] stop');
     };
   }, [projectId, project?.preview_status]);
 
@@ -510,12 +511,12 @@ export default function ProjectDetails() {
   // Log plan state
   const hasPlanContent = counts.materials + counts.tools + counts.cuts + counts.steps > 0;
   const planState = isBuilding ? 'building' : planReady && hasPlanContent ? 'ready' : planReady ? 'active_empty' : 'none';
-  console.log('[details] plan state =', planState);
+  log('[details] plan state =', planState);
 
   const copyText = async (txt: string) => {
     if (!txt) return;
     await Clipboard.setStringAsync(txt);
-    console.log('[copy] ok');
+    log('[copy] ok');
   };
 
   const toggleStepComplete = async (stepIndex: number) => {
@@ -538,7 +539,7 @@ export default function ProjectDetails() {
         completed_steps: newCompleted,
         current_step_index: stepIndex
       });
-      console.log('[progress] step', stepIndex, isCompleted ? 'unchecked' : 'checked');
+      log('[progress] step', stepIndex, isCompleted ? 'unchecked' : 'checked');
     } catch (e) {
       console.error('[progress] update failed', e);
       setCompletedSteps(completedSteps);
@@ -608,7 +609,7 @@ export default function ProjectDetails() {
                   style={{ width: '100%', height: '100%', minHeight: 220 }}
                   resizeMode="cover"
                   onError={(e) => {
-                    console.warn('[hero:error]', { url: resolvedHero, err: e?.nativeEvent?.error });
+                    warn('[hero:error]', { url: resolvedHero, err: e?.nativeEvent?.error });
                     setHeroError(true);
                   }}
                 />
@@ -721,7 +722,7 @@ export default function ProjectDetails() {
                     value={showRuler} 
                     onValueChange={(val) => {
                       setShowRuler(val);
-                      console.log('[ruler] toggle', { on: val, pxPerIn, heroW });
+                      log('[ruler] toggle', { on: val, pxPerIn, heroW });
                     }} 
                   />
                   <Text style={{ fontSize: 14, opacity: 0.85 }}>Show ruler</Text>
@@ -758,7 +759,7 @@ export default function ProjectDetails() {
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => {
-                console.log('[details] nav to full');
+                log('[details] nav to full');
                 track({ userId, event: 'open_plan', projectId });
                 (navigation as any).navigate('DetailedInstructions', { id: projectId });
               }}
@@ -1086,7 +1087,7 @@ export default function ProjectDetails() {
                   try {
                     const text = formatPlanText(project, { overview, materials, tools, cuts, steps });
                     const res = await Share.share({ message: text, title: project?.name ?? 'DIY Plan' });
-                    console.log('[ui] share', { action: res.action });
+                    log('[ui] share', { action: res.action });
                   } catch (e) {
                     console.error('[ui] share error', e);
                     simpleToast('Could not open share sheet');
