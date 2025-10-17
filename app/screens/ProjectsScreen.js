@@ -19,11 +19,6 @@ export default function ProjectsScreen({ navigation }) {
 
   // Unified loader using new cards endpoint
   const fetchProjects = useCallback(async () => {
-    if (!userId) {
-      log('[projects] no userId, skipping fetch');
-      return;
-    }
-
     setLoading(true);
     try {
       const items = await fetchProjectCards(userId);
@@ -38,8 +33,8 @@ export default function ProjectsScreen({ navigation }) {
   }, [userId]);
 
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+    if (userId) fetchProjects();
+  }, [userId, fetchProjects]);
 
   // Listen for project deletion events
   useEffect(() => {
@@ -56,12 +51,12 @@ export default function ProjectsScreen({ navigation }) {
   // Auto-refresh list whenever this screen gains focus
   useFocusEffect(
     useCallback(() => {
-      if (typeof fetchProjects === 'function') {
+      if (userId) {
         log('[projects] focus → refetch');
         fetchProjects();
       }
       return () => {};
-    }, [fetchProjects])
+    }, [userId, fetchProjects])
   );
 
   const handleFilterPress = (filter) => {

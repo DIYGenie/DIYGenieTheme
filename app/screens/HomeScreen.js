@@ -212,11 +212,6 @@ export default function HomeScreen({ navigation }) {
 
   // Use the same unified loader and then slice to "recent"
   const load = useCallback(async () => {
-    if (!userId) {
-      log('[home] no userId, skipping fetch');
-      return;
-    }
-    
     setLoading(true);
     try {
       const items = await fetchProjectCards(userId);
@@ -229,7 +224,9 @@ export default function HomeScreen({ navigation }) {
     }
   }, [userId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { 
+    if (userId) load(); 
+  }, [userId, load]);
 
   // Pull-to-refresh state + handler
   const [refreshing, setRefreshing] = useState(false);
@@ -245,12 +242,12 @@ export default function HomeScreen({ navigation }) {
   // Keep "Recent Projects" fresh when returning to Home
   useFocusEffect(
     useCallback(() => {
-      if (typeof load === 'function') {
+      if (userId) {
         log('[home] focus → refetch recent projects');
         load();
       }
       return () => {};
-    }, [load])
+    }, [userId, load])
   );
 
   const handleNewProject = () => {
