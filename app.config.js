@@ -3,6 +3,8 @@ const APP_ENV = process.env.APP_ENV || 'development';
 const isProd = APP_ENV === 'production';
 const version = require('./package.json').version || '1.0.0';
 
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://diy-genie-webhooks-tyekowalski.replit.app';
+
 module.exports = {
   expo: {
     name: "DIY Genie",
@@ -61,8 +63,8 @@ module.exports = {
     },
     extra: {
       appEnv: APP_ENV,
-      apiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev",
-      previewApiBase: isProd ? "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev/api" : "https://866abea8-7d40-464f-aa97-89666542046b-00-2br01ucza63uw.spock.replit.dev/api",
+      apiBase: BASE_URL,
+      previewApiBase: BASE_URL,
     }
   }
 };
