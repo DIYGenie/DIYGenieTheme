@@ -21,6 +21,8 @@ import { formatPlanText } from '../lib/planFormat';
 import { enableLayoutAnimOnce, animateSection } from '../lib/anim';
 import { deleteProjectDeep } from '../lib/deleteProject';
 import { brand } from '../../theme/colors';
+import { useUser } from '../lib/useUser';
+import { track } from '../lib/track';
 
 type RouteParams = { id: string; justBuilt?: boolean };
 type R = RouteProp<Record<'ProjectDetails', RouteParams>, 'ProjectDetails'>;
@@ -29,6 +31,7 @@ export default function ProjectDetails() {
   const route = useRoute<R>();
   const navigation = useNavigation();
   const safeBack = useSafeBack();
+  const { userId } = useUser();
   const projectId = route.params?.id;
   const justBuilt = route.params?.justBuilt;
 
@@ -320,6 +323,9 @@ export default function ProjectDetails() {
                 message: 'Project deleted',
                 type: 'success',
               });
+
+              // Track deletion
+              track({ userId, event: 'delete_project', projectId });
 
               // Navigate back and emit refresh event
               navigation.goBack();
@@ -753,6 +759,7 @@ export default function ProjectDetails() {
               activeOpacity={0.9}
               onPress={() => {
                 console.log('[details] nav to full');
+                track({ userId, event: 'open_plan', projectId });
                 (navigation as any).navigate('DetailedInstructions', { id: projectId });
               }}
               style={{

@@ -13,6 +13,7 @@ import PressableScale from '../components/ui/PressableScale';
 import ProjectCardSkeleton from '../components/home/ProjectCardSkeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { safeLogEvent } from '../lib/deleteProject';
+import { track } from '../lib/track';
 
 // Shadow helpers for depth and polish
 const shadow16 = {
@@ -138,7 +139,7 @@ const TEMPLATES = [
 ];
 
 // Template cards section
-function TemplateCards({ navigation, onTemplateCreate }) {
+function TemplateCards({ navigation, onTemplateCreate, userId }) {
   const [creating, setCreating] = useState(null);
 
   const handleCreateTemplate = async (template) => {
@@ -180,7 +181,10 @@ function TemplateCards({ navigation, onTemplateCreate }) {
             <Text style={templateStyles.cardBlurb}>{template.blurb}</Text>
           </View>
           <Pressable
-            onPress={() => navigation.navigate('NewProject')}
+            onPress={() => {
+              track({ userId, event: 'create_template', props: { template: template.key } });
+              navigation.navigate('NewProject');
+            }}
             disabled={creating === template.key}
             style={templateStyles.createChip}
             activeOpacity={0.9}
@@ -273,7 +277,7 @@ export default function HomeScreen({ navigation }) {
         <ProgressBar />
 
         {/* Template Cards */}
-        <TemplateCards navigation={navigation} />
+        <TemplateCards navigation={navigation} userId={userId} />
 
         {/* CTA Button */}
         <Pressable
