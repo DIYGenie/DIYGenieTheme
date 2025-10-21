@@ -3,6 +3,9 @@
 ## Overview
 DIY Genie is a React Native mobile application built with Expo, designed to assist users with DIY projects. Its purpose is to empower users to visualize and execute their DIY projects efficiently, following the tagline "Wish. See. Build.". The application offers a gradient-based interface with a welcome screen and three core sections: Home, Projects, and Profile, targeting cross-platform deployment (iOS, Android, and Web).
 
+**GitHub Repository**: https://github.com/DIYGenie/DIYGenieTheme.git  
+**Status**: Ready for GitHub export (October 21, 2025)
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
